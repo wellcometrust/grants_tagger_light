@@ -5,8 +5,6 @@ given a link to the MeSH xml file
 """
 import typer
 
-import os
-import uuid
 import xml.etree.ElementTree as ET  # this is a library that can parse xml easily
 import pandas as pd
 from pathlib import Path
@@ -69,7 +67,6 @@ def inclusion_cli(
     ),
     out_path: Path = typer.Argument(..., help="path to output argument"),
 ):
-
     inclusion(mesh_xml_path, exclusion_list_path, out_path)
 
 
