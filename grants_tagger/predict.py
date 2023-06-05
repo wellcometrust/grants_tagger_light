@@ -6,7 +6,6 @@ for making a prediction
 from pathlib import Path
 import typer
 
-from grants_tagger.models.utils import format_predictions
 from typing import Optional
 from tqdm import tqdm
 

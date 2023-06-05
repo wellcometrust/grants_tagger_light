@@ -1,10 +1,7 @@
-import os
-
-from transformers import BertTokenizerFast, AutoConfig
+from transformers import AutoTokenizer
 from torch.utils.data import Dataset, DataLoader
 from tqdm import tqdm
 import scipy.sparse as sp
-import numpy as np
 import torch
 
 from grants_tagger.bertmesh.model import BertMesh
@@ -12,8 +9,12 @@ from grants_tagger.bertmesh.model import BertMesh
 
 class MeshDataset(Dataset):
     def __init__(self, X):
-        self.tokenizer = BertTokenizerFast.from_pretrained("bert-base-uncased")
-        self.input_ids = self.tokenizer(X, truncation=True, padding=True)["input_ids"]
+        self.tokenizer = AutoTokenizer.from_pretrained(
+            "Wellcome/WellcomeBertMesh"
+        )  # this assumes we will not be re-training the tokenizer
+        self.input_ids = self.tokenizer(
+            X, truncation="max_length", padding=True, max_length=512
+        )["input_ids"]
 
     def __len__(self):
         return len(self.input_ids)

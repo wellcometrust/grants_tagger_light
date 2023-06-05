@@ -8,10 +8,6 @@ from grants_tagger.models.bert_mesh import WellcomeBertMesh
 from grants_tagger.utils import load_pickle
 
 
-class ApproachNotImplemented(Exception):
-    pass
-
-
 def create_model(parameters=None):
     model = WellcomeBertMesh()
 
