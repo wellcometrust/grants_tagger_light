@@ -13,11 +13,7 @@ logger = logging.getLogger(__name__)
 from grants_tagger.preprocess_mesh import preprocess_mesh_cli
 from grants_tagger.preprocess_wellcome import preprocess_wellcome_cli
 from grants_tagger.predict import predict_cli
-from grants_tagger.evaluate_human import evaluate_human_cli
-from grants_tagger.evaluate_mesh_on_grants import evaluate_mesh_on_grants_cli
-from grants_tagger.evaluate_model import evaluate_model_cli
-from grants_tagger.evaluate_mti import evaluate_mti_cli
-from grants_tagger.evaluate_scispacy_meshtagger import evaluate_scispacy_cli
+from grants_tagger.evaluation import evaluate_app
 from grants_tagger.pretrain import pretrain_cli
 from grants_tagger.tune_threshold import tune_threshold_cli
 from grants_tagger.optimise_params import tune_params_cli
@@ -138,12 +134,6 @@ app.add_typer(preprocess_app, name="preprocess")
 
 app.command("predict")(predict_cli)
 
-evaluate_app = typer.Typer()
-evaluate_app.command("grants")(evaluate_mesh_on_grants_cli)
-evaluate_app.command("model")(evaluate_model_cli)
-evaluate_app.command("mti")(evaluate_mti_cli)
-evaluate_app.command("human")(evaluate_human_cli)
-evaluate_app.command("scispacy")(evaluate_scispacy_cli)
 app.add_typer(evaluate_app, name="evaluate")
 
 app.command("pretrain")(pretrain_cli)
