@@ -14,7 +14,6 @@ logger = logging.getLogger(__name__)
 from grants_tagger.predict import predict_cli
 from grants_tagger.evaluation import evaluate_app
 from grants_tagger.preprocessing import preprocess_app
-from grants_tagger.pretrain import pretrain_cli
 from grants_tagger.tune_threshold import tune_threshold_cli
 from grants_tagger.optimise_params import tune_params_cli
 from grants_tagger.download_epmc import download_epmc_cli
@@ -131,8 +130,6 @@ app.add_typer(preprocess_app, name="preprocess")
 app.add_typer(evaluate_app, name="evaluate")
 
 app.command("predict")(predict_cli)
-
-app.command("pretrain")(pretrain_cli)
 
 tune_app = typer.Typer()
 tune_app.command("threshold")(tune_threshold_cli)
