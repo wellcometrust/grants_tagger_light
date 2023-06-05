@@ -132,7 +132,6 @@ app.command("predict")(predict_cli)
 
 tune_app = typer.Typer()
 tune_app.command("threshold")(tune_threshold_cli)
-tune_app.command("params")(tune_params_cli)
 app.add_typer(tune_app, name="tune")
 
 download_app = typer.Typer()
