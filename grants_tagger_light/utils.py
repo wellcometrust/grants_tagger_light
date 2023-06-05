@@ -13,53 +13,6 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-def load_data(data_path, label_binarizer=None, X_format="List"):
-    """Load data from the dataset."""
-    print("Loading data...")
-
-    texts = []
-    tags = []
-    meta = []
-    with open(data_path) as f:
-        for line in f:
-            data = json.loads(line)
-
-            texts.append(data["text"])
-            tags.append(data["tags"])
-            meta.append(data["meta"])
-
-    if label_binarizer:
-        tags = label_binarizer.transform(tags)
-
-    if X_format == "DataFrame":
-        X = pd.DataFrame(meta)
-        X["text"] = texts
-        return X, tags, meta
-
-    return texts, tags, meta
-
-
-def yield_texts(data_path):
-    """Yields texts from JSONL with text field"""
-    with open(data_path) as f:
-        for line in f:
-            item = json.loads(line)
-            yield item["text"]
-
-
-def yield_tags(data_path, label_binarizer=None):
-    """Yields tags from JSONL with tags field. Transforms if label binarizer provided."""
-    with open(data_path) as f:
-        for line in f:
-            item = json.loads(line)
-
-            if label_binarizer:
-                # TODO: Make more efficient by using a buffer
-                yield label_binarizer.transform([item["tags"]])[0]
-            else:
-                yield item["tags"]
-
-
 # TODO: Move to common for cases where Y is a matrix
 def calc_performance_per_tag(Y_true, Y_pred, tags):
     metrics = []

@@ -5,14 +5,14 @@ import json
 import configparser
 import typer
 
-from typing import List, Optional
+from typing import Optional
 from pathlib import Path
 from sklearn.metrics import precision_recall_fscore_support, classification_report
 from wasabi import table, row
 from sklearn.preprocessing import MultiLabelBinarizer
 import scipy.sparse as sp
 
-from grants_tagger_light.utils import load_train_test_data, load_data
+from grants_tagger_light.evaluation.utils import load_train_test_data, load_data
 
 
 def predict_sparse_probs(model, X_test, batch_size=256, cutoff_prob=0.01):
