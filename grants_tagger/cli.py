@@ -15,7 +15,6 @@ from grants_tagger.predict import predict_cli
 from grants_tagger.evaluation import evaluate_app
 from grants_tagger.preprocessing import preprocess_app
 from grants_tagger.tune_threshold import tune_threshold_cli
-from grants_tagger.optimise_params import tune_params_cli
 from grants_tagger.download_epmc import download_epmc_cli
 from grants_tagger.utils import import_development_dependencies
 
