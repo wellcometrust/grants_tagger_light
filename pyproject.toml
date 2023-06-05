@@ -1,0 +1,22 @@
+[tool.poetry]
+name = "grants-tagger-light"
+version = "0.1.0"
+description = "Train and use BERT models for tagging grants with MeSH terms."
+authors = ["Andrei Apostol <andrei@mantisnlp.com>"]
+readme = "README.md"
+packages = [{include = "grants_tagger_light"}]
+
+[tool.poetry.dependencies]
+python = "^3.10"
+
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^7.3.1"
+black = "^23.3.0"
+isort = "^5.12.0"
+ruff = "^0.0.270"
+pre-commit = "^3.3.2"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
