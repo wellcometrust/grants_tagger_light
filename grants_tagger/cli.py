@@ -10,10 +10,10 @@ import typer
 
 logger = logging.getLogger(__name__)
 
-from grants_tagger.preprocess_mesh import preprocess_mesh_cli
-from grants_tagger.preprocess_wellcome import preprocess_wellcome_cli
+
 from grants_tagger.predict import predict_cli
 from grants_tagger.evaluation import evaluate_app
+from grants_tagger.preprocessing import preprocess_app
 from grants_tagger.pretrain import pretrain_cli
 from grants_tagger.tune_threshold import tune_threshold_cli
 from grants_tagger.optimise_params import tune_params_cli
@@ -127,14 +127,10 @@ def train(
             json.dump({"duration": duration, "ec2_instance": instance}, f)
 
 
-preprocess_app = typer.Typer()
-preprocess_app.command("bioasq-mesh")(preprocess_mesh_cli)
-preprocess_app.command("wellcome-science")(preprocess_wellcome_cli)
 app.add_typer(preprocess_app, name="preprocess")
+app.add_typer(evaluate_app, name="evaluate")
 
 app.command("predict")(predict_cli)
-
-app.add_typer(evaluate_app, name="evaluate")
 
 app.command("pretrain")(pretrain_cli)
 

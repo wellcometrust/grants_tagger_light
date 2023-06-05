@@ -1,4 +1,4 @@
-from typer import typer
+import typer
 
 from evaluate_human import evaluate_human_cli
 from evaluate_mesh_on_grants import evaluate_mesh_on_grants_cli

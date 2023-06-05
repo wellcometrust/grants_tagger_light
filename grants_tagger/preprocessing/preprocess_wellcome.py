@@ -4,10 +4,7 @@ Preprocesses the raw Excel files containing grant data with or without tags
 before passing on to train or teach(by Prodigy)
 """
 
-from argparse import ArgumentParser
-from configparser import ConfigParser
 from pathlib import Path
-import pickle
 import configparser
 import json
 import os
@@ -16,7 +13,7 @@ import yaml
 import shutil
 
 import pandas as pd
-from typing import List, Optional
+from typing import Optional
 from grants_tagger.utils import verify_if_paths_exist
 from grants_tagger.label_binarizer import create_label_binarizer
 from grants_tagger.split_data import split_data
@@ -132,7 +129,6 @@ def preprocess_wellcome_cli(
         None, help="path to config file that defines the arguments"
     ),
 ):
-
     params_path = os.path.join(os.path.dirname(__file__), "../params.yaml")
     with open(params_path) as f:
         params = yaml.safe_load(f)

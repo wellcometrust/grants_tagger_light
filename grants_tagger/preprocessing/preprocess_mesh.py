@@ -1,20 +1,16 @@
 """
 Preprocess JSON Mesh data from BioASQ to JSONL
 """
-from configparser import ConfigParser
 from pathlib import Path
-import argparse
 import configparser
-import random
 import json
-import sys
 import os
 import typer
 import yaml
 import shutil
 
 from tqdm import tqdm
-from typing import List, Optional
+from typing import Optional
 import pandas as pd
 import typer
 
@@ -132,7 +128,6 @@ def preprocess_mesh_cli(
         help="Maximum limit on the number of datapoints in the set (including training and test)",
     ),
 ):
-
     params_path = os.path.join(os.path.dirname(__file__), "../params.yaml")
     with open(params_path) as f:
         params = yaml.safe_load(f)
