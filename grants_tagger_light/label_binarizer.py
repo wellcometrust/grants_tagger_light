@@ -4,7 +4,7 @@ import pickle
 from pathlib import Path
 from sklearn.preprocessing import MultiLabelBinarizer
 
-from grants_tagger.utils import yield_tags
+from grants_tagger_light.utils import yield_tags
 
 
 def create_label_binarizer(data_path, label_binarizer_path, sparse=False):

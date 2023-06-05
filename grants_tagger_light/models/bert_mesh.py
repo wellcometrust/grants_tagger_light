@@ -4,7 +4,7 @@ from tqdm import tqdm
 import scipy.sparse as sp
 import torch
 
-from grants_tagger.bertmesh.model import BertMesh
+from grants_tagger_light.bertmesh.model import BertMesh
 
 
 class MeshDataset(Dataset):

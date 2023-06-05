@@ -14,9 +14,9 @@ import torch
 import typer
 import wandb
 
-from grants_tagger.bertmesh.data import MeshDataset
-from grants_tagger.bertmesh.model import BertMesh, MultiLabelAttention
-from grants_tagger.utils import get_ec2_instance_type, load_pickle
+from grants_tagger_light.bertmesh.data import MeshDataset
+from grants_tagger_light.bertmesh.model import BertMesh, MultiLabelAttention
+from grants_tagger_light.utils import get_ec2_instance_type, load_pickle
 
 
 def train_bertmesh(

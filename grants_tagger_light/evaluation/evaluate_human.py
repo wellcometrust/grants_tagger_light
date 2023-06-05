@@ -7,7 +7,7 @@ import typer
 from pathlib import Path
 from sklearn.metrics import classification_report, f1_score
 
-from grants_tagger.utils import load_data
+from grants_tagger_light.utils import load_data
 
 
 def evaluate_human(data_path, label_binarizer_path):

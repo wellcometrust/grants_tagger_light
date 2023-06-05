@@ -17,8 +17,8 @@ except ImportError:
     )
     SHAP_IMPORTED = False
 
-from grants_tagger.predict import predict_tags, format_predictions
-from grants_tagger.models.create_model import load_model
+from grants_tagger_light.predict import predict_tags, format_predictions
+from grants_tagger_light.models.create_model import load_model
 
 threshold = st.sidebar.slider("Threshold", min_value=0.0, max_value=1.0, value=0.2)
 
@@ -111,7 +111,7 @@ else:
         st.button(tag)
 
 if SHAP_IMPORTED:
-    from grants_tagger.models.mesh_cnn import MeshCNN
+    from grants_tagger_light.models.mesh_cnn import MeshCNN
 
     if model_info["approach"] == "mesh-cnn":
         mesh_cnn = MeshCNN(threshold=threshold)

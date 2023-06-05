@@ -7,7 +7,7 @@ import scipy.sparse as sp
 import numpy as np
 import typer
 
-from grants_tagger.utils import load_data
+from grants_tagger_light.utils import load_data
 
 
 def load_pickle(obj_path):

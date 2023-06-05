@@ -12,7 +12,7 @@ from wasabi import table, row
 from sklearn.preprocessing import MultiLabelBinarizer
 import scipy.sparse as sp
 
-from grants_tagger.utils import load_train_test_data, load_data
+from grants_tagger_light.utils import load_train_test_data, load_data
 
 
 def predict_sparse_probs(model, X_test, batch_size=256, cutoff_prob=0.01):
@@ -34,7 +34,7 @@ def evaluate_model(
     results_path=None,
     full_report_path=None,
 ):
-    from grants_tagger.models.create_model_transformer import load_model
+    from grants_tagger_light.models.create_model_transformer import load_model
 
     model = load_model(model_path)
 

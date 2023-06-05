@@ -10,8 +10,8 @@ import torch
 import typer
 import wandb
 
-from grants_tagger.bertmesh.model import BertMesh, MultiLabelAttention
-from grants_tagger.bertmesh.data import MeshDataset
+from grants_tagger_light.bertmesh.model import BertMesh, MultiLabelAttention
+from grants_tagger_light.bertmesh.data import MeshDataset
 
 
 def evaluate(

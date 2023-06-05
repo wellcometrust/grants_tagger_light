@@ -20,7 +20,7 @@ import pandas as pd
 import logging
 
 logger = logging.getLogger(__name__)
-from grants_tagger.utils import import_development_dependencies
+from grants_tagger_light.utils import import_development_dependencies
 
 
 def get_tags(data, annotator):
@@ -48,8 +48,7 @@ def evaluate_mesh_on_grants(
     mesh_tags_path=None,
     parameters=None,
 ):
-
-    from grants_tagger.models.create_model_xlinear import load_model
+    from grants_tagger_light.models.create_model_xlinear import load_model
 
     data = pd.read_excel(data_path, engine="openpyxl")
 

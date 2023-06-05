@@ -6,7 +6,7 @@ import argparse
 
 from pathlib import Path
 
-from grants_tagger.utils import write_jsonl
+from grants_tagger_light.utils import write_jsonl
 
 
 def yield_data_batch(input_path, buffer_size=10_000):

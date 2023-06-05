@@ -11,7 +11,7 @@ import scipy.sparse as sp
 import numpy as np
 import typer
 
-from grants_tagger.utils import get_ec2_instance_type
+from grants_tagger_light.utils import get_ec2_instance_type
 
 
 class MultiLabelAttention(tf.keras.layers.Layer):

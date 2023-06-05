@@ -1,4 +1,4 @@
-from grants_tagger.cli import app
+from grants_tagger_light.cli import app
 
 
 if __name__ == "__main__":

@@ -4,8 +4,8 @@ import ast
 logger = logging.getLogger(__name__)
 
 
-from grants_tagger.models.bert_mesh import WellcomeBertMesh
-from grants_tagger.utils import load_pickle
+from grants_tagger_light.models.bert_mesh import WellcomeBertMesh
+from grants_tagger_light.utils import load_pickle
 
 
 def create_model(parameters=None):

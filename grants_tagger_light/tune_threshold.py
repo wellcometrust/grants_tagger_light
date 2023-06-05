@@ -25,8 +25,8 @@ from typing import List, Optional
 from pathlib import Path
 
 
-from grants_tagger.utils import import_development_dependencies
-from grants_tagger.utils import load_train_test_data, load_data
+from grants_tagger_light.utils import import_development_dependencies
+from grants_tagger_light.utils import load_train_test_data, load_data
 
 logger = logging.getLogger(__name__)
 logger.setLevel(
@@ -217,7 +217,7 @@ def tune_threshold(
     init_threshold: float = 0.2,
     split_data: bool = False,
 ):
-    from grants_tagger.models.create_model_transformer import load_model
+    from grants_tagger_light.models.create_model_transformer import load_model
 
     with open(label_binarizer_path, "rb") as f:
         label_binarizer = pickle.loads(f.read())
