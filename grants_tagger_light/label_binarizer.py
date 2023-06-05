@@ -6,7 +6,7 @@ from sklearn.preprocessing import MultiLabelBinarizer
 from transformers import AutoModel
 
 
-def create_label_binarizer(model_path, label_binarizer_path):
+def create_label_binarizer(model_path: str, label_binarizer_path: str):
     """Creates, saves and returns a multilabel binarizer for targets Y"""
     label_binarizer = MultiLabelBinarizer()
 
