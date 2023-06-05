@@ -1,17 +1,17 @@
 import argparse
 import pickle
-
 from pathlib import Path
+
 from sklearn.preprocessing import MultiLabelBinarizer
+from transformers import AutoModel
 
-from grants_tagger_light.utils import yield_tags
 
-
-def create_label_binarizer(data_path, label_binarizer_path, sparse=False):
+def create_label_binarizer(model_path, label_binarizer_path):
     """Creates, saves and returns a multilabel binarizer for targets Y"""
-    label_binarizer = MultiLabelBinarizer(sparse_output=sparse)
-    # TODO: pass Y_train here which can be generator or list
-    label_binarizer.fit(yield_tags(data_path))
+    label_binarizer = MultiLabelBinarizer()
+
+    model = AutoModel.from_pretrained(model_path)
+    label_binarizer.fit([list(model.id2label.values())])
 
     with open(label_binarizer_path, "wb") as f:
         f.write(pickle.dumps(label_binarizer))
@@ -21,12 +21,9 @@ def create_label_binarizer(data_path, label_binarizer_path, sparse=False):
 
 if __name__ == "__main__":
     argparser = argparse.ArgumentParser()
-    argparser.add_argument("--data_path", type=Path)
+    argparser.add_argument("--model-path", type=Path)
     argparser.add_argument("--label_binarizer_path", type=Path)
-    argparser.add_argument("--sparse_labels", type=bool)
 
     args = argparser.parse_args()
 
-    create_label_binarizer(
-        args.data_path, args.label_binarizer_path, sparse_labels=args.sparse_labels
-    )
+    create_label_binarizer(args.model_path, args.label_binarizer_path)
