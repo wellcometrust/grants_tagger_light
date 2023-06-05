@@ -1,15 +1,12 @@
 # encoding: utf-8
-from functools import partial
 import pickle
 import json
 import os
 
 import requests
-from sklearn.model_selection import train_test_split
 
 from sklearn.metrics import f1_score
 import pandas as pd
-import numpy as np
 
 import logging
 
@@ -61,46 +58,6 @@ def yield_tags(data_path, label_binarizer=None):
                 yield label_binarizer.transform([item["tags"]])[0]
             else:
                 yield item["tags"]
-
-
-def load_train_test_data(
-    train_data_path,
-    label_binarizer,
-    test_data_path=None,
-    test_size=None,
-    data_format="list",
-):
-    """
-    train_data_path: path. path to JSONL data that contains text and tags fields
-    label_binarizer: MultiLabelBinarizer. multilabel binarizer instance used to transform tags
-    test_data_path: path, default None. path to test JSONL data similar to train_data
-    test_size: float, default None. if test_data_path not provided, dictates portion to be used as test
-    data_format: str, default list. controls data are returned as lists or generators for memory efficiency
-    """
-    if data_format == "list":
-        if test_data_path:
-            X_train, Y_train, _ = load_data(train_data_path, label_binarizer)
-            X_test, Y_test, _ = load_data(test_data_path, label_binarizer)
-
-        else:
-            X, Y, _ = load_data(train_data_path, label_binarizer)
-            X_train, X_test, Y_train, Y_test = train_test_split(
-                X, Y, random_state=42, test_size=test_size
-            )
-    else:
-        if test_data_path:
-            X_train = partial(yield_texts, train_data_path)
-            Y_train = partial(yield_tags, train_data_path, label_binarizer)
-            X_test = partial(yield_texts, test_data_path)
-            Y_test = partial(yield_tags, test_data_path, label_binarizer)
-        else:
-            # note that we do not split the data, we assume the user has them splitted
-            X_train = partial(yield_texts, train_data_path)
-            Y_train = partial(yield_tags, train_data_path, label_binarizer)
-            X_test = None
-            Y_test = None
-
-    return X_train, X_test, Y_train, Y_test
 
 
 # TODO: Move to common for cases where Y is a matrix
