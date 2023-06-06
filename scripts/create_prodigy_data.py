@@ -32,7 +32,6 @@ def create_prodigy_data(data_path, label_binarizer_path, output_path, mode):
     labels = label_binarizer.classes_
 
     with open(output_path, "w") as f:
-
         for text, accept_labels, meta_ in zip(texts, cats, meta):
             grant_id = meta_["Grant_ID"]
             for chunk in yield_chunks(text, labels, accept_labels, grant_id, mode):
