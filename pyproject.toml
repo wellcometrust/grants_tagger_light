@@ -36,3 +36,6 @@ priority = "primary"
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
+
+[tool.poetry.scripts]
+grants-tagger = "grants_tagger_light.cli:app"
