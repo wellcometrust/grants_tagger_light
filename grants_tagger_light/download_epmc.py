@@ -1,11 +1,11 @@
+import json
+import os
+
+import requests
+import typer
 from requests.adapters import HTTPAdapter
 from requests.packages.urllib3.util.retry import Retry
 from tqdm import tqdm
-import requests
-import json
-import os
-import typer
-
 
 RETRY_PARAMETERS = {
     "backoff_factor": 1.2,
@@ -54,7 +54,8 @@ def download_epmc(download_path, year=2020):
         month_path = os.path.join(year_path, f"{month}.jsonl")
         if os.path.exists(month_path):
             print(
-                f"Skipping because {month_path} exists. Delete if you want to redownload"
+                f"""Skipping because {month_path} exists.
+                Delete if you want to redownload"""
             )
             continue
 
@@ -87,7 +88,6 @@ def download_epmc_cli(
     ),
     year: int = typer.Option(2020, help="year to download epmc publications"),
 ):
-
     download_epmc(download_path, year)
 
 
