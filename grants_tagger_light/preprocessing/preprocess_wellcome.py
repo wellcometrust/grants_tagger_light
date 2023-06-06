@@ -4,19 +4,20 @@ Preprocesses the raw Excel files containing grant data with or without tags
 before passing on to train or teach(by Prodigy)
 """
 
-from pathlib import Path
 import configparser
 import json
 import os
-import typer
-import yaml
 import shutil
+from pathlib import Path
+from typing import Optional
 
 import pandas as pd
-from typing import Optional
-from grants_tagger_light.utils import verify_if_paths_exist
+import typer
+import yaml
+
 from grants_tagger_light.label_binarizer import create_label_binarizer
 from grants_tagger_light.split_data import split_data
+from grants_tagger_light.utils import verify_if_paths_exist
 
 
 def process_tagger_data(tagger_data):
@@ -46,7 +47,7 @@ def yield_preprocess_data(
         tags: list of comma separated tags per grant
         meta: list of tuple containing meta information for a grant such as its id
     """
-    # cols = ['Grant Team', 'ERG', 'Lead Applicant', 'Organisation', 'Scheme', 'Title', 'Synopsis', 'Lay Summary', 'Qu.']
+    # cols = ['Grant Team', 'ERG', 'Lead Applicant', 'Organisation', 'Scheme', 'Title', 'Synopsis', 'Lay Summary', 'Qu.'] # noqa
     processed_data = data.drop_duplicates(subset=["Grant_ID", "Sciencetags"])
     processed_data = processed_data.dropna(subset=["Synopsis"])
     if "Tagger1_tags" in meta_cols:

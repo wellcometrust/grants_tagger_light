@@ -1,22 +1,21 @@
 """
 Preprocess JSON Mesh data from BioASQ to JSONL
 """
-from pathlib import Path
 import configparser
 import json
 import os
-import typer
-import yaml
 import shutil
-
-from tqdm import tqdm
+from pathlib import Path
 from typing import Optional
+
 import pandas as pd
 import typer
+import yaml
+from tqdm import tqdm
 
-from grants_tagger_light.utils import write_jsonl, verify_if_paths_exist
 from grants_tagger_light.label_binarizer import create_label_binarizer
 from grants_tagger_light.split_data import split_data
+from grants_tagger_light.utils import verify_if_paths_exist, write_jsonl
 
 
 def yield_raw_data(input_path):
@@ -125,7 +124,9 @@ def preprocess_mesh_cli(
     ),
     n_max: Optional[int] = typer.Option(
         None,
-        help="Maximum limit on the number of datapoints in the set (including training and test)",
+        help="""
+        Maximum limit on the number of datapoints in the set
+        (including training and test)""",
     ),
 ):
     params_path = os.path.join(os.path.dirname(__file__), "../params.yaml")

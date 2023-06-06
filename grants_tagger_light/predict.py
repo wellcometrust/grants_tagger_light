@@ -3,15 +3,13 @@ Predict function for disease part of mesh that optionally
 exposes probabilities and that you can set the threshold
 for making a prediction
 """
-from pathlib import Path
-import typer
-
-from typing import Optional
-from tqdm import tqdm
-
-from transformers import AutoModel, AutoTokenizer
-
 import logging
+from pathlib import Path
+from typing import Optional
+
+import typer
+from tqdm import tqdm
+from transformers import AutoModel, AutoTokenizer
 
 logger = logging.getLogger(__name__)
 
@@ -28,7 +26,7 @@ def predict_tags(
     """
     X: list or numpy array of texts
     model_path: path to trained model
-    probabilities: bool, default False. When true probabilities are returned along with tags
+    probabilities: bool, default False. Return both probabilities and tags
     threshold: float, default 0.5. Probability threshold to be used to assign tags.
     parameters: any params required upon model creation
     config: Path to config file

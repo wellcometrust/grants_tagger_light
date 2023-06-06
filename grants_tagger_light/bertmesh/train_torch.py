@@ -1,21 +1,19 @@
-from typing import Optional
-from datetime import datetime
-import yaml
-import time
 import json
+import time
+from datetime import datetime
+from typing import Optional
 
-from sklearn.metrics import precision_recall_fscore_support
-from torch.utils.data import DataLoader
-from accelerate import Accelerator
-from transformers import AutoConfig
-from tqdm import tqdm
-import transformers
 import torch
+import transformers
 import typer
 import wandb
+from accelerate import Accelerator
+from torch.utils.data import DataLoader
+from tqdm import tqdm
+from transformers import AutoConfig
 
 from grants_tagger_light.bertmesh.data import MeshDataset
-from grants_tagger_light.bertmesh.model import BertMesh, MultiLabelAttention
+from grants_tagger_light.bertmesh.model import BertMesh
 from grants_tagger_light.utils import get_ec2_instance_type, load_pickle
 
 

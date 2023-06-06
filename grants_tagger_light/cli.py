@@ -1,17 +1,16 @@
-import subprocess
 import logging
 import os
+import subprocess
 
 import typer
 
-logger = logging.getLogger(__name__)
-
-
-from grants_tagger_light.predict import predict_cli
+from grants_tagger_light.download_epmc import download_epmc_cli
 from grants_tagger_light.evaluation import evaluate_app
+from grants_tagger_light.predict import predict_cli
 from grants_tagger_light.preprocessing import preprocess_app
 from grants_tagger_light.tune_threshold import tune_threshold_cli
-from grants_tagger_light.download_epmc import download_epmc_cli
+
+logger = logging.getLogger(__name__)
 
 
 app = typer.Typer()

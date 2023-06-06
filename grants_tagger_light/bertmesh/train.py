@@ -1,15 +1,14 @@
-import random
-import math
-import time
 import json
-import os
+import math
+import random
+import time
 
-from transformers import TFBertModel, AutoModel
-import tensorflow_addons as tfa
-import tensorflow as tf
-import scipy.sparse as sp
 import numpy as np
+import scipy.sparse as sp
+import tensorflow as tf
+import tensorflow_addons as tfa
 import typer
+from transformers import TFBertModel
 
 from grants_tagger_light.utils import get_ec2_instance_type
 

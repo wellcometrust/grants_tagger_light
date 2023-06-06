@@ -1,17 +1,16 @@
-from datetime import datetime
 import json
+from datetime import datetime
 
-from sklearn.metrics import precision_recall_fscore_support
-from torch.utils.data import DataLoader
-from transformers import AutoConfig
-from tqdm import tqdm
 import scipy.sparse as sp
 import torch
 import typer
 import wandb
+from sklearn.metrics import precision_recall_fscore_support
+from torch.utils.data import DataLoader
+from tqdm import tqdm
 
-from grants_tagger_light.bertmesh.model import BertMesh, MultiLabelAttention
 from grants_tagger_light.bertmesh.data import MeshDataset
+from grants_tagger_light.bertmesh.model import BertMesh
 
 
 def evaluate(

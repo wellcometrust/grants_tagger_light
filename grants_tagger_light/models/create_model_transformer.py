@@ -1,11 +1,10 @@
-import logging
 import ast
-
-logger = logging.getLogger(__name__)
-
+import logging
 
 from grants_tagger_light.models.bert_mesh import WellcomeBertMesh
 from grants_tagger_light.utils import load_pickle
+
+logger = logging.getLogger(__name__)
 
 
 def create_model(parameters=None):
