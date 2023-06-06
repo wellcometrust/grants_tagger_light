@@ -5,10 +5,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
-      - name: poetry
-        uses: snok/install-poetry@v1
-        with:
-          version: "1.5"
+      - name: Install poetry
+        run: curl -sSL https://install.python-poetry.org | python3 -
       - name: Install dependencies
         run: |
           poetry install --only dev
