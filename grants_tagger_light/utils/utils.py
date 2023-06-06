@@ -1,7 +1,17 @@
 import json
-import pandas as pd
-from sklearn.model_selection import train_test_split
+import logging
+import os
+
+# encoding: utf-8
+import pickle
 from functools import partial
+
+import pandas as pd
+import requests
+from sklearn.metrics import f1_score
+from sklearn.model_selection import train_test_split
+
+logger = logging.getLogger(__name__)
 
 
 def yield_texts(data_path):
@@ -13,7 +23,8 @@ def yield_texts(data_path):
 
 
 def yield_tags(data_path, label_binarizer=None):
-    """Yields tags from JSONL with tags field. Transforms if label binarizer provided."""
+    """Yields tags from JSONL with tags field.
+    Transforms if label binarizer provided."""
     with open(data_path) as f:
         for line in f:
             item = json.loads(line)
@@ -60,10 +71,12 @@ def load_train_test_data(
 ):
     """
     train_data_path: path. path to JSONL data that contains text and tags fields
-    label_binarizer: MultiLabelBinarizer. multilabel binarizer instance used to transform tags
+    label_binarizer: MultiLabelBinarizer instance used to transform tags
     test_data_path: path, default None. path to test JSONL data similar to train_data
-    test_size: float, default None. if test_data_path not provided, dictates portion to be used as test
-    data_format: str, default list. controls data are returned as lists or generators for memory efficiency
+    test_size: float, default None. if test_data_path not provided, dictates portion
+               to be used as test
+    data_format: str, default list. controls data are returned as lists or generators
+                 for memory efficiency
     """
     if data_format == "list":
         if test_data_path:
@@ -89,3 +102,75 @@ def load_train_test_data(
             Y_test = None
 
     return X_train, X_test, Y_train, Y_test
+
+
+# TODO: Move to common for cases where Y is a matrix
+def calc_performance_per_tag(Y_true, Y_pred, tags):
+    metrics = []
+    for tag_index in range(Y_true.shape[1]):
+        y_true_tag = Y_true[:, tag_index]
+        y_pred_tag = Y_pred[:, tag_index]
+        metrics.append({"Tag": tags[tag_index], "f1": f1_score(y_true_tag, y_pred_tag)})
+    return pd.DataFrame(metrics)
+
+
+def get_ec2_instance_type():
+    """Utility function to get ec2 instance name,
+    or empty string if not possible to get name"""
+
+    try:
+        instance_type_request = requests.get(
+            "http://169.254.169.254/latest/meta-data/instance-type", timeout=5
+        )
+    except (requests.exceptions.Timeout, requests.exceptions.ConnectionError):
+        return ""
+
+    if instance_type_request.status_code == 200:
+        return instance_type_request.content.decode()
+    else:
+        return ""
+
+
+def load_pickle(obj_path):
+    with open(obj_path, "rb") as f:
+        return pickle.loads(f.read())
+
+
+def save_pickle(obj_path, obj):
+    with open(obj_path, "wb") as f:
+        f.write(pickle.dumps(obj))
+
+
+def write_jsonl(f, data):
+    for item in data:
+        f.write(json.dumps(item))
+        f.write("\n")
+
+
+def verify_if_paths_exist(paths):
+    exist = 0
+    for path in paths:
+        if path and os.path.exists(path):
+            print(f"{path} exists. Remove if you want to rerun.")
+            exist += 1
+    if exist > 0:
+        return True
+    return False
+
+
+def convert_dvc_to_sklearn_params(parameters):
+    """converts dvc key value params to sklearn nested params if needed"""
+    # converts None to empty dict
+    if not parameters:
+        return {}
+
+    # indication of sklearn pipeline
+    has_nested_params = any([v for v in parameters.values() if type(v) is dict])
+    if has_nested_params:
+        return {
+            f"{pipeline_name}__{param_name}": param_value
+            for pipeline_name, params in parameters.items()
+            for param_name, param_value in params.items()
+        }
+    else:
+        return parameters
