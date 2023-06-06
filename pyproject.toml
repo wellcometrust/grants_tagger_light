@@ -24,6 +24,11 @@ ruff = "^0.0.270"
 pre-commit = "^3.3.2"
 
 
+
+[tool.poetry.group.scripts.dependencies]
+awswrangler = "^3.1.1"
+argilla = "^1.8.0"
+
 [[tool.poetry.source]]
 name = "PyPI"
 priority = "default"
