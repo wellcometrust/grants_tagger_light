@@ -1,9 +1,6 @@
-import json
-import pandas as pd
-import os
-import random
 import argparse
-
+import json
+import random
 from pathlib import Path
 
 from grants_tagger_light.utils import write_jsonl
@@ -40,7 +37,8 @@ def split_data(
 ):
     """
     processed_data_path: path. path to JSONL data that contains processed data
-    processed_train_data_path: path. path to JSONL data that contains processed train data
+    processed_train_data_path: path. path to JSONL data that contains processed
+                               train data
     processed_test_data_path: path. path to JSONL data that contains processed test data
     test_split: float, default None. dictates portion to be used as test
     """

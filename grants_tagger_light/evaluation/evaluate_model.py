@@ -1,18 +1,18 @@
 """
 Evaluate model performance on test set
 """
-import json
 import configparser
-import typer
-
-from typing import Optional
+import json
 from pathlib import Path
-from sklearn.metrics import precision_recall_fscore_support, classification_report
-from wasabi import table, row
-from sklearn.preprocessing import MultiLabelBinarizer
-import scipy.sparse as sp
+from typing import Optional
 
-from grants_tagger_light.evaluation.utils import load_train_test_data, load_data
+import scipy.sparse as sp
+import typer
+from sklearn.metrics import classification_report, precision_recall_fscore_support
+from sklearn.preprocessing import MultiLabelBinarizer
+from wasabi import row, table
+
+from grants_tagger_light.utils import load_data, load_train_test_data
 
 
 def predict_sparse_probs(model, X_test, batch_size=256, cutoff_prob=0.01):

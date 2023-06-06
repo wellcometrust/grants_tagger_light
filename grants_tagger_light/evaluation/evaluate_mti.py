@@ -3,13 +3,12 @@ Evaluate MTI tool from NLM on MeSH subset. The subset is automatically tagged
 by MTI through an email batch service and this scripts calculates performance
 by comparing with the ground truth.
 """
-from argparse import ArgumentParser
-from pathlib import Path
-import pickle
-import json
 import csv
-import typer
+import json
+import pickle
+from pathlib import Path
 
+import typer
 from sklearn.metrics import classification_report, f1_score
 
 
@@ -72,7 +71,6 @@ def evaluate_mti_cli(
     ),
     mti_output_path: Path = typer.Argument(..., help="path to mti output txt"),
 ):
-
     evaluate_mti(label_binarizer_path, data_path, mti_output_path)
 
 

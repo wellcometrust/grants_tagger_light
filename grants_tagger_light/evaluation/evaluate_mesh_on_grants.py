@@ -5,22 +5,18 @@ The script works on an Excel file that contains
 columns that follow the pattern below
 Disease MeSH#TAG_INDEX (ANNOTATOR)
 """
-from argparse import ArgumentParser
-from pathlib import Path
 import configparser
-import pickle
 import json
-import typer
-
-from typing import List, Optional
-from sklearn.metrics import f1_score
-import pandas as pd
-
-
 import logging
+import pickle
+from pathlib import Path
+from typing import Optional
+
+import pandas as pd
+import typer
+from sklearn.metrics import f1_score
 
 logger = logging.getLogger(__name__)
-from grants_tagger_light.utils import import_development_dependencies
 
 
 def get_tags(data, annotator):
@@ -116,8 +112,6 @@ def evaluate_mesh_on_grants_cli(
         None, help="path to config file that defines arguments"
     ),
 ):
-    import_development_dependencies()
-
     if config:
         cfg = configparser.ConfigParser(allow_no_value=True)
         cfg.read(config)

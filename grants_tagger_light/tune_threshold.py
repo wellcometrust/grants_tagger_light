@@ -5,28 +5,27 @@ based on paper "Threshold optimisation for multi-label classifiers"
 by Pillai https://doi.org/10.1016/j.patcog.2013.01.012
 
 There are currently two deviations from the paper
-* fixed number of thresholds to be tried instead of all values from Y_pred_proba for efficiency
-* initialisation of thresholds with 0.5 which seems to help convergence in large number of labels
+* fixed number of thresholds to be tried instead of all values from Y_pred_proba
+  for efficiency
+* initialisation of thresholds with 0.5 which seems to help convergence in
+  large number of labels
 """
-from functools import partial
+import logging
 import multiprocessing
+import os
 import pickle
 import random
-import logging
 import time
-import os
+from functools import partial
+from pathlib import Path
+from typing import Optional
 
-from sklearn.metrics import f1_score
-from scipy.sparse import issparse, csc_matrix
-from tqdm import tqdm
 import numpy as np
 import typer
-from typing import List, Optional
-from pathlib import Path
+from scipy.sparse import csc_matrix, issparse
+from sklearn.metrics import f1_score
 
-
-from grants_tagger_light.utils import import_development_dependencies
-from grants_tagger_light.utils import load_train_test_data, load_data
+from grants_tagger_light.utils import load_data, load_train_test_data
 
 logger = logging.getLogger(__name__)
 logger.setLevel(
@@ -287,8 +286,6 @@ def tune_threshold_cli(
         False, help="flag on whether to split data as was done for train"
     ),
 ):
-    import_development_dependencies()
-
     tune_threshold(
         data_path,
         model_path,
