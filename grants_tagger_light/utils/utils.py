@@ -10,6 +10,8 @@ import pandas as pd
 import requests
 from sklearn.metrics import f1_score
 from sklearn.model_selection import train_test_split
+from transformers import AutoModel
+from sklearn.preprocessing import MultiLabelBinarizer
 
 logger = logging.getLogger(__name__)
 
@@ -174,3 +176,16 @@ def convert_dvc_to_sklearn_params(parameters):
         }
     else:
         return parameters
+
+
+def create_label_binarizer(model_path: str, label_binarizer_path: str):
+    """Creates, saves and returns a multilabel binarizer for targets Y"""
+    label_binarizer = MultiLabelBinarizer()
+
+    model = AutoModel.from_pretrained(model_path)
+    label_binarizer.fit([list(model.id2label.values())])
+
+    with open(label_binarizer_path, "wb") as f:
+        f.write(pickle.dumps(label_binarizer))
+
+    return label_binarizer

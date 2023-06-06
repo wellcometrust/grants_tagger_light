@@ -13,8 +13,12 @@ import typer
 import yaml
 from tqdm import tqdm
 
-from grants_tagger_light.label_binarizer import create_label_binarizer
-from grants_tagger_light.utils import verify_if_paths_exist, write_jsonl, split_data
+from grants_tagger_light.utils import (
+    verify_if_paths_exist,
+    write_jsonl,
+    split_data,
+    create_label_binarizer,
+)
 
 
 def yield_raw_data(input_path):
