@@ -2,7 +2,7 @@ import json
 import os
 import tempfile
 
-from grants_tagger_light.split_data import split_data
+from grants_tagger_light.utils import split_data
 
 
 def test_split_data():
