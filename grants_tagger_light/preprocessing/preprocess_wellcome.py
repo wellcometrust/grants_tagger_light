@@ -16,8 +16,7 @@ import typer
 import yaml
 
 from grants_tagger_light.label_binarizer import create_label_binarizer
-from grants_tagger_light.split_data import split_data
-from grants_tagger_light.utils import verify_if_paths_exist
+from grants_tagger_light.utils import verify_if_paths_exist, split_data
 
 
 def process_tagger_data(tagger_data):
