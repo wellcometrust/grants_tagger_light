@@ -68,7 +68,7 @@ def load_data(
     return dset
 
 
-def train(model_key: str, data_path: str, model_save_path: str):
+def train_bertmesh(model_key: str, data_path: str, model_save_path: str):
     model = BertMeshHFCompat.from_pretrained(model_key, trust_remote_code=True)
     tokenizer = AutoTokenizer.from_pretrained(model_key)
 
@@ -102,7 +102,7 @@ train_app = typer.Typer()
 
 
 @train_app.command()
-def train_cli(
+def train_bertmesh_cli(
     model_key: str = typer.Argument(
         ..., help="Pretrained model key. Local path or HF location"
     ),
@@ -112,7 +112,7 @@ def train_cli(
     ),
     model_save_path: str = typer.Argument(..., help="Path to save model to"),
 ):
-    train(model_key, data_path, model_save_path)
+    train_bertmesh(model_key, data_path, model_save_path)
 
 
 if __name__ == "__main__":
