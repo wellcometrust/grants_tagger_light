@@ -1,5 +1,7 @@
 from transformers import AutoModel, PreTrainedModel, BertConfig
+from transformers.modeling_outputs import SequenceClassifierOutput
 import torch
+import torch.nn.functional as F
 
 
 class MultiLabelAttention(torch.nn.Module):
@@ -68,3 +70,26 @@ class BertMesh(PreTrainedModel):
                 for out in outs
             ]
         return outs
+
+
+class BertMeshHFCompat(BertMesh):
+    config_class = BertConfig
+
+    def __init__(self, config):
+        super().__init__(config=config)
+
+    def forward(self, input_ids, labels=None, return_labels=False, **kwargs):
+        outs = super().forward(input_ids, return_labels, **kwargs)
+
+        # Compute loss only if labels are provided
+        if labels is not None:
+            loss = F.binary_cross_entropy(outs, labels.float())
+
+            return SequenceClassifierOutput(
+                loss=loss,
+                logits=outs,
+                hidden_states=None,
+                attentions=None,
+            )
+        else:
+            return outs

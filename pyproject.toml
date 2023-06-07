@@ -15,6 +15,8 @@ pandas = "1.5.3"
 wasabi = "1.1.1"
 torch = {version = "^2.0.1+cpu", source = "torch-cpu"}
 typer = "^0.9.0"
+datasets = "^2.12.0"
+accelerate = "^0.19.0"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^7.3.1"
@@ -29,6 +31,14 @@ pre-commit = "^3.3.2"
 awswrangler = "^3.1.1"
 argilla = "^1.8.0"
 
+
+[tool.poetry.group.torch-cpu.dependencies]
+torch = {version = "^2.0.1+cpu", source = "torch-cpu"}
+
+
+[tool.poetry.group.torch-gpu.dependencies]
+torch = {version = "^2.0.1+cu117", source = "torch-gpu"}
+
 [[tool.poetry.source]]
 name = "PyPI"
 priority = "default"
@@ -37,6 +47,12 @@ priority = "default"
 [[tool.poetry.source]]
 name = "torch-cpu"
 url = "https://download.pytorch.org/whl/cpu"
+priority = "primary"
+
+
+[[tool.poetry.source]]
+name = "torch-gpu"
+url = "https://download.pytorch.org/whl/cu117"
 priority = "primary"
 
 [build-system]
