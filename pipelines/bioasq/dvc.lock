@@ -1,0 +1,109 @@
+schema: '2.0'
+stages:
+  download:
+    cmd: python ../../scripts/download_bioasq_test_data.py 12 ../../data/processed/bioasq/data_12.json
+    deps:
+    - path: ../../scripts/download_bioasq_test_data.py
+      md5: dd7b13b49437977d68fee317acf4499d
+      size: 528
+    outs:
+    - path: ../../data/processed/bioasq/data_12.json
+      md5: 68d082e938c932b208e5a718cbe8ee3e
+      size: 46790
+  tag:
+    cmd: python ../../scripts/tag_bioasq_test_data.py ../../data/processed/bioasq/data_3.json
+      ../../models/xlinear/model/ ../../models/xlinear/label_binarizer.pkl ../../data/raw/desc2021.xml
+      ../../data/processed/bioasq/tagged_data_3_xlinear.json --approach mesh-xlinear
+    deps:
+    - path: ../../data/processed/bioasq/data_3.json
+      md5: ec91b529f6e8464255603001bed995c4
+      size: 7694765
+    - path: ../../data/raw/desc2021.xml
+      md5: 8663a7dd8e1895dd22525d42b80cd2df
+      size: 300410104
+    - path: ../../models/xlinear/label_binarizer.pkl
+      md5: 67d759ed4142feab2e575dc9bd3d5f54
+      size: 827793
+    - path: ../../models/xlinear/model/
+      md5: 072d18f207a503c632e0ce7f363da070.dir
+      size: 3740297256
+      nfiles: 33
+    - path: ../../scripts/tag_bioasq_test_data.py
+      md5: fe0d5e489c45101738e5a62935837d9f
+      size: 1383
+    outs:
+    - path: ../../data/processed/bioasq/tagged_data_3_xlinear.json
+      md5: 4684b1bc9161d2035847a3d7519bf35e
+      size: 504262
+  tag@1:
+    cmd: python ../../scripts/tag_bioasq_test_data.py ../../data/processed/bioasq/data_12.json
+      ../../models/bertmesh/model/ ../../models/bertmesh/label_binarizer.pkl ../../data/raw/desc2021.xml
+      ../../data/processed/bioasq/tagged_data_12_bertmesh.json --approach bertmesh
+      --threshold 0.5
+    deps:
+    - path: ../../data/processed/bioasq/data_12.json
+      md5: 68d082e938c932b208e5a718cbe8ee3e
+      size: 46790
+    - path: ../../data/raw/desc2021.xml
+      md5: 8663a7dd8e1895dd22525d42b80cd2df
+      size: 300410104
+    - path: ../../models/bertmesh/label_binarizer.pkl
+      md5: 003e5fe426208d6b6792de26c3bf058c
+      size: 837939
+    - path: ../../models/bertmesh/model/
+      md5: a214845cc82cf5dc15f7dbb45900f825.dir
+      size: 4544188311
+      nfiles: 15
+    - path: ../../scripts/tag_bioasq_test_data.py
+      md5: fe0d5e489c45101738e5a62935837d9f
+      size: 1383
+    outs:
+    - path: ../../data/processed/bioasq/tagged_data_12_bertmesh.json
+      md5: 944b34485abc82a0245fe3653561f595
+      size: 3181
+  submit@1:
+    cmd: python ../../scripts/submit_bioasq_test_results.py 12 ../../data/processed/bioasq/tagged_data_12_bertmesh.json
+      Wellcome-BertMesh
+    deps:
+    - path: ../../data/processed/bioasq/tagged_data_12_bertmesh.json
+      md5: 944b34485abc82a0245fe3653561f595
+      size: 3181
+    - path: ../../scripts/submit_bioasq_test_results.py
+      md5: 81867d741804db4c1bbd6a70188b9817
+      size: 724
+  tag@0:
+    cmd: python ../../scripts/tag_bioasq_test_data.py ../../data/processed/bioasq/data_12.json
+      ../../models/xlinear/model/ ../../models/xlinear/label_binarizer.pkl ../../data/raw/desc2021.xml
+      ../../data/processed/bioasq/tagged_data_12_xlinear.json --approach mesh-xlinear
+      --threshold 0.2
+    deps:
+    - path: ../../data/processed/bioasq/data_12.json
+      md5: 68d082e938c932b208e5a718cbe8ee3e
+      size: 46790
+    - path: ../../data/raw/desc2021.xml
+      md5: 8663a7dd8e1895dd22525d42b80cd2df
+      size: 300410104
+    - path: ../../models/xlinear/label_binarizer.pkl
+      md5: 67d759ed4142feab2e575dc9bd3d5f54
+      size: 827793
+    - path: ../../models/xlinear/model/
+      md5: 4939257c1b5185f3eb53d20fafcf11f4.dir
+      size: 6753545796
+      nfiles: 38
+    - path: ../../scripts/tag_bioasq_test_data.py
+      md5: fe0d5e489c45101738e5a62935837d9f
+      size: 1383
+    outs:
+    - path: ../../data/processed/bioasq/tagged_data_12_xlinear.json
+      md5: 4d8516468fc09554ab33a58271324c5e
+      size: 3652
+  submit@0:
+    cmd: python ../../scripts/submit_bioasq_test_results.py 12 ../../data/processed/bioasq/tagged_data_12_xlinear.json
+      Wellcome-XLinear
+    deps:
+    - path: ../../data/processed/bioasq/tagged_data_12_xlinear.json
+      md5: 4d8516468fc09554ab33a58271324c5e
+      size: 3652
+    - path: ../../scripts/submit_bioasq_test_results.py
+      md5: 81867d741804db4c1bbd6a70188b9817
+      size: 724
