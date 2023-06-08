@@ -84,12 +84,12 @@ class BertMeshHFCompat(BertMesh):
         # Compute loss only if labels are provided
         if labels is not None:
             loss = F.binary_cross_entropy(outs, labels.float())
-
-            return SequenceClassifierOutput(
-                loss=loss,
-                logits=outs,
-                hidden_states=None,
-                attentions=None,
-            )
         else:
-            return outs
+            loss = -1
+
+        return SequenceClassifierOutput(
+            loss=loss,
+            logits=outs,
+            hidden_states=None,
+            attentions=None,
+        )

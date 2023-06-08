@@ -1,8 +1,10 @@
-from transformers import AutoTokenizer, Trainer, TrainingArguments
+from transformers import AutoTokenizer, Trainer, TrainingArguments, EvalPrediction
 from datasets import Dataset
 from grants_tagger_light.bertmesh import BertMeshHFCompat
 import json
 import typer
+import numpy as np
+from sklearn.metrics import classification_report
 
 
 def load_data(
@@ -65,7 +67,7 @@ def load_data(
     # Split into train and test
     dset = dset.train_test_split(test_size=test_size)
 
-    return dset
+    return dset["train"], dset["test"]
 
 
 def train_bertmesh(model_key: str, data_path: str, model_save_path: str):
@@ -74,28 +76,54 @@ def train_bertmesh(model_key: str, data_path: str, model_save_path: str):
 
     label2id = {v: k for k, v in model.id2label.items()}
 
-    dset = load_data(data_path, tokenizer, label2id=label2id)
+    train_dset, val_dset = load_data(data_path, tokenizer, label2id=label2id)
 
     training_args = {
         "output_dir": "train_output",
         "num_train_epochs": 1,
         "per_device_train_batch_size": 4,
-        "per_device_eval_batch_size": 16,
+        "per_device_eval_batch_size": 4,
         "warmup_steps": 500,
         "weight_decay": 0.01,
-        "learning_rate": 5e-5,
+        "learning_rate": 1e-5,
+        "evaluation_strategy": "steps",
+        "eval_steps": 100,
+        "do_eval": True,
+        "label_names": ["labels"],
     }
 
     training_args = TrainingArguments(**training_args)
 
+    def sklearn_metrics(prediction: EvalPrediction):
+        y_pred = prediction.predictions
+        y_true = prediction.label_ids
+
+        y_pred = np.int64(y_pred > 0.5)
+
+        report = classification_report(y_true, y_pred, output_dict=True)
+
+        metric_dict = {
+            "micro_avg": report["micro avg"],
+            "macro_avg": report["macro avg"],
+            "weighted_avg": report["weighted avg"],
+            "samples_avg": report["samples avg"],
+        }
+
+        return metric_dict
+
     trainer = Trainer(
         model=model,
         args=training_args,
-        train_dataset=dset["train"],
-        eval_dataset=dset["test"],
+        train_dataset=train_dset,
+        eval_dataset=val_dset,
+        compute_metrics=sklearn_metrics,
     )
 
     trainer.train()
+
+    metrics = trainer.evaluate(eval_dataset=val_dset)
+
+    print(metrics)
 
 
 train_app = typer.Typer()
