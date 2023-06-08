@@ -1,5 +1,6 @@
 [core]
     remote = storage
+    autostage = true
 [cache]
     type = "hardlink,symlink"
 ['remote "storage"']
