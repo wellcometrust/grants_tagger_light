@@ -31,16 +31,22 @@ def data_path():
 
 
 @pytest.fixture
-def user_args():
-    # 1 train step, 1 eval step
-    return {
+def save_path():
+    with tempfile.TemporaryDirectory() as tmpdirname:
+        yield tmpdirname + "/model"
+
+
+def test_train_bertmesh(data_path, save_path):
+    model_key = "Wellcome/WellcomeBertMesh"
+
+    # 1 train step, 1 eval step, save after training
+    user_args = {
+        "output_dir": save_path,
         "max_steps": 1,
         "evaluation_strategy": "steps",
         "eval_steps": 1,
+        "save_strategy": "steps",
+        "save_steps": 1,
     }
 
-
-def test_train_bertmesh(data_path, user_args):
-    model_key = "Wellcome/WellcomeBertMesh"
-
-    train_bertmesh(model_key, data_path, "dummy_path", **user_args)
+    train_bertmesh(model_key, data_path, **user_args)

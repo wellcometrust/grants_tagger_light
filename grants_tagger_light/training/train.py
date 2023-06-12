@@ -70,7 +70,7 @@ def load_data(
     return dset["train"], dset["test"]
 
 
-def train_bertmesh(model_key: str, data_path: str, model_save_path: str, **user_args):
+def train_bertmesh(model_key: str, data_path: str, **user_args):
     model = BertMeshHFCompat.from_pretrained(model_key, trust_remote_code=True)
     tokenizer = AutoTokenizer.from_pretrained(model_key)
 
@@ -79,7 +79,8 @@ def train_bertmesh(model_key: str, data_path: str, model_save_path: str, **user_
     train_dset, val_dset = load_data(data_path, tokenizer, label2id=label2id)
 
     training_args = {
-        "output_dir": "train_output",
+        "output_dir": "model_output",
+        "overwrite_output_dir": True,
         "num_train_epochs": 1,
         "per_device_train_batch_size": 4,
         "per_device_eval_batch_size": 4,
@@ -129,6 +130,8 @@ def train_bertmesh(model_key: str, data_path: str, model_save_path: str, **user_
     metrics = trainer.evaluate(eval_dataset=val_dset)
 
     print(metrics)
+
+    trainer.save_model(training_args.output_dir)
 
 
 train_app = typer.Typer()
