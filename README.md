@@ -391,86 +391,11 @@ def epmc_mesh(...)
 ```
 and you would be able to run `grants_tagger preprocess epmc_mesh ...`
 
-## 📦 Bring your own models
-
-To use grants_tagger with your own model you need to define a class
-for your model that adheres to the sklearn api so implements a
-`fit`, `predict`, `predict_proba` and `set_params` but also a `save`
-and `load`. Each custom model is defined in their own python script inside
-the `grants_tagger/models` folder.
-
-Then you need to import you class to `grants_tagger/models/create_model.py` and add it in
-`create_model` as a separate approach with a name. Assuming your new approach
-is a bilstm with attention
-
-```
-from grants_tagger.models.bilstm_attention import BiLSTMAttention
-
-...
-
-def create_model(approach, params)
-...
-elif approach == 'bilstm-attention':
-	model = BiLSTMAttention()
-...
-```
-
-## 🔬 Experiment
-
-To make our experiments reproducible we use a config system (not DVC).
-As such you need to create a new config that describes all parameters
-for the various steps and run each step with the config or use
-`./scripts/run_science_config.sh` or `./scripts/run_mesh_config.sh`
-depending on whether you want to reproduce a wellcome science or mesh
-model.
-
-We record the results of experiments in `docs/results.md` for wellcome
-science and `docs/mesh_results.md` for bioasq mesh.
-
-## 📦 Package
-
-To package the code run `make build`. This will create a wheel in
-dist that you can distribute and `pip install`. `make deploy` pushes
-that wheel in a public Wellcome bucket that you can use if you have
-access to write into it.
-
-Packaged models are produced through dvc by running `dvc repro` and
-stored in s3 by running `make sync_artifacts`. This might soon change to
-a separate command that pushes models to a public bucket so others
-can download.
-
-Thus the recommended way for producing models that are released is
-through DVC repro and as such you need to define the params that
-produce it in the params.yaml as well as the pipeline that produces
-it in `dvc.yaml`. The `params.yaml` is the equivalent of a config file and
-`dvc.yaml` is the equivalent of `run_config.sh`
-
 ## 🚦 Test
 
-Run tests with `make test`. If you want to write some additional tests,
+Run tests with `pytest`. If you want to write some additional tests,
 they should go in the subfolde `tests/`
 
-## 🏗️ Makefile
-
-A Makefile is being used to automate various operations. You can
-get all make commands by running `make`. All the commands have been
-mentioned in previous sections.
-
-```
-Usage: make [task]
-
-task                 help
-------               ----
-sync_data            Sync data to and from s3
-sync_artifacts       Sync processed data and models to and from s3
-virtualenv           Creates virtualenv
-update-requirements  Updates requirement
-test                 Run tests
-build                Create wheel distribution
-deploy               Deploy wheel to public s3 bucket
-clean                Clean hidden and compiled files
-help                 Show help message
-```
 
 ## ✍️ Scripts
 
@@ -478,40 +403,5 @@ Additional scripts, mostly related to Wellcome Trust-specific code can be
 found in `/scripts`. Please refer to the [readme](scripts/README.md) therein for more info
 on how to run those.
 
-## 🏋️ Slim
-
-```bash
-docker build -f Dockerfile.xlinear -t xlinear .
-```
-
-Then run mounting the model volumes
-
-```bash
-docker run -v $(PWD)/models/:/code/models -d -t xlinear
-```
-
-Get your image number, and ssh into the container to debug
-
-```bash
-predict_tags(['This is a malaria grant'], model_path='models/xlinear-0.2.3', label_binarizer_path='models/label_binarizer.pkl', probabilities=True, threshold=0.01)
-```
-
-### Train a slim model
-
-To train a xlinear model, you can use the following functionality:
-
-```python
-from grants_tagger.slim.mesh_xlinear import train_and_evaluate
-
-parameters={'ngram_range': (1, 1), 'beam_size': 30, 'only_topk': 200, 'min_weight_value': 0.1, 'max_features': 400_000}
-
-train_and_evaluate(train_data_path='data/processed/train_mesh2021_toy.jsonl',
-                   test_data_path='data/processed/test_mesh_2021_toy.jsonl',
-                   label_binarizer_path='models/label_binarizer_toy.pkl',
-                   model_path='models/xlinear-toy',
-                   results_path='results/mesh_xlinear_toy.json',
-                   full_report_path='results/mesh_xlinear_toy_full_report.json')
-```
-
-If you want to change the parameters, you can either pass it as a dictionary to `train_and_evaluate`, as above,
-or create a config file (check `configs/mesh/2022.3.0.ini`).
+To install dependencies for the scripts, simply run:
+`poetry install --with scripts`
