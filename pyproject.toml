@@ -39,10 +39,16 @@ awswrangler = "^3.1.1"
 argilla = "^1.8.0"
 
 
+[tool.poetry.group.gpu]
+optional = true
+
+[tool.poetry.group.gpu.dependencies]
+torch = {version = "2.0.1+cu117", source = "torch-gpu"}
+
+
 [[tool.poetry.source]]
 name = "PyPI"
 priority = "default"
-
 
 [[tool.poetry.source]]
 name = "torch-cpu"
