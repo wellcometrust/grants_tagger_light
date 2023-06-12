@@ -47,9 +47,6 @@ For GPU-support:
 For training the model, we recommend installing the version of this package with GPU support.
 For infenrece, CPU-support should suffice.
 
-For development, you will need to also install the development dependencies:
-`poetry install --with dev`
-
 ## 2. Activate the environment
 `poetry shell`
 
@@ -230,7 +227,7 @@ account https://uts.nlm.nih.gov/uts/
 
 ```
 
-### Grants
+### grants
 Evaluate an xlinear model on grants data.
 ```
 
@@ -277,7 +274,7 @@ Predict assigns tags on a given abstract text that you can pass as argument.
 ## 🎛 Tune
 Optimise the threshold used for tag decisions.
 
-### Threshold
+### threshold
 ```
 
  Usage: grants-tagger tune threshold [OPTIONS] DATA_PATH MODEL_PATH
@@ -318,6 +315,9 @@ This commands enables you to download mesh data from EPMC
 ```
 
 # 🧑🏻‍💻  Develop
+
+Install development dependencies via:
+`poetry install --with dev`
 
 ## 📖 Data
 
