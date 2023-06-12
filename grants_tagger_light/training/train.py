@@ -70,7 +70,7 @@ def load_data(
     return dset["train"], dset["test"]
 
 
-def train_bertmesh(model_key: str, data_path: str, model_save_path: str):
+def train_bertmesh(model_key: str, data_path: str, model_save_path: str, **user_args):
     model = BertMeshHFCompat.from_pretrained(model_key, trust_remote_code=True)
     tokenizer = AutoTokenizer.from_pretrained(model_key)
 
@@ -92,11 +92,16 @@ def train_bertmesh(model_key: str, data_path: str, model_save_path: str):
         "label_names": ["labels"],
     }
 
+    training_args.update(user_args)
+
     training_args = TrainingArguments(**training_args)
 
     def sklearn_metrics(prediction: EvalPrediction):
         y_pred = prediction.predictions
         y_true = prediction.label_ids
+
+        # TODO make thresh configurable or return metrics for multiple thresholds
+        # e.g. 0.5:0.95:0.05
 
         y_pred = np.int64(y_pred > 0.5)
 
