@@ -251,6 +251,20 @@ This commands enables you to download mesh data from EPMC
 Install development dependencies via:
 `poetry install --with dev`
 
+## 📋 Env variables
+
+If you want to participate to BIOASQ competition you need to set some variables.
+
+Variable              | Required for       | Description
+--------------------- | ------------------ | ----------
+BIOASQ_USERNAME       | bioasq             | username with which registered in BioASQ
+BIOASQ_PASSWORD       | bioasq             | password            --//--
+
+If you use [direnv](https://direnv.net) then you can use it to populate
+your `.envrc` which will export the variables automatically, otherwise
+ensure you export every time or include in your bash profile.
+
+
 ## ✔️  Reproduce
 
 To reproduce production models we use DVC. DVC defines a directed
