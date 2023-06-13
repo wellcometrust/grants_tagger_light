@@ -159,30 +159,6 @@ evaluate to all models when train starts training explicit model approaches.
 ╰─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
 ```
 
-### MTI
-
-MTI is the automatic mesh indexer from NLM. https://ii.nlm.nih.gov/MTI/
-To get MTI annotations you need to submit grants for tagging through an
-email service and get the results which you can use here for evaluation.
-The service is called Batch MetaMap and to use it you need to have an
-account https://uts.nlm.nih.gov/uts/
-
-```
-
- Usage: grants-tagger evaluate mti [OPTIONS] DATA_PATH LABEL_BINARIZER_PATH
-                                   MTI_OUTPUT_PATH
-
-╭─ Arguments ─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
-│ *    data_path                 PATH  path to sample JSONL mesh data [default: None] [required]                                                                                      │
-│ *    label_binarizer_path      PATH  path to pickled mesh label binarizer [default: None] [required]                                                                                │
-│ *    mti_output_path           PATH  path to mti output txt [default: None] [required]                                                                                              │
-╰─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
-╭─ Options ───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
-│ --help          Show this message and exit.                                                                                                                                         │
-╰─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
-
-```
-
 ### grants
 Evaluate an xlinear model on grants data.
 ```
