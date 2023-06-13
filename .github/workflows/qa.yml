@@ -1,5 +1,5 @@
 name: qa
-on: [push, pull_request]
+on: [push]
 jobs:
   black:
     runs-on: ubuntu-latest
