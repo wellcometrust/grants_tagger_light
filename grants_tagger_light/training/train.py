@@ -1,6 +1,6 @@
 from transformers import AutoTokenizer, Trainer, TrainingArguments, EvalPrediction
 from datasets import Dataset
-from grants_tagger_light.bertmesh import BertMeshHFCompat
+from grants_tagger_light.models.bert_mesh import BertMeshHFCompat
 import json
 import typer
 import numpy as np
