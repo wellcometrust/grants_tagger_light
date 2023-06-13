@@ -1,0 +1,44 @@
+from transformers import Pipeline
+from transformers.pipelines import PIPELINE_REGISTRY
+from transformers.modeling_outputs import SequenceClassifierOutput
+from grants_tagger_light.models.bert_mesh.model import BertMeshHFCompat
+
+
+class BertMeshPipeline(Pipeline):
+    def _sanitize_parameters(self, **pipeline_parameters):
+        preprocess_kwargs = {}
+        forward_kwargs = {}
+        postprocess_kwargs = {"threshold": pipeline_parameters.get("threshold", 0.5)}
+
+        return preprocess_kwargs, forward_kwargs, postprocess_kwargs
+
+    def preprocess(self, input_txt, **preprocess_kwargs):
+        print(input_txt)
+        return self.tokenizer(
+            input_txt,
+            padding="max_length",
+            truncation=True,
+            max_length=512,
+        )["input_ids"]
+
+    def _forward(self, input_ids, **forward_kwargs):
+        return self.model([input_ids])
+
+    def postprocess(
+        self, model_outputs: SequenceClassifierOutput, threshold: float = 0.5
+    ):
+        labels = [
+            [
+                self.model.id2label[label_id]
+                for label_id, label_prob in enumerate(logit)
+                if label_prob > threshold
+            ]
+            for logit in model_outputs.logits
+        ]
+
+        return labels
+
+
+PIPELINE_REGISTRY.register_pipeline(
+    "grants-tagging", pipeline_class=BertMeshPipeline, pt_model=BertMeshHFCompat
+)
