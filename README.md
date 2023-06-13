@@ -64,8 +64,6 @@ You now have access to the `grants-tagger` command line interface!
 | 🎛 tune         | tune params and threshold                                    | True |
 | 📚 pretrain     | pretrains embeddings or language model using unlabeled data  | True |
 | ⬇️  download    | download data from EPMC                                      | False |
-| 🐋  docker      | how to run grants_tagger in a docker container               | True |
-| 🌐 visualize    | creates a streamlit app to interactively tag grants          | False |
 
 in square brackets the commands that are not implemented yet
 
@@ -74,33 +72,10 @@ in square brackets the commands that are not implemented yet
 Preprocess creates a JSONL datafile with `text`, `tags` and `meta` as keys.
 Text and tags are used for training whereas meta can be useful during annotation
 or to analyse predictions and performance. Each dataset needs its own
-preprocessing so the current preprocess works with the wellcome-science dataset and
-the bioasq-mesh one. If you want to use a different dataset see section on bringing
+preprocessing so the current preprocess works with the bioasq-mesh one.
+If you want to use a different dataset see section on bringing
 your own data under development.
 
-
-
-#### wellcome-science
-```
-
- Usage: grants-tagger preprocess wellcome-science [OPTIONS] [INPUT_PATH]
-                                                  [TRAIN_OUTPUT_PATH]
-                                                  [LABEL_BINARIZER_PATH]
-
-╭─ Arguments ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
-│   input_path                [INPUT_PATH]            path to raw Excel file with tagged or untagged grant data [default: None]                                          │
-│   train_output_path         [TRAIN_OUTPUT_PATH]     path to JSONL output file that will be generated for the train set [default: None]                                 │
-│   label_binarizer_path      [LABEL_BINARIZER_PATH]  path to pickle file that will contain the label binarizer [default: None]                                          │
-╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
-╭─ Options ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
-│ --test-output-path        TEXT   path to JSONL output file that will be generated for the test set [default: None]                                                     │
-│ --text-cols               TEXT   comma delimited column names to concatenate to text [default: None]                                                                   │
-│ --meta-cols               TEXT   comma delimited column names to include in the meta [default: None]                                                                   │
-│ --test-split              FLOAT  split percentage for test data. if None no split. [default: 0.1]                                                                      │
-│ --config                  PATH   path to config file that defines the arguments [default: None]                                                                        │
-│ --help                           Show this message and exit.                                                                                                           │
-╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
-```
 
 #### bioasq-mesh
 ```
@@ -181,25 +156,6 @@ evaluate to all models when train starts training explicit model approaches.
 │ --split-data          --no-split-data          flag on whether to split data in same way as was done in train [default: split-data]                                                 │
 │ --config                                 PATH  path to config file that defines arguments [default: None]                                                                           │
 │ --help                                         Show this message and exit.                                                                                                          │
-╰─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
-```
-
-### human
-
-Human evaluates human accuracy on the task in the case human annotations exists.
-Currently only works for wellcome-science that has two annotations per grant but
-it can be extended to support a more general format in the future.
-
-```
-
- Usage: grants-tagger evaluate human [OPTIONS] DATA_PATH LABEL_BINARIZER_PATH
-
-╭─ Arguments ─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
-│ *    data_path                 PATH  [default: None] [required]                                                                                                                     │
-│ *    label_binarizer_path      PATH  [default: None] [required]                                                                                                                     │
-╰─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
-╭─ Options ───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
-│ --help          Show this message and exit.                                                                                                                                         │
 ╰─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
 ```
 
@@ -333,31 +289,6 @@ The MeSH data can be downloaded from various places like EPMC.
 Grants tagger currently uses a sample provided from the [BioASQ](http://www.bioasq.org)
 competition that contains tags for approx 14M publications from PubMed.
 
-## 📋 Env variables
-
-You need to set the following variables for sagemaker or sync to work. If you want to
-participate to BIOASQ competition you need to also set some variables.
-
-Variable              | Required for       | Description
---------------------- | ------------------ | ----------
-PROJECTS_BUCKET       | sagemaker, sync    | s3 bucket for data and models e.g. datalabs-data
-PROJECT_NAME          | sagemaker, sync    | s3 prefix for specific project e.g.grants_tagger
-AWS_ACCOUNT_ID        | sagemaker          | aws organisational account id, ask aws adminstrator
-ECR_IMAGE             | sagemaker          | ecr image with dependencies to run grants tagger
-SAGEMAKER_ROLE        | sagemaker          | aws sagemaker role, ask aws administrator
-AWS_ACCESS_KEY_ID     | sagemaker, sync    | aws access key, for aws cli to work
-AWS_SECRET_ACCESS_KEY | sagemaker, sync    | aws secret key, for aws cli to work
-BIOASQ_USERNAME       | bioasq             | username with which registered in BioASQ
-BIOASQ_PASSWORD       | bioasq             | password            --//--
-
-There is a `.envrc.template` with the env variables needed. If you
-use [direnv](https://direnv.net) then you can use it to populate
-your `.envrc` which will export the variables automatically, otherwise
-ensure you export every time or include in your bash profile.
-
-Note that aws keys are not included as there are various ways to
-setup aws, for example using `aws configure` or `AWS_PROFILE` and
-`.aws/credentials`
 
 ## ✔️  Reproduce
 
@@ -373,7 +304,7 @@ You can reproduce individual experiments using one of the configs in
 the dedicated `/configs` folder. You can run all steps of the pipeline
 using `./scripts/run_DATASET_config.sh path_to_config` where DATASET
 can be one of science or mesh. You can also run individual steps
-with the CLI commands e.g. `grants_tagger preprocess wellcome-science --config path_to_config`
+with the CLI commands e.g. `grants_tagger preprocess bioasq-mesh --config path_to_config`
 and `grants_tagger train --config path_to_config`.
 
 ## 💾 Bring your own data
