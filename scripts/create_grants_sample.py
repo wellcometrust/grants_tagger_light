@@ -3,7 +3,7 @@ import awswrangler as wr
 import argparse
 import random
 from tqdm import tqdm
-from grants_tagger.predict import predict_tags
+from grants_tagger_light.predict import predict_tags
 
 random.seed(42)
 
