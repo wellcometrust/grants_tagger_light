@@ -8,7 +8,10 @@ class BertMeshPipeline(Pipeline):
     def _sanitize_parameters(self, **pipeline_parameters):
         preprocess_kwargs = {}
         forward_kwargs = {}
-        postprocess_kwargs = {"threshold": pipeline_parameters.get("threshold", 0.5)}
+        postprocess_kwargs = {
+            "return_labels": pipeline_parameters.get("return_labels", True),
+            "threshold": pipeline_parameters.get("threshold", 0.5),
+        }
 
         return preprocess_kwargs, forward_kwargs, postprocess_kwargs
 
@@ -25,18 +28,25 @@ class BertMeshPipeline(Pipeline):
         return self.model([input_ids])
 
     def postprocess(
-        self, model_outputs: SequenceClassifierOutput, threshold: float = 0.5
+        self,
+        model_outputs: SequenceClassifierOutput,
+        return_labels: bool,
+        threshold: float = 0.5,
     ):
-        labels = [
-            [
-                self.model.id2label[label_id]
-                for label_id, label_prob in enumerate(logit)
-                if label_prob > threshold
+        if return_labels:
+            outs = [
+                [
+                    self.model.id2label[label_id]
+                    for label_id, label_prob in enumerate(logit)
+                    if label_prob > threshold
+                ]
+                for logit in model_outputs.logits
             ]
-            for logit in model_outputs.logits
-        ]
 
-        return labels
+        else:
+            outs = model_outputs.logits
+
+        return outs
 
 
 PIPELINE_REGISTRY.register_pipeline(
