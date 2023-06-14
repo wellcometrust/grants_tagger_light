@@ -10,6 +10,7 @@ from transformers.pipelines import PIPELINE_REGISTRY
 
 import scipy.sparse as sp
 import typer
+import torch
 from sklearn.metrics import classification_report, precision_recall_fscore_support
 from sklearn.preprocessing import MultiLabelBinarizer
 from wasabi import row, table
@@ -44,11 +45,12 @@ def evaluate_model(
     model = BertMeshHFCompat.from_pretrained(model_path)
 
     label_binarizer = MultiLabelBinarizer()
-    label_binarizer.fit([list(model.model.id2label.values())])
+    label_binarizer.fit([list(model.id2label.values())])
 
     pipe = pipeline(
         "grants-tagging",
         model=model,
+        tokenizer="Wellcome/WellcomeBertMesh",
     )
 
     if split_data:
@@ -60,7 +62,11 @@ def evaluate_model(
     else:
         X_test, Y_test, _ = load_data(data_path, label_binarizer)
 
-    Y_pred_proba = pipe(X_test)
+    Y_pred_proba = pipe(X_test, return_labels=False)
+
+    Y_pred_proba = torch.vstack(Y_pred_proba)
+
+    Y_pred_proba = sp.csr_matrix(Y_pred_proba)
 
     if type(threshold) != list:
         threshold = [threshold]
