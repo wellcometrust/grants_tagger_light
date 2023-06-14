@@ -16,7 +16,6 @@ class BertMeshPipeline(Pipeline):
         return preprocess_kwargs, forward_kwargs, postprocess_kwargs
 
     def preprocess(self, input_txt, **preprocess_kwargs):
-        print(input_txt)
         return self.tokenizer(
             input_txt,
             padding="max_length",
