@@ -24,8 +24,16 @@ import numpy as np
 import typer
 from scipy.sparse import csc_matrix, issparse
 from sklearn.metrics import f1_score
+from transformers import pipeline
+from transformers.pipelines import PIPELINE_REGISTRY
 
 from grants_tagger_light.utils import load_data, load_train_test_data
+from grants_tagger_light.models.bert_mesh import BertMeshHFCompat, BertMeshPipeline
+
+
+PIPELINE_REGISTRY.register_pipeline(
+    "grants-tagging", pipeline_class=BertMeshPipeline, pt_model=BertMeshHFCompat
+)
 
 logger = logging.getLogger(__name__)
 logger.setLevel(
@@ -216,10 +224,10 @@ def tune_threshold(
     init_threshold: float = 0.2,
     split_data: bool = False,
 ):
-    from grants_tagger_light.models.create_model_transformer import load_model
-
     with open(label_binarizer_path, "rb") as f:
         label_binarizer = pickle.loads(f.read())
+
+    pipe = pipeline("grants-tagging", model=model_path)
 
     if split_data:
         # To split in the same way train split in case split was done during train
@@ -233,9 +241,7 @@ def tune_threshold(
 
     X_val, Y_val, X_test, Y_test = val_test_split(X_test, Y_test, val_size)
 
-    model = load_model(model_path)
-
-    Y_pred_proba = model.predict_proba(X_val.tolist())
+    Y_pred_proba = pipe(X_val.tolist())
     Y_pred = Y_pred_proba > init_threshold
 
     f1 = f1_score(Y_val, Y_pred, average="micro")
@@ -244,7 +250,7 @@ def tune_threshold(
 
     optimal_thresholds = optimise_threshold(Y_val, Y_pred_proba, nb_thresholds)
 
-    Y_pred_proba = model.predict_proba(X_test.tolist())
+    Y_pred_proba = pipe(X_test.tolist())
     Y_pred = Y_pred_proba > optimal_thresholds
 
     if isinstance(Y_test, np.matrix):

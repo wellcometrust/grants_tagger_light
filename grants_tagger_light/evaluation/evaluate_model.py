@@ -5,14 +5,21 @@ import configparser
 import json
 from pathlib import Path
 from typing import Optional
+from transformers import pipeline
+from transformers.pipelines import PIPELINE_REGISTRY
 
 import scipy.sparse as sp
 import typer
 from sklearn.metrics import classification_report, precision_recall_fscore_support
 from sklearn.preprocessing import MultiLabelBinarizer
 from wasabi import row, table
-
 from grants_tagger_light.utils import load_data, load_train_test_data
+from grants_tagger_light.models.bert_mesh import BertMeshHFCompat, BertMeshPipeline
+
+
+PIPELINE_REGISTRY.register_pipeline(
+    "grants-tagging", pipeline_class=BertMeshPipeline, pt_model=BertMeshHFCompat
+)
 
 
 def predict_sparse_probs(model, X_test, batch_size=256, cutoff_prob=0.01):
@@ -34,12 +41,15 @@ def evaluate_model(
     results_path=None,
     full_report_path=None,
 ):
-    from grants_tagger_light.models.create_model_transformer import load_model
-
-    model = load_model(model_path)
+    model = BertMeshHFCompat.from_pretrained(model_path)
 
     label_binarizer = MultiLabelBinarizer()
     label_binarizer.fit([list(model.model.id2label.values())])
+
+    pipe = pipeline(
+        "grants-tagging",
+        model=model,
+    )
 
     if split_data:
         print(
@@ -50,7 +60,7 @@ def evaluate_model(
     else:
         X_test, Y_test, _ = load_data(data_path, label_binarizer)
 
-    Y_pred_proba = model.predict_proba(X_test)
+    Y_pred_proba = pipe(X_test)
 
     if type(threshold) != list:
         threshold = [threshold]
