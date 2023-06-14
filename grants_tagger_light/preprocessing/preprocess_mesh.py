@@ -1,7 +1,6 @@
 """
 Preprocess JSON Mesh data from BioASQ to JSONL
 """
-import configparser
 import json
 import os
 import shutil
@@ -122,9 +121,6 @@ def preprocess_mesh_cli(
     filter_years: Optional[str] = typer.Option(
         None, help="years to keep in form min_year,max_year with both inclusive"
     ),
-    config: Optional[Path] = typer.Option(
-        None, help="path to config files that defines arguments"
-    ),
     n_max: Optional[int] = typer.Option(
         None,
         help="""
@@ -143,16 +139,6 @@ def preprocess_mesh_cli(
     # Default value from params
     if not filter_years:
         filter_years = params["preprocess_bioasq_mesh"].get("filter_years")
-
-    if config:
-        cfg = configparser.ConfigParser()
-        cfg.read(config)
-
-        input_path = cfg["preprocess"]["input"]
-        train_output_path = cfg["preprocess"]["output"]
-        mesh_tags_path = cfg["filter_mesh"].get("mesh_tags_path")
-        test_split = cfg["preprocess"].getfloat("test_split")
-        filter_years = cfg["preprocess"].get("filter_years")
 
     if verify_if_paths_exist(
         [
