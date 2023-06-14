@@ -1,6 +1,4 @@
 import logging
-import os
-import subprocess
 
 import typer
 
@@ -30,12 +28,6 @@ download_app.command("epmc-mesh")(download_epmc_cli)
 app.add_typer(download_app, name="download")
 
 app.add_typer(train_app, name="train")
-
-
-@app.command()
-def visualize():
-    st_app_path = os.path.join(os.path.dirname(__file__), "streamlit_visualize.py")
-    subprocess.Popen(["streamlit", "run", st_app_path])
 
 
 if __name__ == "__main__":
