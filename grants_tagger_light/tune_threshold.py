@@ -250,7 +250,7 @@ def tune_threshold(
 
     optimal_thresholds = optimise_threshold(Y_val, Y_pred_proba, nb_thresholds)
 
-    Y_pred_proba = pipe(X_test.tolist())
+    Y_pred_proba = pipe(X_test.tolist(), return_labels=False)
     Y_pred = Y_pred_proba > optimal_thresholds
 
     if isinstance(Y_test, np.matrix):
