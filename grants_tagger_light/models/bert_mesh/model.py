@@ -42,7 +42,7 @@ class BertMesh(PreTrainedModel):
         self.linear_out = torch.nn.Linear(self.hidden_size, self.num_labels)
         self.dropout_layer = torch.nn.Dropout(self.dropout)
 
-    def forward(self, input_ids, labels=None, return_probs=True, **kwargs):
+    def forward(self, input_ids, labels=None, **kwargs):
         if type(input_ids) is list:
             # coming from tokenizer
             input_ids = torch.tensor(input_ids)
