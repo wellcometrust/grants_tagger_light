@@ -28,11 +28,11 @@ from transformers import pipeline
 from transformers.pipelines import PIPELINE_REGISTRY
 
 from grants_tagger_light.utils import load_data, load_train_test_data
-from grants_tagger_light.models.bert_mesh import BertMeshHFCompat, BertMeshPipeline
+from grants_tagger_light.models.bert_mesh import BertMesh, BertMeshPipeline
 
 
 PIPELINE_REGISTRY.register_pipeline(
-    "grants-tagging", pipeline_class=BertMeshPipeline, pt_model=BertMeshHFCompat
+    "grants-tagging", pipeline_class=BertMeshPipeline, pt_model=BertMesh
 )
 
 logger = logging.getLogger(__name__)

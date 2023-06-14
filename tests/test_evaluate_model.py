@@ -6,7 +6,7 @@ from sklearn.preprocessing import MultiLabelBinarizer
 import pytest
 
 from grants_tagger_light.evaluation.evaluate_model import evaluate_model
-from grants_tagger_light.models.bert_mesh import BertMeshHFCompat
+from grants_tagger_light.models.bert_mesh import BertMesh
 
 X = [
     "this grant is about Malaria",
@@ -40,7 +40,7 @@ def label_binarizer_path(tmp_path):
 
     label_binarizer = MultiLabelBinarizer(sparse_output=False)
 
-    model = BertMeshHFCompat.from_pretrained("Wellcome/WellcomeBertMesh")
+    model = BertMesh.from_pretrained("Wellcome/WellcomeBertMesh")
 
     all_labels = list(model.id2label.values())
 

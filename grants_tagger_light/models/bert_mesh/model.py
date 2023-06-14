@@ -32,7 +32,6 @@ class BertMesh(PreTrainedModel):
         self.dropout = getattr(self.config, "dropout", 0.1)
         self.multilabel_attention = getattr(self.config, "multilabel_attention", False)
         self.id2label = self.config.id2label
-        self.threshold = getattr(self.config, "threshold", 0.5)
 
         self.bert = AutoModel.from_pretrained(self.pretrained_model)  # 768
         self.multilabel_attention_layer = MultiLabelAttention(
@@ -43,10 +42,11 @@ class BertMesh(PreTrainedModel):
         self.linear_out = torch.nn.Linear(self.hidden_size, self.num_labels)
         self.dropout_layer = torch.nn.Dropout(self.dropout)
 
-    def forward(self, input_ids, return_labels=False, **kwargs):
+    def forward(self, input_ids, labels=None, return_probs=True, **kwargs):
         if type(input_ids) is list:
             # coming from tokenizer
             input_ids = torch.tensor(input_ids)
+
         if self.multilabel_attention:
             hidden_states = self.bert(input_ids=input_ids)[0]
             attention_outs = self.multilabel_attention_layer(hidden_states)
@@ -59,29 +59,7 @@ class BertMesh(PreTrainedModel):
             outs = torch.nn.functional.relu(self.linear_1(cls))
             outs = self.dropout_layer(outs)
             outs = torch.sigmoid(self.linear_out(outs))
-        if return_labels:
-            # TODO Vectorize
-            outs = [
-                [
-                    self.id2label[label_id]
-                    for label_id, label_prob in enumerate(out)
-                    if label_prob > self.threshold
-                ]
-                for out in outs
-            ]
-        return outs
 
-
-class BertMeshHFCompat(BertMesh):
-    config_class = BertConfig
-
-    def __init__(self, config):
-        super().__init__(config=config)
-
-    def forward(self, input_ids, labels=None, return_labels=False, **kwargs):
-        outs = super().forward(input_ids, return_labels, **kwargs)
-
-        # Compute loss only if labels are provided
         if labels is not None:
             loss = F.binary_cross_entropy(outs, labels.float())
         else:

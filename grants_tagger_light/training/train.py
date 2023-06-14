@@ -1,6 +1,6 @@
 from transformers import AutoTokenizer, Trainer, TrainingArguments, EvalPrediction
 from datasets import Dataset
-from grants_tagger_light.models.bert_mesh import BertMeshHFCompat
+from grants_tagger_light.models.bert_mesh import BertMesh
 import json
 import typer
 import numpy as np
@@ -71,7 +71,7 @@ def load_data(
 
 
 def train_bertmesh(model_key: str, data_path: str, **user_args):
-    model = BertMeshHFCompat.from_pretrained(model_key, trust_remote_code=True)
+    model = BertMesh.from_pretrained(model_key, trust_remote_code=True)
     tokenizer = AutoTokenizer.from_pretrained(model_key)
 
     label2id = {v: k for k, v in model.id2label.items()}

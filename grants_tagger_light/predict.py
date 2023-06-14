@@ -10,10 +10,10 @@ from typing import Optional
 import typer
 from transformers import pipeline
 from transformers.pipelines import PIPELINE_REGISTRY
-from grants_tagger_light.models.bert_mesh import BertMeshPipeline, BertMeshHFCompat
+from grants_tagger_light.models.bert_mesh import BertMeshPipeline, BertMesh
 
 PIPELINE_REGISTRY.register_pipeline(
-    "grants-tagging", pipeline_class=BertMeshPipeline, pt_model=BertMeshHFCompat
+    "grants-tagging", pipeline_class=BertMeshPipeline, pt_model=BertMesh
 )
 
 logger = logging.getLogger(__name__)

@@ -15,11 +15,11 @@ from sklearn.metrics import classification_report, precision_recall_fscore_suppo
 from sklearn.preprocessing import MultiLabelBinarizer
 from wasabi import row, table
 from grants_tagger_light.utils import load_data, load_train_test_data
-from grants_tagger_light.models.bert_mesh import BertMeshHFCompat, BertMeshPipeline
+from grants_tagger_light.models.bert_mesh import BertMesh, BertMeshPipeline
 
 
 PIPELINE_REGISTRY.register_pipeline(
-    "grants-tagging", pipeline_class=BertMeshPipeline, pt_model=BertMeshHFCompat
+    "grants-tagging", pipeline_class=BertMeshPipeline, pt_model=BertMesh
 )
 
 
@@ -42,7 +42,7 @@ def evaluate_model(
     results_path=None,
     full_report_path=None,
 ):
-    model = BertMeshHFCompat.from_pretrained(model_path)
+    model = BertMesh.from_pretrained(model_path)
 
     label_binarizer = MultiLabelBinarizer()
     label_binarizer.fit([list(model.id2label.values())])

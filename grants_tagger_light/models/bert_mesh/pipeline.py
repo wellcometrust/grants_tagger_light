@@ -1,7 +1,7 @@
 from transformers import Pipeline
 from transformers.pipelines import PIPELINE_REGISTRY
 from transformers.modeling_outputs import SequenceClassifierOutput
-from grants_tagger_light.models.bert_mesh.model import BertMeshHFCompat
+from grants_tagger_light.models.bert_mesh.model import BertMesh
 
 
 class BertMeshPipeline(Pipeline):
@@ -49,5 +49,5 @@ class BertMeshPipeline(Pipeline):
 
 
 PIPELINE_REGISTRY.register_pipeline(
-    "grants-tagging", pipeline_class=BertMeshPipeline, pt_model=BertMeshHFCompat
+    "grants-tagging", pipeline_class=BertMeshPipeline, pt_model=BertMesh
 )

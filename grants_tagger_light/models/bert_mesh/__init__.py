@@ -1,7 +1,7 @@
-from .model import BertMeshHFCompat
+from .model import BertMesh
 from .pipeline import BertMeshPipeline
 
 __all__ = [
-    "BertMeshHFCompat",
+    "BertMesh",
     "BertMeshPipeline",
 ]
