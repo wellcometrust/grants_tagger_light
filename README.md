@@ -1,7 +1,3 @@
-[![Build Status](https://travis-ci.com/wellcometrust/grants_tagger.svg?branch=main)](https://travis-ci.com/wellcometrust/grants_tagger)
-[![codecov](https://codecov.io/gh/wellcometrust/grants_tagger/branch/main/graph/badge.svg)](https://codecov.io/gh/wellcometrust/grants_tagger)
-![GitHub](https://img.shields.io/github/license/wellcometrust/grants_tagger)
-
 # Grants Tagger Light 🔖
 Light weight repository for grant tagger model deployment and inference.
 Adapted from [the original repository](https://github.com/wellcometrust/grants_tagger)
