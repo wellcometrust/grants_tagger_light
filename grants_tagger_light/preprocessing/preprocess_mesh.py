@@ -13,7 +13,6 @@ import yaml
 from tqdm import tqdm
 
 from grants_tagger_light.utils import (
-    verify_if_paths_exist,
     write_jsonl,
     split_data,
     create_label_binarizer,
@@ -139,15 +138,6 @@ def preprocess_mesh_cli(
     # Default value from params
     if not filter_years:
         filter_years = params["preprocess_bioasq_mesh"].get("filter_years")
-
-    if verify_if_paths_exist(
-        [
-            train_output_path,
-            label_binarizer_path,
-            test_output_path,
-        ]
-    ):
-        return
 
     temporary_output_path = train_output_path + ".tmp"
     preprocess_mesh(

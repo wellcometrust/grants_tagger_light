@@ -1,6 +1,5 @@
 import json
 import logging
-import os
 
 # encoding: utf-8
 import pickle
@@ -147,17 +146,6 @@ def write_jsonl(f, data):
     for item in data:
         f.write(json.dumps(item))
         f.write("\n")
-
-
-def verify_if_paths_exist(paths):
-    exist = 0
-    for path in paths:
-        if path and os.path.exists(path):
-            print(f"{path} exists. Remove if you want to rerun.")
-            exist += 1
-    if exist > 0:
-        return True
-    return False
 
 
 def convert_dvc_to_sklearn_params(parameters):
