@@ -2,8 +2,6 @@
 Preprocess JSON Mesh data from BioASQ to JSONL
 """
 import json
-import os
-import shutil
 from pathlib import Path
 from typing import Optional
 
@@ -13,8 +11,6 @@ from tqdm import tqdm
 
 from grants_tagger_light.utils import (
     write_jsonl,
-    split_data,
-    create_label_binarizer,
 )
 
 
@@ -126,23 +122,13 @@ def preprocess_mesh_cli(
         (including training and test)""",
     ),
 ):
-    temporary_output_path = train_output_path + ".tmp"
     preprocess_mesh(
         input_path,
-        temporary_output_path,
+        train_output_path,
         mesh_tags_path=mesh_tags_path,
         filter_years=filter_years,
         n_max=n_max,
     )
-    create_label_binarizer(temporary_output_path, label_binarizer_path, sparse=True)
-
-    if test_output_path:
-        split_data(
-            temporary_output_path, train_output_path, test_output_path, test_split
-        )
-        os.remove(temporary_output_path)
-    else:
-        shutil.move(temporary_output_path, train_output_path)
 
 
 if __name__ == "__main__":
