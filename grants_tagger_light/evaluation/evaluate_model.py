@@ -23,17 +23,6 @@ PIPELINE_REGISTRY.register_pipeline(
 )
 
 
-def predict_sparse_probs(model, X_test, batch_size=256, cutoff_prob=0.01):
-    Y_pred_proba = []
-    for i in range(0, X_test.shape[0], batch_size):
-        Y_pred_proba_batch = model.predict_proba(X_test)
-        Y_pred_proba_batch[Y_pred_proba_batch < cutoff_prob] = 0
-        Y_pred_proba_batch = sp.csr_matrix(Y_pred_proba_batch)
-        Y_pred_proba.append(Y_pred_proba_batch)
-    Y_pred_proba = sp.vstack(Y_pred_proba_batch)
-    return Y_pred_proba
-
-
 def evaluate_model(
     model_path,
     data_path,
