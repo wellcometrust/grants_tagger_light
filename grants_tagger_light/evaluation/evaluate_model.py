@@ -1,7 +1,6 @@
 """
 Evaluate model performance on test set
 """
-import configparser
 import json
 from pathlib import Path
 from typing import Optional
@@ -130,20 +129,7 @@ def evaluate_model_cli(
     split_data: bool = typer.Option(
         True, help="flag on whether to split data in same way as was done in train"
     ),
-    config: Optional[Path] = typer.Option(
-        None, help="path to config file that defines arguments"
-    ),
 ):
-    if config:
-        cfg = configparser.ConfigParser(allow_no_value=True)
-        cfg.read(config)
-        if "ensemble" in cfg:
-            model_path = cfg["ensemble"]["models"]
-            data_path = cfg["ensemble"]["data"]
-            threshold = cfg["ensemble"]["threshold"]
-            split_data = cfg["ensemble"]["split_data"]  # needs convert to bool
-            results_path = cfg["ensemble"].get("results_path", "results.json")
-
     if "," in threshold:
         threshold = [float(t) for t in threshold.split(",")]
     else:
