@@ -9,7 +9,6 @@ from typing import Optional
 
 import pandas as pd
 import typer
-import yaml
 from tqdm import tqdm
 
 from grants_tagger_light.utils import (
@@ -127,18 +126,6 @@ def preprocess_mesh_cli(
         (including training and test)""",
     ),
 ):
-    params_path = os.path.join(os.path.dirname(__file__), "../params.yaml")
-    with open(params_path) as f:
-        params = yaml.safe_load(f)
-
-    # Default values from params
-    if not mesh_tags_path:
-        mesh_tags_path = params["preprocess_bioasq_mesh"].get("mesh_tags_path")
-
-    # Default value from params
-    if not filter_years:
-        filter_years = params["preprocess_bioasq_mesh"].get("filter_years")
-
     temporary_output_path = train_output_path + ".tmp"
     preprocess_mesh(
         input_path,
