@@ -58,7 +58,6 @@ You now have access to the `grants-tagger` command line interface!
 | 📈 evaluate     | evaluate performance of pretrained model                     | True |
 | 🔖 predict      | predict tags given a grant abstract using a pretrained model | False |
 | 🎛 tune         | tune params and threshold                                    | True |
-| 📚 pretrain     | pretrains embeddings or language model using unlabeled data  | True |
 | ⬇️  download    | download data from EPMC                                      | False |
 
 in square brackets the commands that are not implemented yet
