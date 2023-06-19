@@ -37,6 +37,7 @@ optional = true
 [tool.poetry.group.scripts.dependencies]
 awswrangler = "^3.1.1"
 argilla = "^1.8.0"
+libpecos = "^1.0.0"
 
 
 [tool.poetry.group.gpu]
