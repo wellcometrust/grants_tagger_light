@@ -12,7 +12,6 @@ import os
 import json
 import scipy.sparse as sp
 import numpy as np
-import ast
 
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.base import BaseEstimator, ClassifierMixin
@@ -20,59 +19,16 @@ from sklearn.base import BaseEstimator, ClassifierMixin
 from pecos.xmc.xlinear.model import XLinearModel
 from pecos.xmc import Indexer, LabelEmbeddingFactory
 
+from grants_tagger_light.utils import save_pickle, load_pickle
+
 logger = logging.getLogger(__name__)
-
-
-def load_pickle(obj_path):
-    with open(obj_path, "rb") as f:
-        return pickle.loads(f.read())
-
-
-def save_pickle(obj_path, obj):
-    with open(obj_path, "wb") as f:
-        f.write(pickle.dumps(obj))
-
-
-def format_predictions(
-    Y_pred_proba, label_binarizer, threshold=0.5, probabilities=True
-):
-    """
-    Formats predictions to output a list of dictionaries
-
-    Y_pred_proba: sparse array or list of predicted probabilites or class
-    (i.e. the output of  `.predict` or `.predict_proba` classifier)
-    label_binarizer: A sklearn fitted label binarizer
-    threshold: Float between 0 and 1
-    probabilities: Whether Y_pred_proba will contain probabilities or just predictions
-
-    Returns:
-        A list of dictionaries for each prediction, e.g.
-        [{"tag": "Malaria", "Probability": 0.5}, ...]
-    """
-    tags = []
-    for y_pred_proba in Y_pred_proba:
-        if sp.issparse(y_pred_proba):
-            y_pred_proba = np.asarray(y_pred_proba.todense()).ravel()
-        if probabilities:
-            tags_i = {
-                tag: prob
-                for tag, prob in zip(label_binarizer.classes_, y_pred_proba)
-                if prob >= threshold
-            }
-        else:
-            tags_i = [
-                tag
-                for tag, prob in zip(label_binarizer.classes_, y_pred_proba)
-                if prob >= threshold
-            ]
-        tags.append(tags_i)
-
-    return tags
 
 
 class MeshXLinear(BaseEstimator, ClassifierMixin):
     def __init__(
         self,
+        label_binarizer_path: str = None,
+        model_path: str = None,
         stop_words="english",
         min_df=5,
         max_df=1.0,
@@ -111,6 +67,13 @@ class MeshXLinear(BaseEstimator, ClassifierMixin):
 
         # Those are MeshXLinear params
         self.threshold = threshold
+
+        if label_binarizer_path is not None:
+            self.load_label_binarizer(label_binarizer_path)
+
+        # This sets vectorizer_ and xlinear_model_
+        if model_path is not None:
+            self.load(model_path)
 
     def _init_vectorizer(self):
         # Sklearn estimators need variables introduced during
@@ -195,6 +158,44 @@ class MeshXLinear(BaseEstimator, ClassifierMixin):
                 beam_size=self.beam_size,
             )
 
+    def predict_tags(
+        self,
+        X,
+        probabilities=False,
+        threshold=0.5,
+    ):
+        """
+        X: list or numpy array of texts
+        model_path: path to trained model
+        label_binarizer_path: path to trained label_binarizer
+        probabilities: bool, default False. When true probabilities
+                    are returned along with tags
+        threshold: float, default 0.5. Probability threshold to be used to assign tags.
+        """
+
+        Y_pred_proba = self.predict_proba(X)
+
+        tags = self._format_predictions(
+            Y_pred_proba,
+            self.label_binarizer_,
+            threshold=threshold,
+            probabilities=probabilities,
+        )
+
+        return tags
+
+    def __call__(
+        self,
+        X,
+        probabilities=False,
+        threshold=0.5,
+    ):
+        return self.predict_tags(
+            X,
+            probabilities=probabilities,
+            threshold=threshold,
+        )
+
     def save(self, model_path):
         model_path = str(model_path)  # In case a Posix is passed
         params_path = os.path.join(model_path, "params.json")
@@ -228,84 +229,44 @@ class MeshXLinear(BaseEstimator, ClassifierMixin):
             model_path, is_predict_only=is_predict_only
         )
 
+    def load_label_binarizer(self, label_binarizer_path):
+        with open(label_binarizer_path, "rb") as f:
+            self.label_binarizer_ = pickle.loads(f.read())
 
-def create_model(parameters=None):
-    """Creates an XLinear model
+    @staticmethod
+    def _format_predictions(
+        Y_pred_proba, label_binarizer, threshold=0.5, probabilities=True
+    ):
+        """
+        Formats predictions to output a list of dictionaries
 
-    Args:
-    - parameters: parameters to set the XLinear model
+        Y_pred_proba: sparse array or list of predicted probabilites or class
+        (i.e. the output of  `.predict` or `.predict_proba` classifier)
+        label_binarizer: A sklearn fitted label binarizer
+        threshold: Float between 0 and 1
+        probabilities: Whether Y_pred_proba will contain probabilities or just
+                       predictions
 
-    Returns:
-        an xlinear model
+        Returns:
+            A list of dictionaries for each prediction, e.g.
+            [{"tag": "Malaria", "Probability": 0.5}, ...]
+        """
+        tags = []
+        for y_pred_proba in Y_pred_proba:
+            if sp.issparse(y_pred_proba):
+                y_pred_proba = np.asarray(y_pred_proba.todense()).ravel()
+            if probabilities:
+                tags_i = {
+                    tag: prob
+                    for tag, prob in zip(label_binarizer.classes_, y_pred_proba)
+                    if prob >= threshold
+                }
+            else:
+                tags_i = [
+                    tag
+                    for tag, prob in zip(label_binarizer.classes_, y_pred_proba)
+                    if prob >= threshold
+                ]
+            tags.append(tags_i)
 
-    """
-    model = MeshXLinear()
-
-    if parameters:
-        params = ast.literal_eval(parameters)
-        model.set_params(**params)
-    else:
-        parameters = {}
-    return model
-
-
-def load_model(model_path, parameters=None):
-    """Loads an XLinear model from a pickle file
-
-    Args:
-    - model_path: location of pickled model
-    - parameters: parameters to set the XLinear model
-
-    Returns:
-        an xlinear model
-
-    """
-    if str(model_path).endswith(".pkl"):
-        model = load_pickle(model_path)
-    else:
-        model = create_model(parameters=parameters)
-        model.load(model_path)
-
-    return model
-
-
-def predict_tags(
-    X,
-    model_path,
-    label_binarizer_path,
-    probabilities=False,
-    threshold=0.5,
-):
-    """
-    X: list or numpy array of texts
-    model_path: path to trained model
-    label_binarizer_path: path to trained label_binarizer
-    probabilities: bool, default False. When true probabilities
-                   are returned along with tags
-    threshold: float, default 0.5. Probability threshold to be used to assign tags.
-    """
-
-    with open(label_binarizer_path, "rb") as f:
-        label_binarizer = pickle.loads(f.read())
-
-    model = load_model(model_path)
-    Y_pred_proba = model.predict_proba(X)
-
-    tags = format_predictions(
-        Y_pred_proba,
-        label_binarizer,
-        threshold=threshold,
-        probabilities=probabilities,
-    )
-
-    return tags
-
-
-if __name__ == "__main__":
-    tags = predict_tags(
-        ["This is a grant about malaria"],
-        "models/xlinear-0.2.5/model",
-        "models/xlinear-0.2.5/label_binarizer.pkl",
-    )
-
-    print(tags)
+        return tags

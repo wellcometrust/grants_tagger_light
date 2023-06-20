@@ -7,7 +7,7 @@ import torch
 
 from tqdm import tqdm
 from grants_tagger_light.predict import predict_tags as predict_tags_bertmesh
-from xlinear_predict import predict_tags as predict_tags_xlinear
+from grants_tagger_light.models.xlinear import MeshXLinear
 
 random.seed(42)
 torch.manual_seed(42)
@@ -89,9 +89,13 @@ def create_comparison_csv(
     num_samples_per_cat: int,
     mesh_metadata_path: str,
     mesh_terms_list_path: str,
+    pre_annotate_bertmesh: bool,
     bertmesh_path: str,
+    bertmesh_thresh: float,
+    pre_annotate_xlinear: bool,
     xlinear_path: str,
     xlinear_label_binarizer_path: str,
+    xlinear_thresh: float,
     output_path: str,
 ):
     subnames = find_subnames(mesh_metadata_path, mesh_terms_list_path)
@@ -118,28 +122,39 @@ def create_comparison_csv(
         lambda x: x.sample(min(len(x), num_samples_per_cat))
     )
 
-    # Annotate with bertmesh
     abstracts = df_sample["abstract"].tolist()
 
-    tags = predict_tags_bertmesh(abstracts, bertmesh_path, return_labels=True)
+    # Annotate with bertmesh
+    if pre_annotate_bertmesh:
+        tags = predict_tags_bertmesh(
+            abstracts,
+            bertmesh_path,
+            return_labels=True,
+            threshold=bertmesh_thresh,
+        )
 
-    df_sample["bertmesh_terms"] = tags
-    # Keep 1st elem of each list (above func returns them nested)
-    df_sample["bertmesh_terms"] = df_sample["bertmesh_terms"].apply(lambda x: x[0])
+        df_sample["bertmesh_terms"] = tags
+        # Keep 1st elem of each list (above func returns them nested)
+        df_sample["bertmesh_terms"] = df_sample["bertmesh_terms"].apply(lambda x: x[0])
 
     # Annotate with xlinear
-    tags = predict_tags_xlinear(
-        X=abstracts,
-        model_path=xlinear_path,
-        label_binarizer_path=xlinear_label_binarizer_path,
-    )
+    if pre_annotate_xlinear:
+        model = MeshXLinear(
+            model_path=xlinear_path,
+            label_binarizer_path=xlinear_label_binarizer_path,
+        )
 
-    df_sample["xlinear_terms"] = tags
+        tags = model(X=abstracts, threshold=xlinear_thresh)
 
-    # Filter out rows where none of the bertmesh tags are in the subnames list
-    df_sample = df_sample[
-        df_sample["bertmesh_terms"].apply(lambda x: any([tag in subnames for tag in x]))
-    ]
+        df_sample["xlinear_terms"] = tags
+
+    if pre_annotate_bertmesh:
+        # Filter out rows where none of the bertmesh tags are in the subnames list
+        df_sample = df_sample[
+            df_sample["bertmesh_terms"].apply(
+                lambda x: any([tag in subnames for tag in x])
+            )
+        ]
 
     # Output df to csv
     df_sample.to_csv(output_path, index=False)
@@ -152,12 +167,15 @@ if __name__ == "__main__":
     parser.add_argument("--num-samples-per-cat", type=int, default=10)
     parser.add_argument("--mesh-metadata-path", type=str)
     parser.add_argument("--mesh-terms-list-path", type=str)
+    parser.add_argument("--pre-annotate-bertmesh", action="store_true")
     parser.add_argument(
         "--bertmesh-path", type=str, default="Wellcome/WellcomeBertMesh"
     )
     parser.add_argument("--bertmesh-thresh", type=float, default=0.5)
+    parser.add_argument("--pre-annotate-xlinear", action="store_true")
     parser.add_argument("--xlinear-path", type=str)
     parser.add_argument("--xlinear-label-binarizer-path", type=str)
+    parser.add_argument("--xlinear-thresh", type=float, default=0.5)
     parser.add_argument("--output-path", type=str)
 
     args = parser.parse_args()
@@ -168,8 +186,12 @@ if __name__ == "__main__":
         num_samples_per_cat=args.num_samples_per_cat,
         mesh_metadata_path=args.mesh_metadata_path,
         mesh_terms_list_path=args.mesh_terms_list_path,
+        pre_annotate_bertmesh=args.pre_annotate_bertmesh,
         bertmesh_path=args.bertmesh_path,
+        bertmesh_thresh=args.bertmesh_thresh,
+        pre_annotate_xlinear=args.pre_annotate_xlinear,
         xlinear_path=args.xlinear_path,
         xlinear_label_binarizer_path=args.xlinear_label_binarizer_path,
+        xlinear_thresh=args.xlinear_thresh,
         output_path=args.output_path,
     )
