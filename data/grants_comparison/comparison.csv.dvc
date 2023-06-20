@@ -1,0 +1,4 @@
+outs:
+- md5: 8325cf6723f73aecdcad40651000ff77
+  size: 888866
+  path: comparison.csv
