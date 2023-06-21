@@ -19,22 +19,15 @@ PIPELINE_REGISTRY.register_pipeline(
 logger = logging.getLogger(__name__)
 
 
-def predict_tags(
-    X,
-    model_path,
-    return_labels=True,
-    threshold=0.5,
-):
+def predict_tags(X, model_path, return_labels=True, threshold=0.5, device: str = "cpu"):
     """
     X: list or numpy array of texts
     model_path: path to trained model
     probabilities: bool, default False. Return both probabilities and tags
     threshold: float, default 0.5. Probability threshold to be used to assign tags.
-    parameters: any params required upon model creation
-    config: Path to config file
     """
 
-    pipe = pipeline("grants-tagging", model=model_path)
+    pipe = pipeline("grants-tagging", model=model_path, device=device)
 
     if isinstance(X, str):
         X = [X]

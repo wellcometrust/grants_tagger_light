@@ -21,10 +21,11 @@ class BertMeshPipeline(Pipeline):
             padding="max_length",
             truncation=True,
             max_length=512,
-        )["input_ids"]
+            return_tensors="pt",
+        )["input_ids"].to(self.device)
 
     def _forward(self, input_ids, **forward_kwargs):
-        return self.model([input_ids])
+        return self.model(input_ids)
 
     def postprocess(
         self,
