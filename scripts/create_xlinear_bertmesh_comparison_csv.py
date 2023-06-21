@@ -103,26 +103,26 @@ def create_comparison_csv(
     parquet_files = wr.s3.list_objects(s3_url)
     random.shuffle(parquet_files)
 
-    all_dfs = []
+    grants = []
 
     for idx in tqdm(range(num_parquet_files_to_consider)):
-        df = wr.s3.read_parquet(
-            parquet_files[idx],
+        grants.append(
+            wr.s3.read_parquet(
+                parquet_files[idx],
+            )
         )
 
-        all_dfs.append(df)
-
-    df = pd.concat(all_dfs)
+    all_grants = pd.concat(grants)
 
     # Filter out rows where abstract is na
-    df = df[~df["abstract"].isna()]
+    all_grants = all_grants[~all_grants["abstract"].isna()]
 
     # Do stratified sampling based on for_first_level_name column
-    df_sample = df.groupby("for_first_level_name", group_keys=False).apply(
+    grants_sample = all_grants.groupby("for_first_level_name", group_keys=False).apply(
         lambda x: x.sample(min(len(x), num_samples_per_cat))
     )
 
-    abstracts = df_sample["abstract"].tolist()
+    abstracts = grants_sample["abstract"].tolist()
 
     # Annotate with bertmesh
     if pre_annotate_bertmesh:
@@ -133,9 +133,11 @@ def create_comparison_csv(
             threshold=bertmesh_thresh,
         )
 
-        df_sample["bertmesh_terms"] = tags
+        grants_sample["bertmesh_terms"] = tags
         # Keep 1st elem of each list (above func returns them nested)
-        df_sample["bertmesh_terms"] = df_sample["bertmesh_terms"].apply(lambda x: x[0])
+        grants_sample["bertmesh_terms"] = grants_sample["bertmesh_terms"].apply(
+            lambda x: x[0]
+        )
 
     # Annotate with xlinear
     if pre_annotate_xlinear:
@@ -146,18 +148,18 @@ def create_comparison_csv(
 
         tags = model(X=abstracts, threshold=xlinear_thresh)
 
-        df_sample["xlinear_terms"] = tags
+        grants_sample["xlinear_terms"] = tags
 
     if pre_annotate_bertmesh:
         # Filter out rows where none of the bertmesh tags are in the subnames list
-        df_sample = df_sample[
-            df_sample["bertmesh_terms"].apply(
+        grants_sample = grants_sample[
+            grants_sample["bertmesh_terms"].apply(
                 lambda x: any([tag in subnames for tag in x])
             )
         ]
 
     # Output df to csv
-    df_sample.to_csv(output_path, index=False)
+    grants_sample.to_csv(output_path, index=False)
 
 
 if __name__ == "__main__":
