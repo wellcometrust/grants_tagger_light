@@ -6,7 +6,7 @@ from transformers import (
     HfArgumentParser,
 )
 from grants_tagger_light.models.bert_mesh import BertMesh
-from grants_tagger_light.training.train_args import BertMeshTrainingArguments
+from grants_tagger_light.training.cli_args import BertMeshTrainingArguments
 from grants_tagger_light.training.dataloaders import load_grants_sample
 from sklearn.metrics import classification_report
 from loguru import logger
