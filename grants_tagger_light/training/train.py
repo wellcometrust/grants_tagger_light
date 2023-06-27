@@ -6,7 +6,10 @@ from transformers import (
     HfArgumentParser,
 )
 from grants_tagger_light.models.bert_mesh import BertMesh
-from grants_tagger_light.training.cli_args import BertMeshTrainingArguments
+from grants_tagger_light.training.cli_args import (
+    BertMeshTrainingArguments,
+    WandbArguments,
+)
 from grants_tagger_light.training.dataloaders import load_grants_sample
 from sklearn.metrics import classification_report
 from loguru import logger
@@ -75,10 +78,11 @@ def train_bertmesh_cli(
         help="Path to data in jsonl format. Must contain text and tags field",
     ),
 ):
-    parser = HfArgumentParser((BertMeshTrainingArguments,))
-    (training_args,) = parser.parse_args_into_dataclasses(ctx.args)
+    parser = HfArgumentParser((BertMeshTrainingArguments, WandbArguments))
+    (training_args, wandb_args) = parser.parse_args_into_dataclasses(ctx.args)
 
     logger.info("Training args: {}".format(pformat(training_args)))
+    logger.info("Wandb args: {}".format(pformat(wandb_args)))
 
     train_bertmesh(model_key, data_path, training_args)
 
