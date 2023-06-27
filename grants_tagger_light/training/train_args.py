@@ -40,6 +40,8 @@ class BertMeshTrainingArguments(TrainingArguments):
     seed: int = field(default=42)
     data_seed: int = field(default=42)
 
+    report_to: str = field(default="wandb")
+
     optim: str = field(
         default="adamw_torch_fused"
     )  # TODO add support for adamw_apex_fused

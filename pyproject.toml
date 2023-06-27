@@ -20,6 +20,7 @@ torch = {version = "2.0.1", source = "torch-cpu"}
 transformers = "4.29.2"
 libpecos = "^1.0.0"
 loguru = "^0.7.0"
+wandb = "^0.15.4"
 
 
 [tool.poetry.group.dev]
