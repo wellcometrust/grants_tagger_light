@@ -41,9 +41,6 @@ def load_grants_sample(
         )
 
     def _label_encode(batch):
-        import pdb
-
-        pdb.set_trace()
         batch["labels"] = [
             [label2id[tag] for tag in tags[0] if tag in label2id]
             for tags in batch["mesh_terms"]
