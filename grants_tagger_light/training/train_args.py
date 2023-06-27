@@ -28,7 +28,7 @@ class BertMeshTrainingArguments(TrainingArguments):
     per_device_train_batch_size: int = field(
         default=8
     )  # set to 256 in grants-tagger repo
-    per_device_eval_batch_size: int = field(default=16)
+    per_device_eval_batch_size: int = field(default=8)
     gradient_accumulation_steps: int = field(default=1)
     group_by_length: bool = field(default=False)  # TODO test this
 
@@ -54,7 +54,7 @@ class BertMeshTrainingArguments(TrainingArguments):
     auto_find_batch_size: bool = field(default=False)  # TODO test this
 
     torch_compile: bool = field(default=False)  # TODO make compilation
-    torch_compile_backend: str = field(default="inductor")
-    torch_compile_mode: str = field(
-        default="default"
-    )  # default | reduce-overhead | max-autotune
+    # torch_compile_backend: str = field(default="inductor")
+    # torch_compile_mode: str = field(
+    #     default="default"
+    # )  # default | reduce-overhead | max-autotune
