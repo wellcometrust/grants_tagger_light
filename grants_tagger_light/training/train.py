@@ -9,8 +9,11 @@ from grants_tagger_light.models.bert_mesh import BertMesh
 from grants_tagger_light.training.train_args import BertMeshTrainingArguments
 from grants_tagger_light.training.dataloaders import load_grants_sample
 from sklearn.metrics import classification_report
+from loguru import logger
+from pprint import pformat
 import typer
 import numpy as np
+import os
 
 
 def train_bertmesh(model_key: str, data_path: str, training_args: TrainingArguments):
@@ -53,9 +56,9 @@ def train_bertmesh(model_key: str, data_path: str, training_args: TrainingArgume
 
     metrics = trainer.evaluate(eval_dataset=val_dset)
 
-    print(metrics)
+    logger.info(pformat(metrics))
 
-    trainer.save_model(training_args.output_dir)
+    trainer.save_model(os.path.join(training_args.output_dir, "best"))
 
 
 train_app = typer.Typer()
@@ -74,6 +77,8 @@ def train_bertmesh_cli(
 ):
     parser = HfArgumentParser((BertMeshTrainingArguments,))
     (training_args,) = parser.parse_args_into_dataclasses(ctx.args)
+
+    logger.info("Training args: {}".format(pformat(training_args)))
 
     train_bertmesh(model_key, data_path, training_args)
 
