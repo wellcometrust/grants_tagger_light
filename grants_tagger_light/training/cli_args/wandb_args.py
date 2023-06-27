@@ -36,9 +36,13 @@ class WandbArguments:
     )
 
     def __post_init__(self):
+        # Postprocess the
         # Check if env variables are set, and if not set them to this class' values
         for field_ in fields(self):
             env_var_name = field_.name.upper()
             env_var = os.environ.get(env_var_name)
             if not env_var:
-                os.environ[env_var_name] = str(getattr(self, field_.name))
+                if isinstance(getattr(self, field_.name), list):
+                    os.environ[env_var_name] = ",".join(getattr(self, field_.name))
+                else:
+                    os.environ[env_var_name] = str(getattr(self, field_.name))
