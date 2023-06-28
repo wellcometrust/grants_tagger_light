@@ -2,13 +2,40 @@ import json
 from transformers import AutoTokenizer
 from datasets import Dataset
 
+# TODO refactor the two load funcs into a class
+
+
+def _tokenize(batch, tokenizer: AutoTokenizer, x_col: str):
+    return tokenizer(
+        batch[x_col],
+        padding="max_length",
+        truncation=True,
+        max_length=512,
+    )
+
+
+def _label_encode(batch, mesh_terms_column: str, label2id: dict):
+    batch["labels"] = [
+        [label2id[tag] for tag in tags[0] if tag in label2id]
+        for tags in batch[mesh_terms_column]
+    ]
+    return batch
+
+
+def _one_hot(batch, label2id: dict):
+    batch["labels"] = [
+        [1 if i in labels else 0 for i in range(len(label2id))]
+        for labels in batch["labels"]
+    ]
+    return batch
+
 
 def load_grants_sample(
     data_path: str,
     tokenizer: AutoTokenizer,
     label2id: dict,
     test_size: float = 0.1,
-    num_proc: int = 1,
+    num_proc: int = 8,
 ):
     """
     Code that loads a grants sample.
@@ -32,28 +59,6 @@ def load_grants_sample(
                 sample = json.loads(line)
                 yield sample
 
-    def _tokenize(batch):
-        return tokenizer(
-            batch["abstract"],
-            padding="max_length",
-            truncation=True,
-            max_length=512,
-        )
-
-    def _label_encode(batch):
-        batch["labels"] = [
-            [label2id[tag] for tag in tags[0] if tag in label2id]
-            for tags in batch["mesh_terms"]
-        ]
-        return batch
-
-    def _one_hot(batch):
-        batch["labels"] = [
-            [1 if i in labels else 0 for i in range(len(label2id))]
-            for labels in batch["labels"]
-        ]
-        return batch
-
     dset = Dataset.from_generator(_datagen, gen_kwargs={"data_path": data_path})
     dset = dset.map(
         _tokenize,
@@ -61,6 +66,7 @@ def load_grants_sample(
         batch_size=32,
         num_proc=num_proc,
         desc="Tokenizing",
+        fn_kwargs={"tokenizer": tokenizer, "x_col": "abstract"},
     )
 
     dset = dset.map(
@@ -69,6 +75,7 @@ def load_grants_sample(
         batch_size=32,
         num_proc=num_proc,
         desc="Encoding labels",
+        fn_kwargs={"mesh_terms_column": "mesh_terms", "label2id": label2id},
     )
 
     dset = dset.map(
@@ -77,9 +84,79 @@ def load_grants_sample(
         batch_size=32,
         num_proc=num_proc,
         desc="One-hot labels",
+        fn_kwargs={"label2id": label2id},
     )
 
     # Split into train and test
     dset = dset.train_test_split(test_size=test_size)
 
     return dset["train"], dset["test"]
+
+
+def load_mesh_json(
+    data_path: str,
+    tokenizer: AutoTokenizer,
+    label2id: dict,
+    test_size: float = 0.1,
+    num_proc: int = 8,
+):
+    def _datagen(mesh_json_path: str):
+        with open(mesh_json_path, "r", encoding="latin1") as f:
+            for idx, line in enumerate(f):
+                # Skip 1st line
+                if idx == 0:
+                    continue
+                sample = json.loads(line[:-2])
+                yield sample
+
+    dset = Dataset.from_generator(_datagen, gen_kwargs={"mesh_json_path": data_path})
+
+    dset = dset.map(
+        _tokenize,
+        batched=True,
+        batch_size=32,
+        num_proc=num_proc,
+        desc="Tokenizing",
+        fn_kwargs={"tokenizer": tokenizer},
+    )
+
+    dset = dset.map(
+        _label_encode,
+        batched=True,
+        batch_size=32,
+        num_proc=num_proc,
+        desc="Encoding labels",
+        fn_kwargs={"mesh_terms_column": "meshMajor", "label2id": label2id},
+    )
+
+    dset = dset.map(
+        _one_hot,
+        batched=True,
+        batch_size=32,
+        num_proc=num_proc,
+        desc="One-hot labels",
+        fn_kwargs={"label2id": label2id},
+    )
+
+    # Split into train and test
+    dset = dset.train_test_split(test_size=test_size)
+
+    return dset["train"], dset["test"]
+
+
+if __name__ == "__main__":
+    from transformers import AutoModel
+
+    model = AutoModel.from_pretrained(
+        "Wellcome/WellcomeBertMesh", trust_remote_code=True
+    )
+    tokenizer = AutoTokenizer.from_pretrained("Wellcome/WellcomeBertMesh")
+
+    dset_train, dset_val = load_mesh_json(
+        data_path="data/raw/allMeSH_2021.json",
+        tokenizer=tokenizer,
+        label2id=model.config.label2id,
+    )
+    import pdb
+
+    pdb.set_trace()
