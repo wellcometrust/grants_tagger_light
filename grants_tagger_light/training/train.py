@@ -10,7 +10,9 @@ from grants_tagger_light.training.cli_args import (
     BertMeshTrainingArguments,
     WandbArguments,
 )
-from grants_tagger_light.training.dataloaders import load_grants_sample
+from grants_tagger_light.training.dataloaders import (
+    load_mesh_json,
+)
 from sklearn.metrics import classification_report
 from loguru import logger
 from pprint import pformat
@@ -25,7 +27,7 @@ def train_bertmesh(model_key: str, data_path: str, training_args: TrainingArgume
 
     label2id = {v: k for k, v in model.id2label.items()}
 
-    train_dset, val_dset = load_grants_sample(data_path, tokenizer, label2id=label2id)
+    train_dset, val_dset = load_mesh_json(data_path, tokenizer, label2id=label2id)
 
     def sklearn_metrics(prediction: EvalPrediction):
         y_pred = prediction.predictions

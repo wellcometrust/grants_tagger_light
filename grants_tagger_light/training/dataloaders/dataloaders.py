@@ -157,6 +157,3 @@ if __name__ == "__main__":
         tokenizer=tokenizer,
         label2id=model.config.label2id,
     )
-    import pdb
-
-    pdb.set_trace()
