@@ -117,7 +117,7 @@ def load_mesh_json(
         batch_size=32,
         num_proc=num_proc,
         desc="Tokenizing",
-        fn_kwargs={"tokenizer": tokenizer},
+        fn_kwargs={"tokenizer": tokenizer, "x_col": "abstractText"},
     )
 
     dset = dset.map(
