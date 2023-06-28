@@ -1,0 +1,9 @@
+vars:
+  - scripts_location: "../../scripts"
+  - json-path: "../../data/raw/allMeSH_2021.json"
+  - jsonl-path: "../../data/raw/allMeSH_2021.jsonl"
+stages:
+  convert:
+    cmd: python ${scripts_location}/mesh_to_jsonl.py --json-path ${json-path} --jsonl-path ${jsonl-path}
+    outs:
+      - ${jsonl-path}

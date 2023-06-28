@@ -1,0 +1,9 @@
+schema: '2.0'
+stages:
+  convert:
+    cmd: python ../../scripts/mesh_to_jsonl.py --json-path ../../data/raw/allMeSH_2021.json
+      --jsonl-path ../../data/raw/allMeSH_2021.jsonl
+    outs:
+    - path: ../../data/raw/allMeSH_2021.jsonl
+      md5: 94f18c3918b180728a553123edb2ee32
+      size: 27914288461
