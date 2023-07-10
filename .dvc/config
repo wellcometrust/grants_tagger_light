@@ -1,0 +1,7 @@
+[core]
+    remote = storage
+    autostage = true
+[cache]
+    type = "hardlink,symlink"
+['remote "storage"']
+    url = s3://datalabs-data/grants_tagger/dvc
