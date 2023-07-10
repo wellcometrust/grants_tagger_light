@@ -16,10 +16,16 @@ def _tokenize(batch, tokenizer: AutoTokenizer, x_col: str):
 
 
 def _label_encode(batch, mesh_terms_column: str, label2id: dict):
-    batch["labels"] = [
-        [label2id[tag] for tag in tags[0] if tag in label2id]
-        for tags in batch[mesh_terms_column]
-    ]
+    batch_labels = []
+    for sample_tags in batch[mesh_terms_column]:
+        sample_labels = []
+        for tag in sample_tags:
+            if tag in label2id:
+                sample_labels.append(label2id[tag])
+        batch_labels.append(sample_labels)
+
+    batch["labels"] = batch_labels
+
     return batch
 
 
@@ -83,7 +89,7 @@ def load_grants_sample(
         _label_encode,
         batched=True,
         batch_size=32,
-        num_proc=num_proc,
+        num_proc=1,
         desc="Encoding labels",
         fn_kwargs={"mesh_terms_column": "mesh_terms", "label2id": label2id},
     )
