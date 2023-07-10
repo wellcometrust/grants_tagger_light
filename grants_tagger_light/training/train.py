@@ -19,6 +19,10 @@ from pprint import pformat
 import typer
 import numpy as np
 import os
+import transformers
+
+
+transformers.set_seed(42)
 
 
 def train_bertmesh(
