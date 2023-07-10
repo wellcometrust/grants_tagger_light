@@ -36,7 +36,9 @@ class WandbArguments:
     )
 
     def __post_init__(self):
-        # Postprocess the
+        if len(self.wandb_tags) == 0:
+            self.wandb_tags = None
+
         # Check if env variables are set, and if not set them to this class' values
         for field_ in fields(self):
             env_var_name = field_.name.upper()
