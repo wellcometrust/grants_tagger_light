@@ -9,7 +9,7 @@ class BertMeshTrainingArguments(TrainingArguments):
     and implements some better defaults for convenience.
     """
 
-    output_dir: str = field(default="bertmesh-outs/default")
+    output_dir: str = field(default="bertmesh_outs/default")
     overwrite_output_dir: bool = field(default=True)
 
     evaluation_strategy: str = field(default="epoch")  # no | epoch | steps
