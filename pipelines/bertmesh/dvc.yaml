@@ -2,7 +2,7 @@ vars:
     - model_key: "Wellcome/WellcomeBertMesh"
     - data_path: "../../data/raw/allMeSH_2021.json"
     - scripts_folder: "../../scripts"
-    - output_dir: "../../bertmesh_outs/pipeline"
+    - output_dir: "../../bertmesh_outs/pipeline_test"
 
 stages:
     train:
