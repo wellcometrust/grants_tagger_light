@@ -21,14 +21,22 @@ import numpy as np
 import os
 
 
-def train_bertmesh(model_key: str, data_path: str, training_args: TrainingArguments):
+def train_bertmesh(
+    model_key: str,
+    data_path: str,
+    max_samples: int,
+    training_args: TrainingArguments,
+):
     model = BertMesh.from_pretrained(model_key, trust_remote_code=True)
     tokenizer = AutoTokenizer.from_pretrained(model_key)
 
     label2id = {v: k for k, v in model.id2label.items()}
 
     train_dset, val_dset = load_mesh_json(
-        data_path, tokenizer=tokenizer, label2id=label2id
+        data_path,
+        tokenizer=tokenizer,
+        label2id=label2id,
+        max_samples=max_samples,
     )
 
     def sklearn_metrics(prediction: EvalPrediction):
@@ -81,6 +89,10 @@ def train_bertmesh_cli(
         ...,
         help="Path to data in jsonl format. Must contain text and tags field",
     ),
+    max_samples: int = typer.Option(
+        np.inf,
+        help="Maximum number of samples to use for training. Useful for dev/debugging",
+    ),
 ):
     parser = HfArgumentParser((BertMeshTrainingArguments, WandbArguments))
     (training_args, wandb_args) = parser.parse_args_into_dataclasses(ctx.args)
@@ -88,7 +100,7 @@ def train_bertmesh_cli(
     logger.info("Training args: {}".format(pformat(training_args)))
     logger.info("Wandb args: {}".format(pformat(wandb_args)))
 
-    train_bertmesh(model_key, data_path, training_args)
+    train_bertmesh(model_key, data_path, max_samples, training_args)
 
 
 if __name__ == "__main__":

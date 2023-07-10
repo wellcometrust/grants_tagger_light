@@ -1,4 +1,5 @@
 import json
+import numpy as np
 from transformers import AutoTokenizer
 from datasets import Dataset
 
@@ -36,6 +37,7 @@ def load_grants_sample(
     label2id: dict,
     test_size: float = 0.1,
     num_proc: int = 8,
+    max_samples: int = np.inf,
 ):
     """
     Code that loads a grants sample.
@@ -48,18 +50,26 @@ def load_grants_sample(
     for development / sanity check purposes).
     """
 
-    def _datagen(data_path: str):
+    def _datagen(data_path: str, max_samples: int = np.inf):
         """
         Loads the data from the given path. The data should be in jsonl format,
         with each line containing a text and tags field.
         The tags field should be a list of strings.
         """
         with open(data_path, "r") as f:
-            for line in f:
+            for idx, line in f:
                 sample = json.loads(line)
+
+                if idx > max_samples:
+                    break
+
                 yield sample
 
-    dset = Dataset.from_generator(_datagen, gen_kwargs={"data_path": data_path})
+    dset = Dataset.from_generator(
+        _datagen,
+        gen_kwargs={"data_path": data_path, "max_samples": max_samples},
+    )
+
     dset = dset.map(
         _tokenize,
         batched=True,
@@ -99,17 +109,25 @@ def load_mesh_json(
     label2id: dict,
     test_size: float = 0.1,
     num_proc: int = 8,
+    max_samples: int = np.inf,
 ):
-    def _datagen(mesh_json_path: str):
+    def _datagen(mesh_json_path: str, max_samples: int = np.inf):
         with open(mesh_json_path, "r", encoding="latin1") as f:
             for idx, line in enumerate(f):
                 # Skip 1st line
                 if idx == 0:
                     continue
                 sample = json.loads(line[:-2])
+
+                if idx > max_samples:
+                    break
+
                 yield sample
 
-    dset = Dataset.from_generator(_datagen, gen_kwargs={"mesh_json_path": data_path})
+    dset = Dataset.from_generator(
+        _datagen,
+        gen_kwargs={"mesh_json_path": data_path, "max_samples": max_samples},
+    )
 
     dset = dset.map(
         _tokenize,
