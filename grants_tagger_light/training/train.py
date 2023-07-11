@@ -159,8 +159,13 @@ if __name__ == "__main__":
         data_path: str
         max_samples: int = np.inf
 
-    func_args, training_args, model_args = HfArgumentParser(
-        (TrainFuncArgs, BertMeshTrainingArguments, BertMeshModelArguments)
+    func_args, training_args, wandb_args, model_args = HfArgumentParser(
+        (
+            TrainFuncArgs,
+            BertMeshTrainingArguments,
+            WandbArguments,
+            BertMeshModelArguments,
+        )
     ).parse_args_into_dataclasses()
 
     train_bertmesh(
