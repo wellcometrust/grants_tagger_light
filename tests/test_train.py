@@ -1,4 +1,5 @@
 from grants_tagger_light.training.train import train_bertmesh
+from grants_tagger_light.training.cli_args import BertMeshModelArguments
 from transformers import TrainingArguments
 import tempfile
 import pytest
@@ -44,9 +45,12 @@ def test_train_bertmesh(data_path, save_path):
         no_cuda=True,
     )
 
+    model_args = BertMeshModelArguments()
+
     train_bertmesh(
         model_key=model_key,
         data_path=data_path,
         max_samples=np.inf,
         training_args=training_args,
+        model_args=model_args,
     )

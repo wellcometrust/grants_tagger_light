@@ -1,8 +1,8 @@
 schema: '2.0'
 stages:
   train:
-    cmd: python ../../grants_tagger_light/training/train.py --model_key Wellcome/WellcomeBertMesh
-      --data_path ../../data/raw/allMeSH_2021.json --output_dir ../../bertmesh_outs/pipeline_test
+    cmd: python ../../grants_tagger_light/training/train.py --model_key "" --data_path
+      ../../data/raw/allMeSH_2021.json --output_dir ../../bertmesh_outs/pipeline_test
       --max_samples 10 --per_device_train_batch_size 4 --per_device_eval_batch_size
       4
     deps:
@@ -14,6 +14,6 @@ stages:
         BertMeshTrainingArguments: {}
     outs:
     - path: ../../bertmesh_outs/pipeline_test/best
-      md5: dfc280687bcbda1eebfcf1ea68662d89.dir
-      size: 649161367
+      md5: b96ff54ecd600460dbb18b3e82d8b517.dir
+      size: 439905869
       nfiles: 3

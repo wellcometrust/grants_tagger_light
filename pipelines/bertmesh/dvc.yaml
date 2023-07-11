@@ -1,5 +1,4 @@
 vars:
-    - model_key: "Wellcome/WellcomeBertMesh"
     - data_path: "../../data/raw/allMeSH_2021.json"
     - script_loc: "../../grants_tagger_light/training"
     - output_dir: "../../bertmesh_outs/pipeline_test"
@@ -8,7 +7,7 @@ stages:
     train:
         cmd: >-
             python ${script_loc}/train.py
-            --model_key ${model_key}
+            --model_key ""
             --data_path ${data_path}
             --output_dir ${output_dir}
             --max_samples 10

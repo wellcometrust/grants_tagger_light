@@ -10,6 +10,7 @@ from grants_tagger_light.models.bert_mesh import BertMesh
 from grants_tagger_light.training.cli_args import (
     BertMeshTrainingArguments,
     WandbArguments,
+    BertMeshModelArguments,
 )
 from grants_tagger_light.training.dataloaders import (
     load_mesh_json,
@@ -31,24 +32,53 @@ def train_bertmesh(
     data_path: str,
     max_samples: int,
     training_args: TrainingArguments,
+    model_args: BertMeshModelArguments = None,
 ):
     if not model_key:
-        pretrained_model_key = "microsoft/BiomedNLP-PubMedBERT-base-uncased-abstract"
-        config = AutoConfig.from_pretrained(pretrained_model_key)
+        assert isinstance(
+            model_args, BertMeshModelArguments
+        ), "If model_key is not provided, must provide model_args of type BertMeshModelArguments"  # noqa
+
+        logger.info("No model key provided. Training model from scratch")
+
+        # Instantiate model from scratch
+        config = AutoConfig.from_pretrained(model_args.pretrained_model_key)
+        tokenizer = AutoTokenizer.from_pretrained(model_args.pretrained_model_key)
+
+        train_dset, val_dset, label2id = load_mesh_json(
+            data_path,
+            tokenizer=tokenizer,
+            label2id=None,
+            max_samples=max_samples,
+        )
+
+        config.update(
+            {
+                "pretrained_model": model_args.pretrained_model_key,
+                "num_labels": len(label2id),
+                "hidden_size": model_args.hidden_size,
+                "dropout": model_args.dropout,
+                "multilabel_attention": model_args.multilabel_attention,
+                "id2label": {v: k for k, v in label2id.items()},
+            }
+        )
         model = BertMesh(config)
+
     else:
+        logger.info(f"Training model from pretrained key {model_key}")
+
+        # Instantiate from pretrained
         model = BertMesh.from_pretrained(model_key, trust_remote_code=True)
+        tokenizer = AutoTokenizer.from_pretrained(model_key)
 
-    tokenizer = AutoTokenizer.from_pretrained(model_key)
+        label2id = {v: k for k, v in model.id2label.items()}
 
-    label2id = {v: k for k, v in model.id2label.items()}
-
-    train_dset, val_dset = load_mesh_json(
-        data_path,
-        tokenizer=tokenizer,
-        label2id=label2id,
-        max_samples=max_samples,
-    )
+        train_dset, val_dset, _ = load_mesh_json(
+            data_path,
+            tokenizer=tokenizer,
+            label2id=label2id,
+            max_samples=max_samples,
+        )
 
     def sklearn_metrics(prediction: EvalPrediction):
         y_pred = prediction.predictions
@@ -105,13 +135,19 @@ def train_bertmesh_cli(
         help="Maximum number of samples to use for training. Useful for dev/debugging",
     ),
 ):
-    parser = HfArgumentParser((BertMeshTrainingArguments, WandbArguments))
-    (training_args, wandb_args) = parser.parse_args_into_dataclasses(ctx.args)
+    parser = HfArgumentParser(
+        (BertMeshTrainingArguments, WandbArguments, BertMeshModelArguments)
+    )
+    (
+        training_args,
+        wandb_args,
+        model_args,
+    ) = parser.parse_args_into_dataclasses(ctx.args)
 
     logger.info("Training args: {}".format(pformat(training_args)))
     logger.info("Wandb args: {}".format(pformat(wandb_args)))
 
-    train_bertmesh(model_key, data_path, max_samples, training_args)
+    train_bertmesh(model_key, data_path, max_samples, training_args, model_args)
 
 
 if __name__ == "__main__":
@@ -123,8 +159,8 @@ if __name__ == "__main__":
         data_path: str
         max_samples: int = np.inf
 
-    func_args, training_args = HfArgumentParser(
-        (TrainFuncArgs, BertMeshTrainingArguments)
+    func_args, training_args, model_args = HfArgumentParser(
+        (TrainFuncArgs, BertMeshTrainingArguments, BertMeshModelArguments)
     ).parse_args_into_dataclasses()
 
     train_bertmesh(
@@ -132,4 +168,5 @@ if __name__ == "__main__":
         func_args.data_path,
         func_args.max_samples,
         training_args,
+        model_args,
     )

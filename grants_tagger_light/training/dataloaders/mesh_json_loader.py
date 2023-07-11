@@ -37,6 +37,15 @@ def _one_hot(batch, label2id: dict):
     return batch
 
 
+def _get_label2id(dset):
+    label_set = set()
+    for sample in dset:
+        for label in sample["meshMajor"]:
+            label_set.add(label)
+    label2id = {label: idx for idx, label in enumerate(label_set)}
+    return label2id
+
+
 def load_mesh_json(
     data_path: str,
     tokenizer: AutoTokenizer,
@@ -72,6 +81,10 @@ def load_mesh_json(
         fn_kwargs={"tokenizer": tokenizer, "x_col": "abstractText"},
     )
 
+    # Generate label2id if None
+    if label2id is None:
+        label2id = _get_label2id(dset)
+
     dset = dset.map(
         _label_encode,
         batched=True,
@@ -93,7 +106,7 @@ def load_mesh_json(
     # Split into train and test
     dset = dset.train_test_split(test_size=test_size)
 
-    return dset["train"], dset["test"]
+    return dset["train"], dset["test"], label2id
 
 
 if __name__ == "__main__":
