@@ -1,0 +1,13 @@
+vars:
+  - model_key: "Wellcome/WellcomeBertMesh"
+  - out_path: "../../models/WellcomeBertMesh-fromhub-11-07-2023"
+  - script_loc: "../../scripts"
+
+stages:
+  save_from_hub:
+    cmd: >-
+      python ${script_loc}/save_local_from_hub.py
+      --key ${model_key}
+      --out_path ${out_path}
+    outs:
+      - ${out_path}
