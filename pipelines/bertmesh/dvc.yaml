@@ -1,13 +1,13 @@
 vars:
     - model_key: "Wellcome/WellcomeBertMesh"
     - data_path: "../../data/raw/allMeSH_2021.json"
-    - scripts_folder: "../../scripts"
+    - script_loc: "../../grants_tagger_light/training"
     - output_dir: "../../bertmesh_outs/pipeline_test"
 
 stages:
     train:
         cmd: >-
-            python ${scripts_folder}/train_bertmesh_script.py
+            python ${script_loc}/train.py
             --model_key ${model_key}
             --data_path ${data_path}
             --output_dir ${output_dir}

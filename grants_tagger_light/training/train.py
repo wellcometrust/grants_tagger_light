@@ -108,4 +108,21 @@ def train_bertmesh_cli(
 
 
 if __name__ == "__main__":
-    train_app()
+    from dataclasses import dataclass
+
+    @dataclass
+    class TrainFuncArgs:
+        model_key: str
+        data_path: str
+        max_samples: int = np.inf
+
+    func_args, training_args = HfArgumentParser(
+        (TrainFuncArgs, BertMeshTrainingArguments)
+    ).parse_args_into_dataclasses()
+
+    train_bertmesh(
+        func_args.model_key,
+        func_args.data_path,
+        func_args.max_samples,
+        training_args,
+    )
