@@ -1,5 +1,6 @@
 from transformers import TrainingArguments
 from dataclasses import dataclass, field
+import torch
 
 
 @dataclass
@@ -44,7 +45,7 @@ class BertMeshTrainingArguments(TrainingArguments):
 
     optim: str = field(
         default="adamw_torch_fused"
-    )  # TODO add support for adamw_apex_fused
+    )  # TODO add support for adamw_apex_fused; use adamw_anyprecision if using bf16
 
     fp16: bool = field(default=False)  # TODO test if micro-f1 is maintained
 
@@ -60,3 +61,8 @@ class BertMeshTrainingArguments(TrainingArguments):
     # torch_compile_mode: str = field(
     #     default="default"
     # )  # default | reduce-overhead | max-autotune
+
+    def __post_init__(self):
+        super().__post_init__()
+        if "fused" in self.optim and not torch.cuda.is_available():
+            self.optim = "adamw_torch"
