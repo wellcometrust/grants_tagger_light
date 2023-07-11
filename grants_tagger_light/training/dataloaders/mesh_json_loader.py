@@ -17,9 +17,9 @@ def _tokenize(batch, tokenizer: AutoTokenizer, x_col: str):
 
 def _label_encode(batch, mesh_terms_column: str, label2id: dict):
     batch_labels = []
-    for sample_tags in batch[mesh_terms_column]:
+    for example_tags in batch[mesh_terms_column]:
         sample_labels = []
-        for tag in sample_tags:
+        for tag in example_tags:
             if tag in label2id:
                 sample_labels.append(label2id[tag])
         batch_labels.append(sample_labels)
