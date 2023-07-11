@@ -25,9 +25,6 @@ class BertMesh(PreTrainedModel):
         config,
     ):
         super().__init__(config=config)
-        import pdb
-
-        pdb.set_trace()
 
         self.config.auto_map = {"AutoModel": "model.BertMesh"}
         self.pretrained_model = self.config.pretrained_model
