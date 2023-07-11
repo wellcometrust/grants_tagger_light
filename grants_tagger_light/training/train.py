@@ -4,6 +4,7 @@ from transformers import (
     TrainingArguments,
     EvalPrediction,
     HfArgumentParser,
+    AutoConfig,
 )
 from grants_tagger_light.models.bert_mesh import BertMesh
 from grants_tagger_light.training.cli_args import (
@@ -31,7 +32,13 @@ def train_bertmesh(
     max_samples: int,
     training_args: TrainingArguments,
 ):
-    model = BertMesh.from_pretrained(model_key, trust_remote_code=True)
+    if not model_key:
+        pretrained_model_key = "microsoft/BiomedNLP-PubMedBERT-base-uncased-abstract"
+        config = AutoConfig.from_pretrained(pretrained_model_key)
+        model = BertMesh(config)
+    else:
+        model = BertMesh.from_pretrained(model_key, trust_remote_code=True)
+
     tokenizer = AutoTokenizer.from_pretrained(model_key)
 
     label2id = {v: k for k, v in model.id2label.items()}
