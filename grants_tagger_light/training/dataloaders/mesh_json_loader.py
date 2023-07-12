@@ -107,18 +107,3 @@ def load_mesh_json(
     dset = dset.train_test_split(test_size=test_size)
 
     return dset["train"], dset["test"], label2id
-
-
-if __name__ == "__main__":
-    from transformers import AutoModel
-
-    model = AutoModel.from_pretrained(
-        "Wellcome/WellcomeBertMesh", trust_remote_code=True
-    )
-    tokenizer = AutoTokenizer.from_pretrained("Wellcome/WellcomeBertMesh")
-
-    dset_train, dset_val = load_mesh_json(
-        data_path="data/raw/allMeSH_2021.json",
-        tokenizer=tokenizer,
-        label2id=model.config.label2id,
-    )
