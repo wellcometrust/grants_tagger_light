@@ -43,6 +43,14 @@ class BertMesh(PreTrainedModel):
         self.linear_out = torch.nn.Linear(self.hidden_size, self.num_labels)
         self.dropout_layer = torch.nn.Dropout(self.dropout)
 
+    def freeze_backbone(self):
+        for param in self.bert.parameters():
+            param.requires_grad = False
+
+    def unfreeze_backbone(self):
+        for param in self.bert.parameters():
+            param.requires_grad = True
+
     def forward(self, input_ids, labels=None, **kwargs):
         if type(input_ids) is list:
             # coming from tokenizer

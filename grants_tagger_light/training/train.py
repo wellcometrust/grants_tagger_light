@@ -60,6 +60,7 @@ def train_bertmesh(
                 "dropout": model_args.dropout,
                 "multilabel_attention": model_args.multilabel_attention,
                 "id2label": {v: k for k, v in label2id.items()},
+                "freeze_backbone": model_args.freeze_backbone,
             }
         )
         model = BertMesh(config)
@@ -79,6 +80,10 @@ def train_bertmesh(
             label2id=label2id,
             max_samples=max_samples,
         )
+
+    if model_args.freeze_backbone:
+        logger.info("Freezing backbone")
+        model.freeze_backbone()
 
     def sklearn_metrics(prediction: EvalPrediction):
         y_pred = prediction.predictions
