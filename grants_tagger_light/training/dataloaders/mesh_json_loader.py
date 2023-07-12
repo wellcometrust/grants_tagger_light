@@ -72,6 +72,9 @@ def load_mesh_json(
         gen_kwargs={"mesh_json_path": data_path, "max_samples": max_samples},
     )
 
+    # Remove unused columns to save space & time
+    dset.remove_columns(["journal", "year", "pmid", "title"])
+
     dset = dset.map(
         _tokenize,
         batched=True,
