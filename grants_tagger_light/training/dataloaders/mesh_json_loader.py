@@ -82,6 +82,7 @@ def load_mesh_json(
         num_proc=num_proc,
         desc="Tokenizing",
         fn_kwargs={"tokenizer": tokenizer, "x_col": "abstractText"},
+        remove_columns=["abstractText"],
     )
 
     # Generate label2id if None
@@ -95,6 +96,7 @@ def load_mesh_json(
         num_proc=num_proc,
         desc="Encoding labels",
         fn_kwargs={"mesh_terms_column": "meshMajor", "label2id": label2id},
+        remove_columns=["meshMajor"],
     )
 
     dset = dset.map(
@@ -102,7 +104,7 @@ def load_mesh_json(
         batched=True,
         batch_size=32,
         num_proc=num_proc,
-        desc="One-hot labels",
+        desc="One-hot encoding labels",
         fn_kwargs={"label2id": label2id},
     )
 
