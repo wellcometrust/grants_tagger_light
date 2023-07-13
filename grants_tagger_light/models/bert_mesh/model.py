@@ -25,6 +25,7 @@ class BertMesh(PreTrainedModel):
         config,
     ):
         super().__init__(config=config)
+
         self.config.auto_map = {"AutoModel": "model.BertMesh"}
         self.pretrained_model = self.config.pretrained_model
         self.num_labels = self.config.num_labels
@@ -42,6 +43,14 @@ class BertMesh(PreTrainedModel):
         self.linear_out = torch.nn.Linear(self.hidden_size, self.num_labels)
         self.dropout_layer = torch.nn.Dropout(self.dropout)
 
+    def freeze_backbone(self):
+        for param in self.bert.parameters():
+            param.requires_grad = False
+
+    def unfreeze_backbone(self):
+        for param in self.bert.parameters():
+            param.requires_grad = True
+
     def forward(self, input_ids, labels=None, **kwargs):
         if type(input_ids) is list:
             # coming from tokenizer
@@ -52,16 +61,16 @@ class BertMesh(PreTrainedModel):
             attention_outs = self.multilabel_attention_layer(hidden_states)
             outs = torch.nn.functional.relu(self.linear_1(attention_outs))
             outs = self.dropout_layer(outs)
-            outs = torch.sigmoid(self.linear_2(outs))
+            outs = self.linear_2(outs)
             outs = torch.flatten(outs, start_dim=1)
         else:
             cls = self.bert(input_ids=input_ids)[1]
             outs = torch.nn.functional.relu(self.linear_1(cls))
             outs = self.dropout_layer(outs)
-            outs = torch.sigmoid(self.linear_out(outs))
+            outs = self.linear_out(outs)
 
         if labels is not None:
-            loss = F.binary_cross_entropy(outs, labels.float())
+            loss = F.binary_cross_entropy_with_logits(outs, labels.float())
         else:
             loss = -1
 

@@ -1,32 +1,24 @@
 from grants_tagger_light.training.train import train_bertmesh
+from grants_tagger_light.training.cli_args import BertMeshModelArguments
+from transformers import TrainingArguments
 import tempfile
 import pytest
-import json
+import numpy as np
 
 # Note dummy data is not necessarily annotated correctly
-dummy_data = [
-    {
-        "text": "This grant is about malaria",
-        "tags": ["Humans", "Malaria"],
-    },
-    {
-        "text": "This grant is about HIV",
-        "tags": ["HIV Infections", "Humans"],
-    },
-    {
-        "text": "This grant is about diabetes",
-        "tags": ["Diabetes Mellitus", "Humans"],
-    },
-]
+dummy_data = """{"articles":[
+{"journal":"dummyJournal","meshMajor":["COVID-19","SARS-CoV-2"],"year":"2023","abstractText":"This is an article about coronavirus.","title":"article1","pmid":"pmid1"},
+{"journal":"dummyJournal","meshMajor":["COVID-19","SARS-CoV-2"],"year":"2023","abstractText":"This is an article about COVID-19.","title":"article2","pmid":"pmid2"},
+{"journal":"dummyJournal","meshMajor":["Malaria"],"year":"2023","abstractText":"This is an article about malaria", "title": "article3", "pmid": "pmid3"},
+"""  # noqa
 
 
 @pytest.fixture
 def data_path():
     with tempfile.TemporaryDirectory() as tmpdirname:
-        data_path = tmpdirname + "/data.jsonl"
+        data_path = tmpdirname + "/data.json"
         with open(data_path, "w") as f:
-            for sample in dummy_data:
-                f.write(json.dumps(sample) + "\n")
+            f.write(dummy_data)
         yield data_path
 
 
@@ -40,13 +32,25 @@ def test_train_bertmesh(data_path, save_path):
     model_key = "Wellcome/WellcomeBertMesh"
 
     # 1 train step, 1 eval step, save after training
-    user_args = {
-        "output_dir": save_path,
-        "max_steps": 1,
-        "evaluation_strategy": "steps",
-        "eval_steps": 1,
-        "save_strategy": "steps",
-        "save_steps": 1,
-    }
+    training_args = TrainingArguments(
+        output_dir=save_path,
+        max_steps=1,
+        per_device_train_batch_size=2,
+        per_device_eval_batch_size=2,
+        evaluation_strategy="steps",
+        eval_steps=1,
+        save_strategy="steps",
+        save_steps=1,
+        report_to="none",
+        no_cuda=True,
+    )
 
-    train_bertmesh(model_key, data_path, **user_args)
+    model_args = BertMeshModelArguments()
+
+    train_bertmesh(
+        model_key=model_key,
+        data_path=data_path,
+        max_samples=np.inf,
+        training_args=training_args,
+        model_args=model_args,
+    )

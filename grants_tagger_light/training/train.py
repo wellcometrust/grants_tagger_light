@@ -1,101 +1,90 @@
-from transformers import AutoTokenizer, Trainer, TrainingArguments, EvalPrediction
-from datasets import Dataset
+from transformers import (
+    AutoTokenizer,
+    Trainer,
+    TrainingArguments,
+    EvalPrediction,
+    HfArgumentParser,
+    AutoConfig,
+)
 from grants_tagger_light.models.bert_mesh import BertMesh
-import json
+from grants_tagger_light.training.cli_args import (
+    BertMeshTrainingArguments,
+    WandbArguments,
+    BertMeshModelArguments,
+)
+from grants_tagger_light.training.dataloaders import (
+    load_mesh_json,
+    MultilabelDataCollator,
+)
+from sklearn.metrics import classification_report
+from loguru import logger
+from pprint import pformat
 import typer
 import numpy as np
-from sklearn.metrics import classification_report
+import os
+import transformers
 
 
-def load_data(
+transformers.set_seed(42)
+
+
+def train_bertmesh(
+    model_key: str,
     data_path: str,
-    tokenizer: AutoTokenizer,
-    label2id: dict,
-    test_size: float = 0.1,
-    num_proc: int = 8,
+    max_samples: int,
+    training_args: TrainingArguments,
+    model_args: BertMeshModelArguments = None,
 ):
-    def _datagen(data_path: str):
-        """
-        Loads the data from the given path. The data should be in jsonl format,
-        with each line containing a text and tags field.
-        The tags field should be a list of strings.
-        """
-        with open(data_path, "r") as f:
-            for line in f:
-                sample = json.loads(line)
-                yield sample
+    if not model_key:
+        assert isinstance(
+            model_args, BertMeshModelArguments
+        ), "If model_key is not provided, must provide model_args of type BertMeshModelArguments"  # noqa
 
-    def _tokenize(batch):
-        return tokenizer(
-            batch["text"], padding="max_length", truncation=True, max_length=512
+        logger.info("No model key provided. Training model from scratch")
+
+        # Instantiate model from scratch
+        config = AutoConfig.from_pretrained(model_args.pretrained_model_key)
+        tokenizer = AutoTokenizer.from_pretrained(model_args.pretrained_model_key)
+
+        train_dset, val_dset, label2id = load_mesh_json(
+            data_path,
+            tokenizer=tokenizer,
+            label2id=None,
+            max_samples=max_samples,
         )
 
-    def _label_encode(batch):
-        batch["labels"] = [
-            [label2id[tag] for tag in tags if tag in label2id] for tags in batch["tags"]
-        ]
-        return batch
+        config.update(
+            {
+                "pretrained_model": model_args.pretrained_model_key,
+                "num_labels": len(label2id),
+                "hidden_size": model_args.hidden_size,
+                "dropout": model_args.dropout,
+                "multilabel_attention": model_args.multilabel_attention,
+                "id2label": {v: k for k, v in label2id.items()},
+                "freeze_backbone": model_args.freeze_backbone,
+            }
+        )
+        model = BertMesh(config)
 
-    def _one_hot(batch):
-        batch["labels"] = [
-            [1 if i in labels else 0 for i in range(len(label2id))]
-            for labels in batch["labels"]
-        ]
-        return batch
+    else:
+        logger.info(f"Training model from pretrained key {model_key}")
 
-    dset = Dataset.from_generator(_datagen, gen_kwargs={"data_path": data_path})
-    dset = dset.map(
-        _tokenize, batched=True, batch_size=32, num_proc=num_proc, desc="Tokenizing"
-    )
+        # Instantiate from pretrained
+        model = BertMesh.from_pretrained(model_key, trust_remote_code=True)
+        tokenizer = AutoTokenizer.from_pretrained(model_key)
 
-    dset = dset.map(
-        _label_encode,
-        batched=True,
-        batch_size=32,
-        num_proc=num_proc,
-        desc="Encoding labels",
-    )
+        label2id = {v: k for k, v in model.id2label.items()}
 
-    dset = dset.map(
-        _one_hot,
-        batched=True,
-        batch_size=32,
-        num_proc=num_proc,
-        desc="One-hot labels",
-    )
+        train_dset, val_dset, _ = load_mesh_json(
+            data_path,
+            tokenizer=tokenizer,
+            label2id=label2id,
+            max_samples=max_samples,
+        )
 
-    # Split into train and test
-    dset = dset.train_test_split(test_size=test_size)
-
-    return dset["train"], dset["test"]
-
-
-def train_bertmesh(model_key: str, data_path: str, **user_args):
-    model = BertMesh.from_pretrained(model_key, trust_remote_code=True)
-    tokenizer = AutoTokenizer.from_pretrained(model_key)
-
-    label2id = {v: k for k, v in model.id2label.items()}
-
-    train_dset, val_dset = load_data(data_path, tokenizer, label2id=label2id)
-
-    training_args = {
-        "output_dir": "model_output",
-        "overwrite_output_dir": True,
-        "num_train_epochs": 1,
-        "per_device_train_batch_size": 4,
-        "per_device_eval_batch_size": 4,
-        "warmup_steps": 500,
-        "weight_decay": 0.01,
-        "learning_rate": 1e-5,
-        "evaluation_strategy": "steps",
-        "eval_steps": 100,
-        "do_eval": True,
-        "label_names": ["labels"],
-    }
-
-    training_args.update(user_args)
-
-    training_args = TrainingArguments(**training_args)
+    if model_args.freeze_backbone:
+        logger.info("Freezing backbone")
+        model.freeze_backbone()
 
     def sklearn_metrics(prediction: EvalPrediction):
         y_pred = prediction.predictions
@@ -117,11 +106,14 @@ def train_bertmesh(model_key: str, data_path: str, **user_args):
 
         return metric_dict
 
+    collator = MultilabelDataCollator(label2id=label2id)
+
     trainer = Trainer(
         model=model,
         args=training_args,
         train_dataset=train_dset,
         eval_dataset=val_dset,
+        data_collator=collator,
         compute_metrics=sklearn_metrics,
     )
 
@@ -129,9 +121,9 @@ def train_bertmesh(model_key: str, data_path: str, **user_args):
 
     metrics = trainer.evaluate(eval_dataset=val_dset)
 
-    print(metrics)
+    logger.info(pformat(metrics))
 
-    trainer.save_model(training_args.output_dir)
+    trainer.save_model(os.path.join(training_args.output_dir, "best"))
 
 
 train_app = typer.Typer()
@@ -139,6 +131,7 @@ train_app = typer.Typer()
 
 @train_app.command()
 def train_bertmesh_cli(
+    ctx: typer.Context,
     model_key: str = typer.Argument(
         ..., help="Pretrained model key. Local path or HF location"
     ),
@@ -146,10 +139,55 @@ def train_bertmesh_cli(
         ...,
         help="Path to data in jsonl format. Must contain text and tags field",
     ),
-    model_save_path: str = typer.Argument(..., help="Path to save model to"),
+    max_samples: int = typer.Argument(
+        -1,
+        help="Maximum number of samples to use for training. Useful for dev/debugging",
+    ),
 ):
-    train_bertmesh(model_key, data_path, model_save_path)
+    if max_samples == -1:
+        max_samples = np.inf
+
+    parser = HfArgumentParser(
+        (
+            BertMeshTrainingArguments,
+            WandbArguments,
+            BertMeshModelArguments,
+        )
+    )
+    (
+        training_args,
+        wandb_args,
+        model_args,
+    ) = parser.parse_args_into_dataclasses(ctx.args)
+
+    logger.info("Training args: {}".format(pformat(training_args)))
+    logger.info("Wandb args: {}".format(pformat(wandb_args)))
+
+    train_bertmesh(model_key, data_path, max_samples, training_args, model_args)
 
 
 if __name__ == "__main__":
-    train_app()
+    from dataclasses import dataclass
+
+    @dataclass
+    class TrainFuncArgs:
+        model_key: str
+        data_path: str
+        max_samples: int = np.inf
+
+    func_args, training_args, wandb_args, model_args = HfArgumentParser(
+        (
+            TrainFuncArgs,
+            BertMeshTrainingArguments,
+            WandbArguments,
+            BertMeshModelArguments,
+        )
+    ).parse_args_into_dataclasses()
+
+    train_bertmesh(
+        func_args.model_key,
+        func_args.data_path,
+        func_args.max_samples,
+        training_args,
+        model_args,
+    )
