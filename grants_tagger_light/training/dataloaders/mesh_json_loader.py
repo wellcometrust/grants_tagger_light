@@ -2,6 +2,7 @@ import json
 import numpy as np
 from transformers import AutoTokenizer
 from datasets import Dataset
+from sklearn.preprocessing import MultiLabelBinarizer
 
 # TODO refactor the two load funcs into a class
 
@@ -15,25 +16,8 @@ def _tokenize(batch, tokenizer: AutoTokenizer, x_col: str):
     )
 
 
-def _label_encode(batch, mesh_terms_column: str, label2id: dict):
-    batch_labels = []
-    for example_tags in batch[mesh_terms_column]:
-        sample_labels = []
-        for tag in example_tags:
-            if tag in label2id:
-                sample_labels.append(label2id[tag])
-        batch_labels.append(sample_labels)
-
-    batch["labels"] = batch_labels
-
-    return batch
-
-
-def _one_hot(batch, label2id: dict):
-    batch["labels"] = [
-        [1 if i in labels else 0 for i in range(len(label2id))]
-        for labels in batch["labels"]
-    ]
+def _binarize_labels(batch, mlb: MultiLabelBinarizer):
+    batch["mlb_labels"] = mlb.transform(batch["meshMajor"])
     return batch
 
 
@@ -73,7 +57,7 @@ def load_mesh_json(
     )
 
     # Remove unused columns to save space & time
-    dset.remove_columns(["journal", "year", "pmid", "title"])
+    dset = dset.remove_columns(["journal", "year", "pmid", "title"])
 
     dset = dset.map(
         _tokenize,
@@ -89,23 +73,17 @@ def load_mesh_json(
     if label2id is None:
         label2id = _get_label2id(dset)
 
-    dset = dset.map(
-        _label_encode,
-        batched=True,
-        batch_size=32,
-        num_proc=num_proc,
-        desc="Encoding labels",
-        fn_kwargs={"mesh_terms_column": "meshMajor", "label2id": label2id},
-        remove_columns=["meshMajor"],
-    )
+    mlb = MultiLabelBinarizer(classes=list(label2id.keys()))
+    mlb.fit([list(label2id.keys())])
 
     dset = dset.map(
-        _one_hot,
+        _binarize_labels,
         batched=True,
         batch_size=32,
         num_proc=num_proc,
         desc="One-hot encoding labels",
-        fn_kwargs={"label2id": label2id},
+        fn_kwargs={"mlb": mlb},
+        remove_columns=["meshMajor"],
     )
 
     # Split into train and test
