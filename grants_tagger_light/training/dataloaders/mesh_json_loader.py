@@ -17,7 +17,7 @@ def _tokenize(batch, tokenizer: AutoTokenizer, x_col: str):
 
 
 def _binarize_labels(batch, mlb: MultiLabelBinarizer):
-    batch["mlb_labels"] = mlb.transform(batch["meshMajor"])
+    batch["labels"] = mlb.transform(batch["meshMajor"])
     return batch
 
 
