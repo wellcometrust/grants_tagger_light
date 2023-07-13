@@ -14,6 +14,7 @@ from grants_tagger_light.training.cli_args import (
 )
 from grants_tagger_light.training.dataloaders import (
     load_mesh_json,
+    MultilabelDataCollator,
 )
 from sklearn.metrics import classification_report
 from loguru import logger
@@ -105,11 +106,14 @@ def train_bertmesh(
 
         return metric_dict
 
+    collator = MultilabelDataCollator(label2id=label2id)
+
     trainer = Trainer(
         model=model,
         args=training_args,
         train_dataset=train_dset,
         eval_dataset=val_dset,
+        data_collator=collator,
         compute_metrics=sklearn_metrics,
     )
 

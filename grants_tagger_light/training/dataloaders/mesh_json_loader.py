@@ -2,7 +2,7 @@ import json
 import numpy as np
 from transformers import AutoTokenizer
 from datasets import Dataset
-from sklearn.preprocessing import MultiLabelBinarizer
+from loguru import logger
 
 # TODO refactor the two load funcs into a class
 
@@ -16,9 +16,15 @@ def _tokenize(batch, tokenizer: AutoTokenizer, x_col: str):
     )
 
 
-def _binarize_labels(batch, mlb: MultiLabelBinarizer):
-    batch["labels"] = mlb.transform(batch["meshMajor"])
-    return batch
+def _encode_labels(sample, label2id: dict):
+    sample["label_ids"] = []
+    for label in sample["meshMajor"]:
+        try:
+            sample["label_ids"].append(label2id[label])
+        except KeyError:
+            logger.warning(f"Label {label} not found in label2id")
+
+    return sample
 
 
 def _get_label2id(dset):
@@ -73,16 +79,12 @@ def load_mesh_json(
     if label2id is None:
         label2id = _get_label2id(dset)
 
-    mlb = MultiLabelBinarizer(classes=list(label2id.keys()))
-    mlb.fit([list(label2id.keys())])
-
     dset = dset.map(
-        _binarize_labels,
-        batched=True,
-        batch_size=32,
+        _encode_labels,
+        batched=False,
         num_proc=num_proc,
-        desc="One-hot encoding labels",
-        fn_kwargs={"mlb": mlb},
+        desc="Encoding labels",
+        fn_kwargs={"label2id": label2id},
         remove_columns=["meshMajor"],
     )
 
