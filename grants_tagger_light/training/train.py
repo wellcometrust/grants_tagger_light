@@ -135,7 +135,7 @@ def train_bertmesh_cli(
         ...,
         help="Path to data in jsonl format. Must contain text and tags field",
     ),
-    max_samples: int = typer.Option(
+    max_samples: int = typer.Argument(
         -1,
         help="Maximum number of samples to use for training. Useful for dev/debugging",
     ),
@@ -144,7 +144,11 @@ def train_bertmesh_cli(
         max_samples = np.inf
 
     parser = HfArgumentParser(
-        (BertMeshTrainingArguments, WandbArguments, BertMeshModelArguments)
+        (
+            BertMeshTrainingArguments,
+            WandbArguments,
+            BertMeshModelArguments,
+        )
     )
     (
         training_args,
