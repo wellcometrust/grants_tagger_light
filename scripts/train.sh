@@ -11,5 +11,7 @@ grants-tagger train bertmesh \
     --num_train_epochs 1 \
     --evaluation_strategy steps \
     --evaluation_steps 100000 \
+    --save_strategy steps \
+    --save_steps 100000 \
     --fp16 \
     --torch_compile
