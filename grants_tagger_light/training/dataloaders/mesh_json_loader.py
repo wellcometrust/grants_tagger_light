@@ -40,7 +40,7 @@ def load_mesh_json(
     data_path: str,
     tokenizer: AutoTokenizer,
     label2id: dict,
-    test_size: float = 0.1,
+    test_size: float = 0.05,
     num_proc: int = 8,
     max_samples: int = np.inf,
 ):
