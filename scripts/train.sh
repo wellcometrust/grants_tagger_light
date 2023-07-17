@@ -10,7 +10,7 @@ grants-tagger train bertmesh \
     --per_device_eval_batch_size 8 \
     --num_train_epochs 1 \
     --evaluation_strategy steps \
-    --evaluation_steps 100000 \
+    --eval_steps 100000 \
     --save_strategy steps \
     --save_steps 100000 \
     --fp16 \
