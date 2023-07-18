@@ -2,6 +2,7 @@ import json
 import numpy as np
 import os
 import typer
+import time
 from transformers import AutoTokenizer
 from datasets import Dataset, disable_caching
 from loguru import logger
@@ -77,14 +78,16 @@ def preprocess_mesh(
 
                 yield sample
 
+    t1 = time.time()
     dset = Dataset.from_generator(
         _datagen,
         gen_kwargs={"mesh_json_path": data_path, "max_samples": max_samples},
     )
-
+    logger.info("Time taken to load dataset: {}".format(time.time() - t1))
     # Remove unused columns to save space & time
     dset = dset.remove_columns(["journal", "year", "pmid", "title"])
 
+    t1 = time.time()
     dset = dset.map(
         _tokenize,
         batched=True,
@@ -95,11 +98,13 @@ def preprocess_mesh(
         remove_columns=["abstractText"],
         load_from_cache_file=False,
     )
+    logger.info("Time taken to tokenize: {}".format(time.time() - t1))
 
     # Generate label2id if None
     if label2id is None:
         label2id = _get_label2id(dset)
 
+    t1 = time.time()
     dset = dset.map(
         _encode_labels,
         batched=False,
@@ -109,15 +114,20 @@ def preprocess_mesh(
         remove_columns=["meshMajor"],
         load_from_cache_file=False,
     )
+    logger.info("Time taken to encode labels: {}".format(time.time() - t1))
 
     # Split into train and test
+    t1 = time.time()
     dset = dset.train_test_split(test_size=test_size)
+    logger.info("Time taken to split into train and test: {}".format(time.time() - t1))
 
     # Save to disk
+    t1 = time.time()
     dset.save_to_disk(os.path.join(save_loc, "dataset"))
 
     with open(os.path.join(save_loc, "label2id.json"), "w") as f:
         json.dump(label2id, f, indent=4)
+    logger.info("Time taken to save to disk: {}".format(time.time() - t1))
 
 
 @preprocess_app.command()
