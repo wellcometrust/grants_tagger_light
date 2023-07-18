@@ -9,7 +9,6 @@ from grants_tagger_light.models.bert_mesh import BertMesh
 
 # TODO refactor the two load funcs into a class
 
-disable_caching()
 preprocess_app = typer.Typer()
 
 
@@ -50,6 +49,8 @@ def preprocess_mesh(
     num_proc: int = 8,
     max_samples: int = np.inf,
 ):
+    disable_caching()
+
     if not model_key:
         label2id = None
         # Use the same pretrained tokenizer as in Wellcome/WellcomeBertMesh
@@ -92,6 +93,7 @@ def preprocess_mesh(
         desc="Tokenizing",
         fn_kwargs={"tokenizer": tokenizer, "x_col": "abstractText"},
         remove_columns=["abstractText"],
+        load_from_cache_file=False,
     )
 
     # Generate label2id if None
@@ -105,6 +107,7 @@ def preprocess_mesh(
         desc="Encoding labels",
         fn_kwargs={"label2id": label2id},
         remove_columns=["meshMajor"],
+        load_from_cache_file=False,
     )
 
     # Split into train and test
