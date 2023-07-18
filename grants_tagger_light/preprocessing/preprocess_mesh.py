@@ -129,7 +129,7 @@ def preprocess_mesh_cli(
     num_proc: int = typer.Option(
         8, help="Number of processes to use for preprocessing"
     ),
-    max_samples: int = typer.Argument(
+    max_samples: int = typer.Option(
         -1,
         help="Maximum number of samples to use for preprocessing",
     ),
