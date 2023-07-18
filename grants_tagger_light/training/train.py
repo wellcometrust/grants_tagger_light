@@ -13,17 +13,17 @@ from grants_tagger_light.training.cli_args import (
     BertMeshModelArguments,
 )
 from grants_tagger_light.training.dataloaders import (
-    load_mesh_json,
     MultilabelDataCollator,
 )
 from sklearn.metrics import classification_report
 from loguru import logger
 from pprint import pformat
+from datasets import load_dataset
 import typer
 import numpy as np
 import os
 import transformers
-
+import json
 
 transformers.set_seed(42)
 
@@ -31,7 +31,6 @@ transformers.set_seed(42)
 def train_bertmesh(
     model_key: str,
     data_path: str,
-    max_samples: int,
     training_args: TrainingArguments,
     model_args: BertMeshModelArguments = None,
 ):
@@ -44,14 +43,13 @@ def train_bertmesh(
 
         # Instantiate model from scratch
         config = AutoConfig.from_pretrained(model_args.pretrained_model_key)
-        tokenizer = AutoTokenizer.from_pretrained(model_args.pretrained_model_key)
+        AutoTokenizer.from_pretrained(model_args.pretrained_model_key)
 
-        train_dset, val_dset, label2id = load_mesh_json(
-            data_path,
-            tokenizer=tokenizer,
-            label2id=None,
-            max_samples=max_samples,
-        )
+        dset = load_dataset(os.path.join(data_path, "dataset"))
+        train_dset, val_dset = dset["train"], dset["test"]
+
+        with open(os.path.join(data_path, "label2id.json"), "r") as f:
+            label2id = json.load(f)
 
         config.update(
             {
@@ -71,16 +69,12 @@ def train_bertmesh(
 
         # Instantiate from pretrained
         model = BertMesh.from_pretrained(model_key, trust_remote_code=True)
-        tokenizer = AutoTokenizer.from_pretrained(model_key)
+        AutoTokenizer.from_pretrained(model_key)
 
         label2id = {v: k for k, v in model.id2label.items()}
 
-        train_dset, val_dset, _ = load_mesh_json(
-            data_path,
-            tokenizer=tokenizer,
-            label2id=label2id,
-            max_samples=max_samples,
-        )
+        dset = load_dataset(os.path.join(data_path, "dataset"))
+        train_dset, val_dset = dset["train"], dset["test"]
 
     if model_args.freeze_backbone:
         logger.info("Freezing backbone")
