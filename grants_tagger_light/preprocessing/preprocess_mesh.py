@@ -3,12 +3,13 @@ import numpy as np
 import os
 import typer
 from transformers import AutoTokenizer
-from datasets import Dataset
+from datasets import Dataset, disable_caching
 from loguru import logger
 from grants_tagger_light.models.bert_mesh import BertMesh
 
 # TODO refactor the two load funcs into a class
 
+disable_caching()
 preprocess_app = typer.Typer()
 
 
