@@ -1,5 +1,6 @@
 import json
 import tempfile
+import time
 
 import numpy as np
 import typer
@@ -8,6 +9,8 @@ from datasets import Dataset, disable_caching, load_dataset
 from loguru import logger
 from grants_tagger_light.models.bert_mesh import BertMesh
 import os
+
+from grants_tagger_light.utils.benchmark import Benchmark
 
 # TODO refactor the two load funcs into a class
 
@@ -65,9 +68,11 @@ def preprocess_mesh(
     test_size: float = 0.05,
     num_proc: int = 8,
     max_samples: int = np.inf,
-    batch_size: int = 32
+    batch_size: int = 32,
+    benchmark: Benchmark = None,
 ):
-    print("Downloading tokenizer and model...")
+    experiment_name = 'num_proc=' + str(num_proc) + '_max_samples=' + str(max_samples)
+
     if not model_key:
         label2id = None
         # Use the same pretrained tokenizer as in Wellcome/WellcomeBertMesh
@@ -81,24 +86,23 @@ def preprocess_mesh(
 
         label2id = {v: k for k, v in model.id2label.items()}
 
-    """print("Creating generator...")
-    dset = Dataset.from_generator(
-        _datagen,
-        gen_kwargs={"files": files, "max_samples": max_samples},
-        num_proc=num_proc
-    )"""
+    start = time.time()
     if max_samples != np.inf:
         data_path = create_tmp_file(data_path, max_samples)
 
     dset = load_dataset("json", data_files=data_path, num_proc=num_proc)
     if 'train' in dset:
         dset = dset['train']
+    if benchmark:
+        benchmark.register(experiment_name, "Loading dataset", str(time.time() - start))
 
-    print("Removing columns...")
+    start = time.time()
     # Remove unused columns to save space & time
     dset = dset.remove_columns(["journal", "year", "pmid", "title"])
+    if benchmark:
+        benchmark.register(experiment_name, "Removing columns", str(time.time() - start))
 
-    print("Tokenizing with map...")
+    start = time.time()
     dset = dset.map(
         _tokenize,
         batched=True,
@@ -108,15 +112,17 @@ def preprocess_mesh(
         fn_kwargs={"tokenizer": tokenizer, "x_col": "abstractText"},
         remove_columns=["abstractText"],
     )
+    if benchmark:
+        benchmark.register(experiment_name, "Tokenizing", str(time.time() - start))
 
-    print("Getting label2id...")
+    start = time.time()
     # Generate label2id if None
     if label2id is None:
         dset = dset.map(
             lambda x: {'labels': x["meshMajor"]},
             batched=True,
             batch_size=batch_size,
-            num_proc=num_proc,
+            num_proc=1, # Multithreading degrades times, as benchmarking showed
             desc="Getting labels"
         )
 
@@ -128,28 +134,37 @@ def preprocess_mesh(
 
         # Step 3: Dictionary creation
         label2id = {label: idx for idx, label in enumerate(unique_labels_set)}
+    if benchmark:
+        benchmark.register(experiment_name, "label2id", str(time.time() - start))
 
-    print("Encoding with map...")
+    start = time.time()
     dset = dset.map(
         _encode_labels,
         batched=True,
         batch_size=batch_size,
         desc="Encoding labels",
-        num_proc=num_proc,
+        num_proc=1, # Multithreading degrades times, as benchmarking showed
         fn_kwargs={"label2id": label2id},
         remove_columns=["meshMajor", "labels"],
     )
+    if benchmark:
+        benchmark.register(experiment_name, "Encoding labels", str(time.time() - start))
 
-    print("Splitting training and test...")
     # Split into train and test
     dset = dset.train_test_split(test_size=test_size)
 
-    print("Saving to disk...")
+    start = time.time()
     # Save to disk
-    dset.save_to_disk(os.path.join(save_loc, "dataset"), num_proc=num_proc)
+    dset.save_to_disk(
+        os.path.join(save_loc, "dataset"),
+        num_proc=1 # Multithreading degrades times, as benchmarking showed
+    )
 
     with open(os.path.join(save_loc, "label2id.json"), "w") as f:
         json.dump(label2id, f, indent=4)
+
+    if benchmark:
+        benchmark.register(experiment_name, "Saving", str(time.time() - start))
 
 
 @preprocess_app.command()
@@ -170,17 +185,34 @@ def preprocess_mesh_cli(
     ),
     batch_size: int = typer.Option(
         32,
-        help="Size of the preprocessing batch")
+        help="Size of the preprocessing batch"),
+    benchmark: bool = typer.Option(
+        False,
+        help="Benchmark and create a file with the times")
 ):
     if max_samples == -1:
         max_samples = np.inf
 
-    preprocess_mesh(
-        data_path=data_path,
-        save_loc=save_loc,
-        model_key=model_key,
-        test_size=test_size,
-        num_proc=num_proc,
-        max_samples=max_samples,
-        batch_size=batch_size
-    )
+    if benchmark:
+        benchmark = Benchmark('preprocessing_mesh_benchmark.csv')
+        for num_proc in range(1, 9):
+            preprocess_mesh(
+                data_path=data_path,
+                save_loc=save_loc,
+                model_key=model_key,
+                test_size=test_size,
+                num_proc=num_proc,
+                max_samples=max_samples,
+                batch_size=batch_size,
+                benchmark=benchmark
+            )
+        benchmark.to_csv()
+    else:
+        preprocess_mesh(
+                    data_path=data_path,
+                    save_loc=save_loc,
+                    model_key=model_key,
+                    test_size=test_size,
+                    num_proc=num_proc,
+                    max_samples=max_samples,
+                    batch_size=batch_size)
