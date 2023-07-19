@@ -177,3 +177,12 @@ def create_label_binarizer(model_path: str, label_binarizer_path: str):
         f.write(pickle.dumps(label_binarizer))
 
     return label_binarizer
+
+
+def calculate_max_steps(training_args, dset):
+    """ This is needed when using IterableDatasets, as there is no __len__ in advance since the dataset is a
+    generator with yield, so it does not know when to end.
+        Source: https://discuss.huggingface.co/t/streaming-dataset-into-trainer-does-not-implement-len-max-steps-has-to-be-specified/32893/6"""
+    train_batch_size = training_args.per_device_train_batch_size
+    accumulation_steps = training_args.gradient_accumulation_steps
+    return (len(dset["train"]) / train_batch_size) / accumulation_steps

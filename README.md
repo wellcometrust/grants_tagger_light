@@ -1,9 +1,9 @@
 # Grants Tagger Light 🔖
-Light weight repository for grant tagger model deployment and inference.
+Lightweight repository for grant tagger model deployment and inference.
 Adapted from [the original repository](https://github.com/wellcometrust/grants_tagger)
 
 Grants tagger is a machine learning powered tool that
-assigns biomedically related tags to grants proposals.
+assigns biomedical related tags to grant proposals.
 Those tags can be custom to the organisation
 or based upon a preexisting ontology like MeSH.
 
@@ -12,16 +12,16 @@ Wellcome Trust for internal use but both the models and the
 code will be made available in a reusable manner.
 
 This work started as a means to automate the tags of one
-funding division within Wellcome but currently it has expanded
+funding division within Wellcome, but currently it has expanded
 into the development and automation of a complete set of tags
 that can cover past and future directions for the organisation.
 
 Science tags refer to the custom tags for the Science funding
-division. These tags are higly specific to the research Wellcome
-funds so it is not advisable to use them.
+division. These tags are highly specific to the research Wellcome
+funds, so it is not advisable to use them.
 
 MeSH tags are subset of tags from the MeSH ontology that aim to
-tags grants according to:
+tag grants according to:
 - diseases
 - themes of research
 Those tags are generic enough to be used by other biomedical funders
@@ -41,24 +41,30 @@ For GPU-support:
 `poetry install --with gpu`
 
 For training the model, we recommend installing the version of this package with GPU support.
-For infenrece, CPU-support should suffice.
+For inference, CPU-support should suffice.
 
 ## 2. Activate the environment
 `poetry shell`
 
 You now have access to the `grants-tagger` command line interface!
 
+## OPTIONAL: 3. Install MantisNLP `remote` to connect to a remote AWS instances
+`pip install git+https://github.com/ivyleavedtoadflax/remote.py.git`
+Then add your instance
+`remote config add [instance_name]`
+And then connect and attach to your machine with a tunnel
+`remote connect -p 1234:localhost:1234 -v`
 
 # ⌨️  Commands
 
-| Commands        |                                                              | needs dev |
-| --------------- | ------------------------------------------------------------ | --------- |
-| ⚙️  preprocess   | preprocess data to use for training                          | False |
-| 🔥 train        | trains a new model                                           | True |
-| 📈 evaluate     | evaluate performance of pretrained model                     | True |
-| 🔖 predict      | predict tags given a grant abstract using a pretrained model | False |
-| 🎛 tune         | tune params and threshold                                    | True |
-| ⬇️  download    | download data from EPMC                                      | False |
+| Commands        | Description                                                  | Needs dev |
+| --------------- |--------------------------------------------------------------|-----------|
+| ⚙️  preprocess   | preprocess data to use for training                          | False     |
+| 🔥 train        | trains a new model                                           | True      |
+| 📈 evaluate     | evaluate performance of pretrained model                     | True      |
+| 🔖 predict      | predict tags given a grant abstract using a pretrained model | False     |
+| 🎛 tune         | tune params and threshold                                    | True      |
+| ⬇️  download    | download data from EPMC                                      | False     |
 
 in square brackets the commands that are not implemented yet
 
@@ -97,7 +103,7 @@ your own data under development.
 
 ## 🔥 Train
 
-Train acts as the entry point command for training all models. Currently we only support
+Train acts as the entry point command for training all models. Currently, we only support
 the BertMesh model. The command will train a model and save it to the specified path.
 
 ### bertmesh

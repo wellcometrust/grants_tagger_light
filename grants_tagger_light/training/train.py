@@ -25,12 +25,16 @@ import os
 import transformers
 import json
 
+from grants_tagger_light.utils.sharding import Sharding
+from grants_tagger_light.utils.utils import calculate_max_steps
+
 transformers.set_seed(42)
 
 
 def train_bertmesh(
     model_key: str,
     data_path: str,
+    max_samples: int,
     training_args: TrainingArguments,
     model_args: BertMeshModelArguments = None,
 ):
@@ -46,7 +50,7 @@ def train_bertmesh(
         AutoTokenizer.from_pretrained(model_args.pretrained_model_key)
 
         dset = load_dataset(os.path.join(data_path, "dataset"))
-        train_dset, val_dset = dset["train"], dset["test"]
+        train_dset, val_dset = Sharding(num_shards=100).shard(dset["train"]), dset["test"]
 
         with open(os.path.join(data_path, "label2id.json"), "r") as f:
             label2id = json.load(f)
@@ -74,7 +78,8 @@ def train_bertmesh(
         label2id = {v: k for k, v in model.id2label.items()}
 
         dset = load_dataset(os.path.join(data_path, "dataset"))
-        train_dset, val_dset = dset["train"], dset["test"]
+
+        train_dset, val_dset = Sharding(num_shards=100).shard(dset["train"]), dset["test"]
 
     if model_args.freeze_backbone:
         logger.info("Freezing backbone")
@@ -102,13 +107,19 @@ def train_bertmesh(
 
     collator = MultilabelDataCollator(label2id=label2id)
 
+    max_steps = calculate_max_steps(training_args, dset)
+    print("Before:\n" + str(training_args.max_steps))
+    training_args.max_steps = max_steps
+    print("After:\n" + str(training_args.max_steps))
+    print(max_steps)
+
     trainer = Trainer(
         model=model,
         args=training_args,
         train_dataset=train_dset,
         eval_dataset=val_dset,
         data_collator=collator,
-        compute_metrics=sklearn_metrics,
+        compute_metrics=sklearn_metrics
     )
 
     trainer.train()
