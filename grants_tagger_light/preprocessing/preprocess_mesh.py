@@ -1,22 +1,15 @@
 import json
 import tempfile
-import time
 
 import numpy as np
 import typer
 from transformers import AutoTokenizer
 from datasets import Dataset, disable_caching, load_dataset
-from loguru import logger
 from grants_tagger_light.models.bert_mesh import BertMesh
 import os
+from loguru import logger
 
-from grants_tagger_light.utils.benchmark import Benchmark
-
-# TODO refactor the two load funcs into a class
-
-disable_caching()
 preprocess_app = typer.Typer()
-
 
 def _tokenize(batch, tokenizer: AutoTokenizer, x_col: str):
     return tokenizer(
@@ -35,7 +28,7 @@ def _encode_labels(sample, label2id):
     return {'label_ids': [_map_label_to_ids(x, label2id) for x in sample['meshMajor']]}
 
 
-def create_tmp_file(jsonl_file, lines):
+def create_sample_file(jsonl_file, lines):
     with open(jsonl_file, 'r') as input_file:
         with tempfile.NamedTemporaryFile(mode='w', delete=False) as tmp_file:
             for _ in range(lines):
@@ -47,20 +40,6 @@ def create_tmp_file(jsonl_file, lines):
     return tmp_file.name
 
 
-def _datagen(mesh_json_path: str, max_samples: int = np.inf):
-    with open(mesh_json_path, "r", encoding="latin1") as f:
-        for idx, line in enumerate(f):
-            # Skip 1st line
-            if idx == 0:
-                continue
-            sample = json.loads(line[:-2])
-
-            if idx > max_samples:
-                break
-
-            yield sample
-
-
 def preprocess_mesh(
     data_path: str,
     save_loc: str,
@@ -68,11 +47,8 @@ def preprocess_mesh(
     test_size: float = 0.05,
     num_proc: int = 8,
     max_samples: int = np.inf,
-    batch_size: int = 32,
-    benchmark: Benchmark = None,
+    batch_size: int = 32
 ):
-    experiment_name = 'num_proc=' + str(num_proc) + '_max_samples=' + str(max_samples)
-
     if not model_key:
         label2id = None
         # Use the same pretrained tokenizer as in Wellcome/WellcomeBertMesh
@@ -86,23 +62,16 @@ def preprocess_mesh(
 
         label2id = {v: k for k, v in model.id2label.items()}
 
-    start = time.time()
     if max_samples != np.inf:
-        data_path = create_tmp_file(data_path, max_samples)
+        data_path = create_sample_file(data_path, max_samples)
 
     dset = load_dataset("json", data_files=data_path, num_proc=num_proc)
     if 'train' in dset:
         dset = dset['train']
-    if benchmark:
-        benchmark.register(experiment_name, "Loading dataset", str(time.time() - start))
 
-    start = time.time()
     # Remove unused columns to save space & time
     dset = dset.remove_columns(["journal", "year", "pmid", "title"])
-    if benchmark:
-        benchmark.register(experiment_name, "Removing columns", str(time.time() - start))
 
-    start = time.time()
     dset = dset.map(
         _tokenize,
         batched=True,
@@ -112,10 +81,7 @@ def preprocess_mesh(
         fn_kwargs={"tokenizer": tokenizer, "x_col": "abstractText"},
         remove_columns=["abstractText"],
     )
-    if benchmark:
-        benchmark.register(experiment_name, "Tokenizing", str(time.time() - start))
 
-    start = time.time()
     # Generate label2id if None
     if label2id is None:
         dset = dset.map(
@@ -134,10 +100,7 @@ def preprocess_mesh(
 
         # Step 3: Dictionary creation
         label2id = {label: idx for idx, label in enumerate(unique_labels_set)}
-    if benchmark:
-        benchmark.register(experiment_name, "label2id", str(time.time() - start))
 
-    start = time.time()
     dset = dset.map(
         _encode_labels,
         batched=True,
@@ -147,13 +110,10 @@ def preprocess_mesh(
         fn_kwargs={"label2id": label2id},
         remove_columns=["meshMajor", "labels"],
     )
-    if benchmark:
-        benchmark.register(experiment_name, "Encoding labels", str(time.time() - start))
 
     # Split into train and test
     dset = dset.train_test_split(test_size=test_size)
 
-    start = time.time()
     # Save to disk
     dset.save_to_disk(
         os.path.join(save_loc, "dataset"),
@@ -163,13 +123,10 @@ def preprocess_mesh(
     with open(os.path.join(save_loc, "label2id.json"), "w") as f:
         json.dump(label2id, f, indent=4)
 
-    if benchmark:
-        benchmark.register(experiment_name, "Saving", str(time.time() - start))
-
 
 @preprocess_app.command()
 def preprocess_mesh_cli(
-    data_path: str = typer.Argument(..., help="Path to mesh.json"),
+    data_path: str = typer.Argument(..., help="Path to mesh.jsonl"),
     save_loc: str = typer.Argument(..., help="Path to save processed data"),
     model_key: str = typer.Argument(
         ...,
@@ -186,33 +143,27 @@ def preprocess_mesh_cli(
     batch_size: int = typer.Option(
         32,
         help="Size of the preprocessing batch"),
-    benchmark: bool = typer.Option(
+    disable_cache: bool = typer.Option(
         False,
-        help="Benchmark and create a file with the times")
+        help="Do you want to disable `Datasets` caching? (not recommended)")
+
 ):
+    if disable_cache:
+        disable_caching()
+
     if max_samples == -1:
         max_samples = np.inf
 
-    if benchmark:
-        benchmark = Benchmark('preprocessing_mesh_benchmark.csv')
-        for num_proc in range(1, 9):
-            preprocess_mesh(
+    if not data_path.endswith('jsonl'):
+        logger.error("It seems your input MeSH data is not in `jsonl` format. "
+                     "Please, run first `scripts/mesh_json_to_jsonlpy.`")
+        exit(1)
+
+    preprocess_mesh(
                 data_path=data_path,
                 save_loc=save_loc,
                 model_key=model_key,
                 test_size=test_size,
                 num_proc=num_proc,
                 max_samples=max_samples,
-                batch_size=batch_size,
-                benchmark=benchmark
-            )
-        benchmark.to_csv()
-    else:
-        preprocess_mesh(
-                    data_path=data_path,
-                    save_loc=save_loc,
-                    model_key=model_key,
-                    test_size=test_size,
-                    num_proc=num_proc,
-                    max_samples=max_samples,
-                    batch_size=batch_size)
+                batch_size=batch_size)

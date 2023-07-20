@@ -24,6 +24,7 @@ import numpy as np
 import os
 import transformers
 import json
+from datasets import load_from_disk
 
 from grants_tagger_light.utils.sharding import Sharding
 from grants_tagger_light.utils.utils import calculate_max_steps
@@ -34,7 +35,6 @@ transformers.set_seed(42)
 def train_bertmesh(
     model_key: str,
     data_path: str,
-    max_samples: int,
     training_args: TrainingArguments,
     model_args: BertMeshModelArguments = None,
 ):
@@ -46,12 +46,16 @@ def train_bertmesh(
         logger.info("No model key provided. Training model from scratch")
 
         # Instantiate model from scratch
+        logger.info(f"Loading `{model_args.pretrained_model_key}` tokenizer...")
         config = AutoConfig.from_pretrained(model_args.pretrained_model_key)
         AutoTokenizer.from_pretrained(model_args.pretrained_model_key)
 
-        dset = load_dataset(os.path.join(data_path, "dataset"))
+        logger.info(f"Loading preprocessed dataset at {data_path}...")
+        dset = load_from_disk(os.path.join(data_path, 'dataset'))
+        logger.info(f"Sharding training dataset...")
         train_dset, val_dset = Sharding(num_shards=100).shard(dset["train"]), dset["test"]
 
+        logger.info(f"Loading labels and other model configurations...")
         with open(os.path.join(data_path, "label2id.json"), "r") as f:
             label2id = json.load(f)
 
@@ -72,13 +76,17 @@ def train_bertmesh(
         logger.info(f"Training model from pretrained key {model_key}")
 
         # Instantiate from pretrained
+        logger.info(f"Loading `{model_key}` tokenizer...")
         model = BertMesh.from_pretrained(model_key, trust_remote_code=True)
         AutoTokenizer.from_pretrained(model_key)
 
+        logger.info(f"Loading labels from model {model_key}...")
         label2id = {v: k for k, v in model.id2label.items()}
 
-        dset = load_dataset(os.path.join(data_path, "dataset"))
+        logger.info(f"Loading preprocessed dataset at {data_path}...")
+        dset = load_from_disk(os.path.join(data_path, 'dataset'))
 
+        logger.info(f"Sharding training dataset...")
         train_dset, val_dset = Sharding(num_shards=100).shard(dset["train"]), dset["test"]
 
     if model_args.freeze_backbone:
@@ -105,14 +113,14 @@ def train_bertmesh(
 
         return metric_dict
 
+    logger.info(f"Collating labels...")
     collator = MultilabelDataCollator(label2id=label2id)
 
+    logger.info(f"Calculating max steps for IterableDatasets...")
     max_steps = calculate_max_steps(training_args, dset)
-    print("Before:\n" + str(training_args.max_steps))
     training_args.max_steps = max_steps
-    print("After:\n" + str(training_args.max_steps))
-    print(max_steps)
 
+    logger.info(f"Initializing Trainer...")
     trainer = Trainer(
         model=model,
         args=training_args,
@@ -122,12 +130,15 @@ def train_bertmesh(
         compute_metrics=sklearn_metrics
     )
 
+    logger.info(f"Training...")
     trainer.train()
 
+    logger.info(f"Evaluating...")
     metrics = trainer.evaluate(eval_dataset=val_dset)
 
     logger.info(pformat(metrics))
 
+    logger.info(f"Saving the model...")
     trainer.save_model(os.path.join(training_args.output_dir, "best"))
 
 
@@ -142,15 +153,14 @@ def train_bertmesh_cli(
     ),
     data_path: str = typer.Argument(
         ...,
-        help="Path to data in jsonl format. Must contain text and tags field",
-    ),
-    max_samples: int = typer.Argument(
-        -1,
-        help="Maximum number of samples to use for training. Useful for dev/debugging",
-    ),
+        help="Path to PyArrow folder with preprocessed Mesh. If not available, run first "
+             "`grants-tagger preprocess mesh [input_jsonl] [output_pyarrrow_folder] [model_key|'']`",
+    )
 ):
-    if max_samples == -1:
-        max_samples = np.inf
+    if not os.path.isdir(data_path):
+        logger.error("`data_path` should be a folder resulted as the output of calling to "
+                     "`grants-tagger preprocess mesh [input_jsonl] [output_pyarrrow_folder] [model_key|'']`")
+        exit(1)
 
     parser = HfArgumentParser(
         (
@@ -168,7 +178,7 @@ def train_bertmesh_cli(
     logger.info("Training args: {}".format(pformat(training_args)))
     logger.info("Wandb args: {}".format(pformat(wandb_args)))
 
-    train_bertmesh(model_key, data_path, max_samples, training_args, model_args)
+    train_bertmesh(model_key, data_path, training_args, model_args)
 
 
 if __name__ == "__main__":
@@ -192,7 +202,6 @@ if __name__ == "__main__":
     train_bertmesh(
         func_args.model_key,
         func_args.data_path,
-        func_args.max_samples,
         training_args,
-        model_args,
+        model_args
     )
