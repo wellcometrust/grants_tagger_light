@@ -157,9 +157,6 @@ def preprocess_mesh_cli(
         256,
         help="Size of the preprocessing batch")
 ):
-    if max_samples == -1:
-        max_samples = np.inf
-
     if not data_path.endswith('jsonl'):
         logger.error("It seems your input MeSH data is not in `jsonl` format. "
                      "Please, run first `scripts/mesh_json_to_jsonlpy.`")
