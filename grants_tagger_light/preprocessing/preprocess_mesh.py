@@ -8,6 +8,7 @@ from datasets import Dataset, disable_caching, load_dataset
 from grants_tagger_light.models.bert_mesh import BertMesh
 import os
 from loguru import logger
+from tqdm import tqdm
 
 preprocess_app = typer.Typer()
 
