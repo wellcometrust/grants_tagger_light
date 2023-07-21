@@ -95,14 +95,17 @@ def preprocess_mesh(
             desc="Getting labels"
         )
 
-        logger.info("Obtaining unique values from the labels...")
         unique_labels_set = set()
 
-        unique_labels_set.update([arr for arr in dset['labels']])
+        logger.info("Obtaining unique values from the labels...")
+        # Iterate through the lists and add elements to the set
+        for arr in tqdm(dset['labels']):
+            unique_labels_set.update(arr)
 
-        # Step 3: Dictionary creation
         logger.info("Creating label2id dictionary...")
-        label2id = {label: idx for idx, label in enumerate(unique_labels_set)}
+        label2id = dict()
+        for idx, label in enumerate(tqdm(unique_labels_set)):
+            label2id.update({label: idx})
 
     dset = dset.map(
         _encode_labels,
