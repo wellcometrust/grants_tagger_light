@@ -67,7 +67,8 @@ def preprocess_mesh(
     if max_samples != np.inf:
         data_path = create_sample_file(data_path, max_samples)
 
-    dset = load_dataset("json", data_files=data_path, num_proc=1) # We only have 1 file, so no sharding is available https://huggingface.co/docs/datasets/loading#multiprocessing
+    # We only have 1 file, so no sharding is available https://huggingface.co/docs/datasets/loading#multiprocessing
+    dset = load_dataset("json", data_files=data_path, num_proc=1)
     # By default, any dataset loaded is set to 'train' using the previous command
     if 'train' in dset:
         dset = dset['train']
@@ -92,10 +93,11 @@ def preprocess_mesh(
             lambda x: {'labels': x["meshMajor"]},
             batched=True,
             batch_size=batch_size,
-            num_proc=num_proc, # Multithreading degrades times in some cases: https://github.com/huggingface/datasets/issues/1992
+            num_proc=num_proc,
             desc="Getting labels"
         )
 
+        # Most efficient way to do dedup of labels
         unique_labels_set = set()
 
         logger.info("Obtaining unique values from the labels...")
@@ -103,6 +105,7 @@ def preprocess_mesh(
         for arr in tqdm(dset['labels']):
             unique_labels_set.update(arr)
 
+        # Most efficient way to do dictionary creation
         logger.info("Creating label2id dictionary...")
         label2id = dict()
         for idx, label in enumerate(tqdm(unique_labels_set)):
@@ -113,7 +116,7 @@ def preprocess_mesh(
         batched=True,
         batch_size=batch_size,
         desc="Encoding labels",
-        num_proc=num_proc, # Multithreading degrades times in some cases: https://github.com/huggingface/datasets/issues/1992
+        num_proc=num_proc,
         fn_kwargs={"label2id": label2id},
         remove_columns=["meshMajor", "labels"],
     )
@@ -126,7 +129,8 @@ def preprocess_mesh(
     # Save to disk
     dset.save_to_disk(
         os.path.join(save_loc, "dataset"),
-        num_proc=num_proc # Multithreading degrades times in some cases: https://github.com/huggingface/datasets/issues/1992
+        num_proc=1,
+        num_shards=1
     )
 
     with open(os.path.join(save_loc, "label2id.json"), "w") as f:
