@@ -86,7 +86,7 @@ def preprocess_mesh(
 
     # Generate label2id if None
     if label2id is None:
-        logger.info("labelGetting the labels. Please, wait...")
+        logger.info("Getting the labels...")
         dset = dset.map(
             lambda x: {'labels': x["meshMajor"]},
             batched=True,
@@ -95,12 +95,13 @@ def preprocess_mesh(
             desc="Getting labels"
         )
 
-        logger.info("Obtaining the labels. Please, wait...")
+        logger.info("Obtaining the labels...")
         # Step 1: Get the 'labels' column from the dataset
         labels_column = dset['labels']
 
         # Step 2: Flatten the list column and compute unique values
         # unique_labels_set = set(label for sublist in labels_column for label in sublist)
+        logger.info("Obtaining unique values from the labels...")
         unique_labels_set = set()
 
         # Iterate through the lists and add elements to the set
@@ -108,7 +109,7 @@ def preprocess_mesh(
             unique_labels_set.update(arr.to_pylist())
 
         # Step 3: Dictionary creation
-        logger.info("Creating label2id. Please, wait...")
+        logger.info("Creating label2id dictionary...")
         label2id = {label: idx for idx, label in enumerate(unique_labels_set)}
 
     dset = dset.map(
@@ -121,10 +122,11 @@ def preprocess_mesh(
         remove_columns=["meshMajor", "labels"],
     )
 
-    logger.info("Preparing train/test split. Please, wait...")
+    logger.info("Preparing train/test split....")
     # Split into train and test
     dset = dset.train_test_split(test_size=test_size)
 
+    logger.info("Saving to disk...")
     # Save to disk
     dset.save_to_disk(
         os.path.join(save_loc, "dataset"),
