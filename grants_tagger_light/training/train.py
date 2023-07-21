@@ -41,7 +41,8 @@ def train_bertmesh(
     max_samples: int = -1,
     test_size: float = 0.05,
     num_proc: int = os.cpu_count(),
-    batch_size: int = 256
+    batch_size: int = 256,
+    shards: int = -1
 ):
     if not model_key:
         assert isinstance(
@@ -55,17 +56,33 @@ def train_bertmesh(
         config = AutoConfig.from_pretrained(model_args.pretrained_model_key)
 
         logger.info(f"Preprocessing the dataset at {data_path}...")
-        # dset = load_from_disk(os.path.join(data_path, 'dataset'))
-        dset, label2id = preprocess_mesh(
-                data_path=data_path,
-                model_key=model_key,
-                test_size=test_size,
-                num_proc=num_proc,
-                max_samples=max_samples,
-                batch_size=batch_size)
+        if os.path.isdir(data_path):
+            logger.info(f"Loading from disk...")
+            dset = load_from_disk(os.path.join(data_path, 'dataset'))
+            with open(os.path.join(data_path, 'label2id'), 'r') as f:
+                label2id = json.load(f)
+        else:
+            logger.info(f"Preprocessing started!")
+            dset, label2id = preprocess_mesh(
+                    data_path=data_path,
+                    model_key=model_key,
+                    test_size=test_size,
+                    num_proc=num_proc,
+                    max_samples=max_samples,
+                    batch_size=batch_size)
 
-        logger.info(f"Sharding training dataset...")
-        train_dset, val_dset = Sharding(num_shards=100).shard(dset["train"]), dset["test"]
+        train_dset, val_dset = dset["train"], dset["test"]
+        train_dset_size = len(train_dset)
+        if max_samples > 0:
+            max_samples = min(max_samples, train_dset_size)
+            logger.info(f"Training max samples: {max_samples}.")
+            train_dset.filter(lambda example, idx: idx < max_samples, with_indices=True)
+        else:
+            logger.info(f"Training with all data...")
+
+        if shards > 0:
+            logger.info(f"Sharding training dataset...")
+            train_dset = Sharding(num_shards=shards).shard(train_dset)
 
         config.update(
             {
@@ -87,21 +104,29 @@ def train_bertmesh(
         logger.info(f"Loading `{model_key}` tokenizer...")
         model = BertMesh.from_pretrained(model_key, trust_remote_code=True)
 
-        # logger.info(f"Loading labels from model {model_key}...")
-        # label2id = {v: k for k, v in model.id2label.items()}
-
         logger.info(f"Preprocessing the dataset at {data_path}...")
-        # dset = load_from_disk(os.path.join(data_path, 'dataset'))
-        dset, label2id = preprocess_mesh(
-            data_path=data_path,
-            model_key=model_key,
-            test_size=test_size,
-            num_proc=num_proc,
-            max_samples=max_samples,
-            batch_size=batch_size)
+        if os.path.isdir(data_path):
+            logger.info(f"Loading from disk...")
+            dset = load_from_disk(os.path.join(data_path, 'dataset'))
+            with open(os.path.join(data_path, 'label2id'), 'r') as f:
+                label2id = json.load(f)
+        else:
+            dset, label2id = preprocess_mesh(
+                data_path=data_path,
+                model_key=model_key,
+                test_size=test_size,
+                num_proc=num_proc,
+                max_samples=max_samples,
+                batch_size=batch_size)
 
-        logger.info(f"Sharding training dataset...")
-        train_dset, val_dset = Sharding(num_shards=100).shard(dset["train"]), dset["test"]
+        train_dset, val_dset = dset["train"], dset["test"]
+        train_dset_size = len(train_dset)
+        if max_samples > 0:
+            max_samples = min(max_samples, train_dset_size)
+            logger.info(f"Training max samples: {max_samples}.")
+            train_dset.filter(lambda example, idx: idx < max_samples, with_indices=True)
+        else:
+            logger.info(f"Training with all data...")
 
     if model_args.freeze_backbone:
         logger.info("Freezing backbone")
@@ -130,9 +155,10 @@ def train_bertmesh(
     logger.info(f"Collating labels...")
     collator = MultilabelDataCollator(label2id=label2id)
 
-    logger.info(f"Calculating max steps for IterableDatasets...")
-    max_steps = calculate_max_steps(training_args, dset)
-    training_args.max_steps = max_steps
+    if shards > 0:
+        logger.info(f"Calculating max steps for IterableDatasets shards...")
+        max_steps = calculate_max_steps(training_args, dset)
+        training_args.max_steps = max_steps
 
     logger.info(f"Initializing Trainer...")
     trainer = Trainer(
@@ -167,7 +193,7 @@ def train_bertmesh_cli(
     ),
     data_path: str = typer.Argument(
         ...,
-        help="Path to mesh.jsonl"
+        help="Path to allMeSH_2021.jsonl (or similar) or to a folder after preprocessing and saving to disk"
     ),
     test_size: float = typer.Option(0.05, help="Fraction of data to use for testing"),
     num_proc: int = typer.Option(
@@ -179,7 +205,10 @@ def train_bertmesh_cli(
     ),
     batch_size: int = typer.Option(
         256,
-        help="Size of the preprocessing batch")
+        help="Size of the preprocessing batch"),
+    shards: int = typer.Option(
+        -1,
+        help="Number os shards to divide training IterativeDataset to (improves performance)")
 ):
 
     parser = HfArgumentParser(
@@ -198,7 +227,7 @@ def train_bertmesh_cli(
     logger.info("Training args: {}".format(pformat(training_args)))
     logger.info("Wandb args: {}".format(pformat(wandb_args)))
 
-    train_bertmesh(model_key, data_path, training_args, model_args, max_samples, test_size, num_proc, batch_size)
+    train_bertmesh(model_key, data_path, training_args, model_args, max_samples, test_size, num_proc, batch_size, shards)
 
 """
 if __name__ == "__main__":

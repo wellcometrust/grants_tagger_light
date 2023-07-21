@@ -48,7 +48,8 @@ def preprocess_mesh(
     test_size: float = 0.05,
     num_proc: int = os.cpu_count(),
     max_samples: int = -1,
-    batch_size: int = 256
+    batch_size: int = 256,
+    save_to_path: str = None
 ):
     if max_samples == -1:
         max_samples = np.inf
@@ -126,6 +127,12 @@ def preprocess_mesh(
     # Split into train and test
     dset = dset.train_test_split(test_size=test_size)
 
+    if save_to_path is not None:
+        logger.info("Saving to disk...")
+        dset.save_to_disk(os.path.join(save_to_path, 'dataset'), num_proc=num_proc)
+        with open(os.path.join(save_to_path, 'label2id'), 'w') as f:
+            json.dump(label2id, f)
+
     return dset, label2id
 
 
@@ -135,13 +142,20 @@ def preprocess_mesh_cli(
         ...,
         help="Path to mesh.jsonl"
     ),
+    save_to_path: str = typer.Argument(
+        ...,
+        help="Path to save the serialized PyArrow dataset after preprocessing"
+    ),
     model_key: str = typer.Argument(
         ...,
         help="Key to use when loading tokenizer and label2id. Leave blank if training from scratch",  # noqa
     ),
-    test_size: float = typer.Option(0.05, help="Fraction of data to use for testing"),
+    test_size: float = typer.Option(
+        0.05,
+        help="Fraction of data to use for testing"),
     num_proc: int = typer.Option(
-        os.cpu_count(), help="Number of processes to use for preprocessing"
+        os.cpu_count(),
+        help="Number of processes to use for preprocessing"
     ),
     max_samples: int = typer.Option(
         -1,
@@ -151,6 +165,13 @@ def preprocess_mesh_cli(
         256,
         help="Size of the preprocessing batch")
 ):
+    print("\033[96mRunning preprocessing will save the data as a PyArrow dataset which is a very time consuming "
+          "operation. If you don't need the data to be saved, you can save much time just by running:\n"
+          "\t`grants-tagger train bertmesh {model_key} {path_to_jsonl}`\033[0m")
+
+    if input('Do You Want To Continue? [Y/n]') != 'Y':
+        exit(1)
+
     if not data_path.endswith('jsonl'):
         logger.error("It seems your input MeSH data is not in `jsonl` format. "
                      "Please, run first `scripts/mesh_json_to_jsonlpy.`")
@@ -162,4 +183,5 @@ def preprocess_mesh_cli(
                 test_size=test_size,
                 num_proc=num_proc,
                 max_samples=max_samples,
-                batch_size=batch_size)
+                batch_size=batch_size,
+                save_to_path=save_to_path)
