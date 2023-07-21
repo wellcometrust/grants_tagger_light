@@ -125,15 +125,7 @@ def preprocess_mesh(
     logger.info("Preparing train/test split....")
     # Split into train and test
     dset = dset.train_test_split(test_size=test_size)
-    
-    """
-    logger.info("Saving to disk...")
-    
-    # Save to disk
-    dset.save_to_disk(
-        os.path.join(save_loc, "dataset")
-    )
-    """
+
     return dset, label2id
 
 
