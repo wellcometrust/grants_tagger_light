@@ -75,7 +75,7 @@ def preprocess_mesh(
 
     # Remove unused columns to save space & time
     dset = dset.remove_columns(["journal", "year", "pmid", "title"])
-    """
+
     dset = dset.map(
         _tokenize,
         batched=True,
@@ -124,17 +124,14 @@ def preprocess_mesh(
     logger.info("Preparing train/test split....")
     # Split into train and test
     dset = dset.train_test_split(test_size=test_size)
-    """
+    
     logger.info("Saving to disk...")
     # Save to disk
     dset.save_to_disk(
-        os.path.join(save_loc, "dataset"),
-        num_proc=1,
-        num_shards=1
+        os.path.join(save_loc, "dataset")
     )
 
-    with open(os.path.join(save_loc, "label2id.json"), "w") as f:
-        json.dump(label2id, f, indent=4)
+    return dset, label2id
 
 
 @preprocess_app.command()
