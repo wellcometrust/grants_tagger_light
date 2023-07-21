@@ -44,10 +44,9 @@ def create_sample_file(jsonl_file, lines):
 
 def preprocess_mesh(
     data_path: str,
-    save_loc: str,
     model_key: str,
     test_size: float = 0.05,
-    num_proc: int = 8,
+    num_proc: int = os.cpu_count(),
     max_samples: int = np.inf,
     batch_size: int = 256
 ):
@@ -125,42 +124,39 @@ def preprocess_mesh(
     # Split into train and test
     dset = dset.train_test_split(test_size=test_size)
     
+    """
     logger.info("Saving to disk...")
+    
     # Save to disk
     dset.save_to_disk(
         os.path.join(save_loc, "dataset")
     )
-
+    """
     return dset, label2id
 
 
 @preprocess_app.command()
 def preprocess_mesh_cli(
-    data_path: str = typer.Argument(..., help="Path to mesh.jsonl"),
-    save_loc: str = typer.Argument(..., help="Path to save processed data"),
+    data_path: str = typer.Argument(
+        ...,
+        help="Path to mesh.jsonl"
+    ),
     model_key: str = typer.Argument(
         ...,
         help="Key to use when loading tokenizer and label2id. Leave blank if training from scratch",  # noqa
     ),
     test_size: float = typer.Option(0.05, help="Fraction of data to use for testing"),
     num_proc: int = typer.Option(
-        8, help="Number of processes to use for preprocessing"
+        os.cpu_count(), help="Number of processes to use for preprocessing"
     ),
     max_samples: int = typer.Option(
-        -1,
+        np.inf,
         help="Maximum number of samples to use for preprocessing",
     ),
     batch_size: int = typer.Option(
         256,
-        help="Size of the preprocessing batch"),
-    disable_cache: bool = typer.Option(
-        False,
-        help="Do you want to disable `Datasets` caching? (not recommended)")
-
+        help="Size of the preprocessing batch")
 ):
-    if disable_cache:
-        disable_caching()
-
     if max_samples == -1:
         max_samples = np.inf
 
@@ -171,7 +167,6 @@ def preprocess_mesh_cli(
 
     preprocess_mesh(
                 data_path=data_path,
-                save_loc=save_loc,
                 model_key=model_key,
                 test_size=test_size,
                 num_proc=num_proc,

@@ -7,6 +7,7 @@ from transformers import (
     AutoConfig,
 )
 from grants_tagger_light.models.bert_mesh import BertMesh
+from grants_tagger_light.preprocessing.preprocess_mesh import preprocess_mesh
 from grants_tagger_light.training.cli_args import (
     BertMeshTrainingArguments,
     WandbArguments,
@@ -37,6 +38,10 @@ def train_bertmesh(
     data_path: str,
     training_args: TrainingArguments,
     model_args: BertMeshModelArguments = None,
+    max_samples:int = np.inf,
+    test_size: float = 0.05,
+    num_proc: int = os.cpu_count(),
+    batch_size: int = 256
 ):
     if not model_key:
         assert isinstance(
@@ -48,16 +53,19 @@ def train_bertmesh(
         # Instantiate model from scratch
         logger.info(f"Loading `{model_args.pretrained_model_key}` tokenizer...")
         config = AutoConfig.from_pretrained(model_args.pretrained_model_key)
-        AutoTokenizer.from_pretrained(model_args.pretrained_model_key)
 
-        logger.info(f"Loading preprocessed dataset at {data_path}...")
-        dset = load_from_disk(os.path.join(data_path, 'dataset'))
+        logger.info(f"Preprocessing the dataset at {data_path}...")
+        # dset = load_from_disk(os.path.join(data_path, 'dataset'))
+        dset, label2id = preprocess_mesh(
+                data_path=data_path,
+                model_key=model_key,
+                test_size=test_size,
+                num_proc=num_proc,
+                max_samples=max_samples,
+                batch_size=batch_size)
+
         logger.info(f"Sharding training dataset...")
         train_dset, val_dset = Sharding(num_shards=100).shard(dset["train"]), dset["test"]
-
-        logger.info(f"Loading labels and other model configurations...")
-        with open(os.path.join(data_path, "label2id.json"), "r") as f:
-            label2id = json.load(f)
 
         config.update(
             {
@@ -78,13 +86,19 @@ def train_bertmesh(
         # Instantiate from pretrained
         logger.info(f"Loading `{model_key}` tokenizer...")
         model = BertMesh.from_pretrained(model_key, trust_remote_code=True)
-        AutoTokenizer.from_pretrained(model_key)
 
-        logger.info(f"Loading labels from model {model_key}...")
-        label2id = {v: k for k, v in model.id2label.items()}
+        # logger.info(f"Loading labels from model {model_key}...")
+        # label2id = {v: k for k, v in model.id2label.items()}
 
-        logger.info(f"Loading preprocessed dataset at {data_path}...")
-        dset = load_from_disk(os.path.join(data_path, 'dataset'))
+        logger.info(f"Preprocessing the dataset at {data_path}...")
+        # dset = load_from_disk(os.path.join(data_path, 'dataset'))
+        dset, label2id = preprocess_mesh(
+            data_path=data_path,
+            model_key=model_key,
+            test_size=test_size,
+            num_proc=num_proc,
+            max_samples=max_samples,
+            batch_size=batch_size)
 
         logger.info(f"Sharding training dataset...")
         train_dset, val_dset = Sharding(num_shards=100).shard(dset["train"]), dset["test"]
@@ -153,14 +167,20 @@ def train_bertmesh_cli(
     ),
     data_path: str = typer.Argument(
         ...,
-        help="Path to PyArrow folder with preprocessed Mesh. If not available, run first "
-             "`grants-tagger preprocess mesh [input_jsonl] [output_pyarrrow_folder] [model_key|'']`",
-    )
+        help="Path to mesh.jsonl"
+    ),
+    test_size: float = typer.Option(0.05, help="Fraction of data to use for testing"),
+    num_proc: int = typer.Option(
+        os.cpu_count(), help="Number of processes to use for preprocessing"
+    ),
+    max_samples: int = typer.Option(
+        -1,
+        help="Maximum number of samples to use for preprocessing",
+    ),
+    batch_size : int = typer.Option(
+        256,
+        help="Size of the preprocessing batch")
 ):
-    if not os.path.isdir(data_path):
-        logger.error("`data_path` should be a folder resulted as the output of calling to "
-                     "`grants-tagger preprocess mesh [input_jsonl] [output_pyarrrow_folder] [model_key|'']`")
-        exit(1)
 
     parser = HfArgumentParser(
         (
@@ -178,9 +198,9 @@ def train_bertmesh_cli(
     logger.info("Training args: {}".format(pformat(training_args)))
     logger.info("Wandb args: {}".format(pformat(wandb_args)))
 
-    train_bertmesh(model_key, data_path, training_args, model_args)
+    train_bertmesh(model_key, data_path, training_args, model_args, max_samples, test_size, num_proc, batch_size)
 
-
+"""
 if __name__ == "__main__":
     from dataclasses import dataclass
 
@@ -203,5 +223,9 @@ if __name__ == "__main__":
         func_args.model_key,
         func_args.data_path,
         training_args,
-        model_args
+        model_args,
+        max_samples,
+        test_size,
+        batch_size
     )
+"""
