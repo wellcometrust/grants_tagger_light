@@ -106,7 +106,7 @@ def preprocess_mesh(
 
         # Iterate through the lists and add elements to the set
         for arr in labels_column:
-            unique_labels_set.update(arr.to_pylist())
+            unique_labels_set.update(arr)
 
         # Step 3: Dictionary creation
         logger.info("Creating label2id dictionary...")
