@@ -38,7 +38,7 @@ def train_bertmesh(
     data_path: str,
     training_args: TrainingArguments,
     model_args: BertMeshModelArguments = None,
-    max_samples: int = np.inf,
+    max_samples: int = -1,
     test_size: float = 0.05,
     num_proc: int = os.cpu_count(),
     batch_size: int = 256
@@ -174,7 +174,7 @@ def train_bertmesh_cli(
         os.cpu_count(), help="Number of processes to use for preprocessing"
     ),
     max_samples: int = typer.Option(
-        np.inf,
+        -1,
         help="Maximum number of samples to use for preprocessing",
     ),
     batch_size: int = typer.Option(

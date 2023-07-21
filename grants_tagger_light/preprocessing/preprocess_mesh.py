@@ -47,9 +47,14 @@ def preprocess_mesh(
     model_key: str,
     test_size: float = 0.05,
     num_proc: int = os.cpu_count(),
-    max_samples: int = np.inf,
+    max_samples: int = -1,
     batch_size: int = 256
 ):
+    if max_samples == -1:
+        max_samples = np.inf
+    else:
+        data_path = create_sample_file(data_path, max_samples)
+
     if not model_key:
         label2id = None
         # Use the same pretrained tokenizer as in Wellcome/WellcomeBertMesh
@@ -62,9 +67,6 @@ def preprocess_mesh(
         model = BertMesh.from_pretrained(model_key, trust_remote_code=True)
 
         label2id = {v: k for k, v in model.id2label.items()}
-
-    if max_samples != np.inf:
-        data_path = create_sample_file(data_path, max_samples)
 
     # We only have 1 file, so no sharding is available https://huggingface.co/docs/datasets/loading#multiprocessing
     dset = load_dataset("json", data_files=data_path, num_proc=1)
@@ -150,7 +152,7 @@ def preprocess_mesh_cli(
         os.cpu_count(), help="Number of processes to use for preprocessing"
     ),
     max_samples: int = typer.Option(
-        np.inf,
+        -1,
         help="Maximum number of samples to use for preprocessing",
     ),
     batch_size: int = typer.Option(
