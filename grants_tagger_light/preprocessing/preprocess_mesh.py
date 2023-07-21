@@ -11,6 +11,7 @@ from loguru import logger
 
 preprocess_app = typer.Typer()
 
+
 def _tokenize(batch, tokenizer: AutoTokenizer, x_col: str):
     return tokenizer(
         batch[x_col],
@@ -65,7 +66,8 @@ def preprocess_mesh(
     if max_samples != np.inf:
         data_path = create_sample_file(data_path, max_samples)
 
-    dset = load_dataset("json", data_files=data_path, num_proc=num_proc)
+    dset = load_dataset("json", data_files=data_path, num_proc=1) # We only have 1 file, so no sharding is available https://huggingface.co/docs/datasets/loading#multiprocessing
+    # By default, any dataset loaded is set to 'train' using the previous command
     if 'train' in dset:
         dset = dset['train']
 
@@ -84,21 +86,29 @@ def preprocess_mesh(
 
     # Generate label2id if None
     if label2id is None:
+        logger.info("labelGetting the labels. Please, wait...")
         dset = dset.map(
             lambda x: {'labels': x["meshMajor"]},
             batched=True,
             batch_size=batch_size,
-            num_proc=1, # Multithreading degrades times, as benchmarking showed
+            num_proc=num_proc, # Multithreading degrades times in some cases: https://github.com/huggingface/datasets/issues/1992
             desc="Getting labels"
         )
 
+        logger.info("Obtaining the labels. Please, wait...")
         # Step 1: Get the 'labels' column from the dataset
         labels_column = dset['labels']
 
         # Step 2: Flatten the list column and compute unique values
-        unique_labels_set = set(label for sublist in labels_column for label in sublist)
+        # unique_labels_set = set(label for sublist in labels_column for label in sublist)
+        unique_labels_set = set()
+
+        # Iterate through the lists and add elements to the set
+        for arr in labels_column:
+            unique_labels_set.update(arr.to_pylist())
 
         # Step 3: Dictionary creation
+        logger.info("Creating label2id. Please, wait...")
         label2id = {label: idx for idx, label in enumerate(unique_labels_set)}
 
     dset = dset.map(
@@ -106,18 +116,19 @@ def preprocess_mesh(
         batched=True,
         batch_size=batch_size,
         desc="Encoding labels",
-        num_proc=1, # Multithreading degrades times, as benchmarking showed
+        num_proc=num_proc, # Multithreading degrades times in some cases: https://github.com/huggingface/datasets/issues/1992
         fn_kwargs={"label2id": label2id},
         remove_columns=["meshMajor", "labels"],
     )
 
+    logger.info("Preparing train/test split. Please, wait...")
     # Split into train and test
     dset = dset.train_test_split(test_size=test_size)
 
     # Save to disk
     dset.save_to_disk(
         os.path.join(save_loc, "dataset"),
-        num_proc=1 # Multithreading degrades times, as benchmarking showed
+        num_proc=num_proc # Multithreading degrades times in some cases: https://github.com/huggingface/datasets/issues/1992
     )
 
     with open(os.path.join(save_loc, "label2id.json"), "w") as f:
