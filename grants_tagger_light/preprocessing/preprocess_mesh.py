@@ -48,7 +48,7 @@ def preprocess_mesh(
     test_size: float = 0.05,
     num_proc: int = 8,
     max_samples: int = np.inf,
-    batch_size: int = 32
+    batch_size: int = 256
 ):
     if not model_key:
         label2id = None
@@ -95,18 +95,10 @@ def preprocess_mesh(
             desc="Getting labels"
         )
 
-        logger.info("Obtaining the labels...")
-        # Step 1: Get the 'labels' column from the dataset
-        labels_column = dset['labels']
-
-        # Step 2: Flatten the list column and compute unique values
-        # unique_labels_set = set(label for sublist in labels_column for label in sublist)
         logger.info("Obtaining unique values from the labels...")
         unique_labels_set = set()
 
-        # Iterate through the lists and add elements to the set
-        for arr in labels_column:
-            unique_labels_set.update(arr)
+        unique_labels_set.update([arr for arr in dset['labels']])
 
         # Step 3: Dictionary creation
         logger.info("Creating label2id dictionary...")
@@ -154,7 +146,7 @@ def preprocess_mesh_cli(
         help="Maximum number of samples to use for preprocessing",
     ),
     batch_size: int = typer.Option(
-        32,
+        256,
         help="Size of the preprocessing batch"),
     disable_cache: bool = typer.Option(
         False,
