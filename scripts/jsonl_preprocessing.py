@@ -59,7 +59,7 @@ def mesh_json_to_jsonl(
         show_progress: print the number of line you are processing
     Returns:
 
-    """
+    """ # noqa
     filter_tags_list = list(filter(lambda x: x.strip() != "", filter_tags.split(",")))
     filter_years_list = list(filter(lambda x: x.strip() != "", filter_years.split(",")))
     with open(output_path, "w", encoding=output_encoding) as fw:
