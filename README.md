@@ -90,15 +90,22 @@ the BertMesh model. The command will train a model and save it to the specified 
 │ --num-proc           INTEGER  Number of processes to use for preprocessing [default: 8]                          │
 │ --max-samples        INTEGER  Maximum number of samples to use from the json [default: -1]                       │
 │ --shards             INTEGER  Number os shards to divide training IterativeDataset to (improves performance)     │
-│                               [default: -1]                                                                      │
+│                               [default: -1, meaning no shards]. Recommended: 100                                 │
 │ --help                        Show this message and exit.                                                        │
 ╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
 ```
 
+#### About `model_key`
 `model_key` possible values are:
 - A HF location for a pretrained / finetuned model 
 - "" to load a model by default and train from scratch: `microsoft/BiomedNLP-PubMedBERT-base-uncased-abstract`
 
+#### About `sharding`
+`sharding` was proposed by [Hugging Face](https://github.com/huggingface/datasets/issues/2252#issuecomment-825596467)
+to improve performance on big datasets. To enable it:
+- set shards to something bigger than 1 (Recommended: 100)
+
+#### Other arguments
 Besides those arguments, feel free to add any other TrainingArgument from Hugging Face or Wand DB. Examples:
 ```commandline
 grants-tagger train bertmesh \
