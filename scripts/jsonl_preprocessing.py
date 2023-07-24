@@ -45,7 +45,8 @@ def mesh_json_to_jsonl(
     show_progress: bool = True,
 ):
     """
-    Mesh json is not optimized for parallel processing. This script aims to transform it into `jsonl` so that,
+    Mesh json is not optimized for parallel processing.
+    This script aims to transform it into `jsonl` so that,
     by having 1 json per line, you can evenly distribute it among all the cores.
 
     Args:
@@ -53,8 +54,8 @@ def mesh_json_to_jsonl(
         output_path: path for the resulted jsonl file
         input_encoding: encoding of the input json (default `latin1`)
         output_encoding: encoding of the output jsonl (default `latin1`)
-        filter_tags: tags separated by commas(T1,T2,T3) to only include the entries with  those tags
-        filter_years: years separated by commas(2008,2009) to only include the entries of those years
+        filter_tags: tags separated by commas(T1,T2,T3) to only include the entries with those
+        filter_years: years separated by commas(2008,2009) to only include the entries of those
         show_progress: print the number of line you are processing
     Returns:
 
@@ -72,7 +73,7 @@ def mesh_json_to_jsonl(
                     continue
                 try:
                     sample = json.loads(line[:-2])
-                except:
+                except json.JSONDecodeError:
                     logger.warning(f"Skipping line in bad json format: {line}")
                     continue
                 if process_data(sample, filter_tags_list, filter_years_list):
