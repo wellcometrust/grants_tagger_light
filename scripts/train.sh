@@ -2,7 +2,9 @@
 grants-tagger train bertmesh \
     "" \
     data/raw/allMeSH_2021.jsonl \
-    -1 \
+    --test-size 0.05 \
+    --max-samples 1000 \
+    --shards 100 \
     --output_dir bertmesh_outs/pipeline_test/ \
     --wandb_name test-train-all \
     --wandb_api_key ${WANDB_API_KEY} \
@@ -15,3 +17,4 @@ grants-tagger train bertmesh \
     --save_steps 100000 \
     --fp16 \
     --torch_compile
+

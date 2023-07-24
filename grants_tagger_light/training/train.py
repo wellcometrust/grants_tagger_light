@@ -157,7 +157,12 @@ def train_bertmesh(
         max_steps = Sharding.calculate_max_steps(training_args, train_dset_size)
         training_args.max_steps = max_steps
 
-    logger.info(f"Initializing Trainer...")
+    logger.info(f"Initializing Trainer:\n"
+                f"* per_device_train_batch_size={training_args.per_device_train_batch_size}\n"
+                f"* max_steps = {training_args.max_steps}\n"
+                f"* epochs = {training_args.num_train_epochs}\n"
+                )
+
     trainer = Trainer(
         model=model,
         args=training_args,
