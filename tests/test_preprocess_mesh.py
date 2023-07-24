@@ -3,7 +3,6 @@ import tempfile
 
 from grants_tagger_light.preprocessing.preprocess_mesh import (
     preprocess_mesh,
-    process_data,
 )
 
 
