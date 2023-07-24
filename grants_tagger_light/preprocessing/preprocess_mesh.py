@@ -54,7 +54,6 @@ def preprocess_mesh(
     max_samples: int = -1,
     batch_size: int = 256,
 ):
-
     if max_samples != -1:
         data_path = create_sample_file(data_path, max_samples)
 
@@ -76,7 +75,6 @@ def preprocess_mesh(
     # By default, any dataset loaded is set to 'train' using the previous command
     if "train" in dset:
         dset = dset["train"]
-
 
     # Remove unused columns to save space & time
     dset = dset.remove_columns(["journal", "year", "pmid", "title"])
@@ -131,7 +129,6 @@ def preprocess_mesh(
         num_proc=num_proc,
         fn_kwargs={"label2id": label2id},
         remove_columns=columns_to_remove,
-
     )
     logger.info("Time taken to encode labels: {}".format(time.time() - t1))
 
