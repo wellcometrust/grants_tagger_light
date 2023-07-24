@@ -43,7 +43,8 @@ def train_bertmesh(
     if not model_key:
         assert isinstance(
             model_args, BertMeshModelArguments
-        ), "If model_key is not provided, must provide model_args of type BertMeshModelArguments"  # noqa
+        ), "If model_key is not provided, " \
+           "must provide model_args of type BertMeshModelArguments"  # noqa
 
         logger.info("No model key provided. Training model from scratch")
 
@@ -53,8 +54,8 @@ def train_bertmesh(
 
         logger.info(f"Preprocessing the dataset at {data_path}...")
         if os.path.isdir(data_path):
-            logger.info("Folder found, which means you preprocessed and save the data before. "
-                        "Loading from disk...")
+            logger.info("Folder found, which means you preprocessed and "
+                        "save the data before. Loading from disk...")
             dset = load_from_disk(os.path.join(data_path, 'dataset'))
             with open(os.path.join(data_path, 'label2id'), 'r') as f:
                 label2id = json.load(f)
@@ -75,10 +76,10 @@ def train_bertmesh(
             logger.info(f"Training max samples: {train_dset_size}.")
             train_dset.filter(lambda example, idx: idx < train_dset_size, with_indices=True)
         else:
-            logger.info(f"Training with all data...")
+            logger.info("Training with all data...")
 
         if shards > 0:
-            logger.info(f"Sharding training dataset...")
+            logger.info("Sharding training dataset...")
             train_dset = Sharding(num_shards=shards).shard(train_dset)
 
         config.update(
@@ -103,12 +104,13 @@ def train_bertmesh(
 
         logger.info(f"Preprocessing the dataset at {data_path}...")
         if os.path.isdir(data_path):
-            logger.info(f"Folder found, which means you preprocessed and save the data before. Loading from disk...")
+            logger.info("Folder found, which means you preprocessed and "
+                        "save the data before. Loading from disk...")
             dset = load_from_disk(os.path.join(data_path, 'dataset'))
             with open(os.path.join(data_path, 'label2id'), 'r') as f:
                 label2id = json.load(f)
         else:
-            logger.info(f"Preprocessing the data on the fly...")
+            logger.info("Preprocessing the data on the fly...")
             dset, label2id = preprocess_mesh(
                 data_path=data_path,
                 model_key=model_key,
@@ -121,10 +123,10 @@ def train_bertmesh(
         train_dset_size = len(train_dset)
         if max_samples > 0:
             train_dset_size = min(max_samples, train_dset_size)
-            logger.info(f"Training max samples: {train_dset_size}.")
+            logger.info("Training max samples: {train_dset_size}.")
             train_dset.filter(lambda example, idx: idx < train_dset_size, with_indices=True)
         else:
-            logger.info(f"Training with all data...")
+            logger.info("Training with all data...")
 
     if model_args.freeze_backbone:
         logger.info("Freezing backbone")
@@ -150,7 +152,7 @@ def train_bertmesh(
 
         return metric_dict
 
-    logger.info(f"Collating labels...")
+    logger.info("Collating labels...")
     collator = MultilabelDataCollator(label2id=label2id)
 
     if shards > 0:
