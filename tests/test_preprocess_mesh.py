@@ -83,7 +83,7 @@ def test_json_to_jsonl(json_data_path):
     output_tmp = tempfile.NamedTemporaryFile(mode="w")
     mesh_json_to_jsonl(json_data_path, output_tmp.name, show_progress=False)
 
-    with open(output_tmp.name, 'r') as f:
+    with open(output_tmp.name, "r") as f:
         result = [json.loads(jline) for jline in f.read().splitlines()]
         assert len(result) == 2
 
@@ -91,11 +91,9 @@ def test_json_to_jsonl(json_data_path):
 
 
 def test_preprocess_mesh(jsonl_data_path):
-    dset, label2id = preprocess_mesh(data_path=jsonl_data_path,
-                                     model_key='',
-                                     num_proc=2,
-                                     batch_size=1,
-                                     test_size=0.5)
+    dset, label2id = preprocess_mesh(
+        data_path=jsonl_data_path, model_key="", num_proc=2, batch_size=1, test_size=0.5
+    )
     assert "train" in dset
     assert "test" in dset
     assert len(dset["train"]) == 1

@@ -1,4 +1,4 @@
-from datasets import load_dataset, IterableDataset
+from datasets import IterableDataset
 
 
 class Sharding:
@@ -17,14 +17,18 @@ class Sharding:
                 yield example
 
     def shard(self, dataset):
-        shards = [dataset.shard(num_shards=self.num_shards, index=index, contiguous=True)
-                  for index in range(self.num_shards)]
+        shards = [
+            dataset.shard(num_shards=self.num_shards, index=index, contiguous=True)
+            for index in range(self.num_shards)
+        ]
 
-        return IterableDataset.from_generator(self.gen_from_shards, gen_kwargs={"_shards": shards})
+        return IterableDataset.from_generator(
+            self.gen_from_shards, gen_kwargs={"_shards": shards}
+        )
 
     @staticmethod
     def calculate_max_steps(training_args, train_dset_size):
-        """ This is needed when using IterableDatasets, as there is no __len__ in advance since the dataset is a
+        """This is needed when using IterableDatasets, as there is no __len__ in advance since the dataset is a
         generator with yield, so it does not know when to end.
             Source: https://discuss.huggingface.co/t/streaming-dataset-into-trainer-does-not-implement-len-max-steps-has-to-be-specified/32893/6
 
@@ -34,7 +38,7 @@ class Sharding:
                 >  14781199.15 / 8 = 1847649.89375
                 if accumulation_steps is 1, then
                 > 1847649.89375 / 1 = 1847649.89375
-            """
+        """
 
         train_batch_size = training_args.per_device_train_batch_size
         accumulation_steps = training_args.gradient_accumulation_steps

@@ -167,7 +167,7 @@ def train_bertmesh(
     collator = MultilabelDataCollator(label2id=label2id)
 
     if shards > 0:
-        logger.info(f"Calculating max steps for " f"IterableDatasets shards...")
+        logger.info("Calculating max steps for IterableDatasets shards...")
         max_steps = Sharding.calculate_max_steps(training_args, train_dset_size)
         training_args.max_steps = max_steps
 

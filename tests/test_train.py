@@ -48,7 +48,7 @@ def _train_bertmesh_from_model_key(data_path, save_path, model_key):
         training_args=training_args,
         model_args=model_args,
         num_proc=2,
-        test_size=0.5
+        test_size=0.5,
     )
 
 
@@ -58,4 +58,3 @@ def test_train_bertmesh_from_model_key(data_path, save_path):
 
 def test_train_bertmesh_from_scratch(data_path, save_path):
     _train_bertmesh_from_model_key(data_path, save_path, "")
-

@@ -177,4 +177,3 @@ def create_label_binarizer(model_path: str, label_binarizer_path: str):
         f.write(pickle.dumps(label_binarizer))
 
     return label_binarizer
-
