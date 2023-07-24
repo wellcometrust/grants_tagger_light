@@ -74,7 +74,8 @@ def train_bertmesh(
         if max_samples > 0:
             train_dset_size = min(max_samples, train_dset_size)
             logger.info(f"Training max samples: {train_dset_size}.")
-            train_dset.filter(lambda example, idx: idx < train_dset_size, with_indices=True)
+            train_dset.filter(lambda example, idx: idx < train_dset_size,
+                              with_indices=True)
         else:
             logger.info("Training with all data...")
 
@@ -123,8 +124,9 @@ def train_bertmesh(
         train_dset_size = len(train_dset)
         if max_samples > 0:
             train_dset_size = min(max_samples, train_dset_size)
-            logger.info("Training max samples: {train_dset_size}.")
-            train_dset.filter(lambda example, idx: idx < train_dset_size, with_indices=True)
+            logger.info(f"Training max samples: {train_dset_size}.")
+            train_dset.filter(lambda example, idx: idx < train_dset_size,
+                              with_indices=True)
         else:
             logger.info("Training with all data...")
 
@@ -136,12 +138,15 @@ def train_bertmesh(
         y_pred = prediction.predictions
         y_true = prediction.label_ids
 
-        # TODO make thresh configurable or return metrics for multiple thresholds
+        # TODO make thresh configurable or return metrics
+        #  for multiple thresholds
         # e.g. 0.5:0.95:0.05
 
         y_pred = np.int64(y_pred > 0.5)
 
-        report = classification_report(y_true, y_pred, output_dict=True)
+        report = classification_report(y_true,
+                                       y_pred,
+                                       output_dict=True)
 
         metric_dict = {
             "micro_avg": report["micro avg"],
@@ -156,12 +161,15 @@ def train_bertmesh(
     collator = MultilabelDataCollator(label2id=label2id)
 
     if shards > 0:
-        logger.info(f"Calculating max steps for IterableDatasets shards...")
-        max_steps = Sharding.calculate_max_steps(training_args, train_dset_size)
+        logger.info(f"Calculating max steps for "
+                    f"IterableDatasets shards...")
+        max_steps = Sharding.calculate_max_steps(training_args,
+                                                 train_dset_size)
         training_args.max_steps = max_steps
 
     logger.info(f"Initializing Trainer:\n"
-                f"* per_device_train_batch_size={training_args.per_device_train_batch_size}\n"
+                f"* per_device_train_batch_size="
+                f"{training_args.per_device_train_batch_size}\n"
                 f"* max_steps = {training_args.max_steps}\n"
                 f"* epochs = {training_args.num_train_epochs}\n"
                 )
@@ -175,15 +183,15 @@ def train_bertmesh(
         compute_metrics=sklearn_metrics
     )
 
-    logger.info(f"Training...")
+    logger.info("Training...")
     trainer.train()
 
-    logger.info(f"Evaluating...")
+    logger.info("Evaluating...")
     metrics = trainer.evaluate(eval_dataset=val_dset)
 
     logger.info(pformat(metrics))
 
-    logger.info(f"Saving the model...")
+    logger.info("Saving the model...")
     trainer.save_model(os.path.join(training_args.output_dir, "best"))
 
 
@@ -194,11 +202,13 @@ train_app = typer.Typer()
 def train_bertmesh_cli(
     ctx: typer.Context,
     model_key: str = typer.Argument(
-        ..., help="Pretrained model key. Local path or HF location"
+        ..., help="Pretrained model key. "
+                  "Local path or HF location"
     ),
     data_path: str = typer.Argument(
         ...,
-        help="Path to allMeSH_2021.jsonl (or similar) or to a folder after preprocessing and saving to disk"
+        help="Path to allMeSH_2021.jsonl (or similar) "
+             "or to a folder after preprocessing and saving to disk"
     ),
     test_size: float = typer.Option(
         0.05,
@@ -214,7 +224,8 @@ def train_bertmesh_cli(
     ),
     shards: int = typer.Option(
         -1,
-        help="Number os shards to divide training IterativeDataset to (improves performance)")
+        help="Number os shards to divide training "
+             "IterativeDataset to (improves performance)")
 ):
 
     parser = HfArgumentParser(
@@ -233,4 +244,11 @@ def train_bertmesh_cli(
     logger.info("Training args: {}".format(pformat(training_args)))
     logger.info("Wandb args: {}".format(pformat(wandb_args)))
 
-    train_bertmesh(model_key, data_path, training_args, model_args, max_samples, test_size, num_proc, shards)
+    train_bertmesh(model_key,
+                   data_path,
+                   training_args,
+                   model_args,
+                   max_samples,
+                   test_size,
+                   num_proc,
+                   shards)
