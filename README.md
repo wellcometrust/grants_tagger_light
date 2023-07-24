@@ -58,48 +58,16 @@ And then connect and attach to your machine with a tunnel
 # ⌨️  Commands
 
 | Commands        | Description                                                  | Needs dev |
-| --------------- |--------------------------------------------------------------|-----------|
-| ⚙️  preprocess   | preprocess data to use for training                          | False     |
-| 🔥 train        | trains a new model                                           | True      |
+|-----------------|--------------------------------------------------------------|-----------|
+| 🔥 train        | preprocesses the data and trains a new model                 | True      |
+| ⚙ preprocess    | (Optional) preprocess and save the data outside training    | False     |
 | 📈 evaluate     | evaluate performance of pretrained model                     | True      |
 | 🔖 predict      | predict tags given a grant abstract using a pretrained model | False     |
 | 🎛 tune         | tune params and threshold                                    | True      |
-| ⬇️  download    | download data from EPMC                                      | False     |
+| ⬇ download      | download data from EPMC                                      | False     |
+
 
 in square brackets the commands that are not implemented yet
-
-## ⚙️  Preprocess
-
-Preprocess creates a JSONL datafile with `text`, `tags` and `meta` as keys.
-Text and tags are used for training whereas meta can be useful during annotation
-or to analyse predictions and performance. Each dataset needs its own
-preprocessing so the current preprocess works with the bioasq-mesh one.
-If you want to use a different dataset see section on bringing
-your own data under development.
-
-
-#### bioasq-mesh
-```
-
- Usage: grants-tagger preprocess bioasq-mesh [OPTIONS] [INPUT_PATH]
-                                             [TRAIN_OUTPUT_PATH]
-                                             [LABEL_BINARIZER_PATH]
-
-╭─ Arguments ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
-│   input_path                [INPUT_PATH]            path to BioASQ JSON data [default: None]                                                                           │
-│   train_output_path         [TRAIN_OUTPUT_PATH]     path to JSONL output file that will be generated for the train set [default: None]                                 │
-│   label_binarizer_path      [LABEL_BINARIZER_PATH]  path to pickle file that will contain the label binarizer [default: None]                                          │
-╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
-╭─ Options ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
-│ --test-output-path        TEXT     path to JSONL output file that will be generated for the test set [default: None]                                                   │
-│ --mesh-tags-path          TEXT     path to mesh tags to filter [default: None]                                                                                         │
-│ --test-split              FLOAT    split percentage for test data. if None no split. [default: 0.01]                                                                   │
-│ --filter-years            TEXT     years to keep in form min_year,max_year with both inclusive [default: None]                                                         │
-│ --config                  PATH     path to config files that defines arguments [default: None]                                                                         │
-│ --n-max                   INTEGER  Maximum limit on the number of datapoints in the set (including training and test) [default: None]                                  │
-│ --help                             Show this message and exit.                                                                                                         │
-╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
-```
 
 ## 🔥 Train
 
@@ -108,21 +76,86 @@ the BertMesh model. The command will train a model and save it to the specified 
 
 ### bertmesh
 ```
-
  Usage: grants-tagger train bertmesh [OPTIONS] MODEL_KEY DATA_PATH
-                                     MODEL_SAVE_PATH
 
-╭─ Arguments ─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
-│ *    model_key            TEXT  Pretrained model key. Local path or HF location [default: None] [required]                                                                          │
-│ *    data_path            TEXT  Path to data in jsonl format. Must contain text and tags field [default: None] [required]                                                           │
-│ *    model_save_path      TEXT  Path to save model to [default: None] [required]                                                                                                    │
-╰─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
-╭─ Options ───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
-│ --help          Show this message and exit.                                                                                                                                         │
-╰─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
-
+╭─ Arguments ──────────────────────────────────────────────────────────────────────────────────────────────────────╮
+│ *    model_key      TEXT  Pretrained model key. Local path or HF location [default: None] [required]             │
+│ *    data_path      TEXT  Path to allMeSH_2021.jsonl (or similar) or to a folder after preprocessing and saving  │
+│                           to disk                                                                                │
+│                           [default: None]                                                                        │
+│                           [required]                                                                             │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+╭─ Options ────────────────────────────────────────────────────────────────────────────────────────────────────────╮
+│ --test-size          FLOAT    Fraction of data to use for testing [default: 0.05]                                │
+│ --num-proc           INTEGER  Number of processes to use for preprocessing [default: 8]                          │
+│ --max-samples        INTEGER  Maximum number of samples to use from the json [default: -1]                       │
+│ --shards             INTEGER  Number os shards to divide training IterativeDataset to (improves performance)     │
+│                               [default: -1]                                                                      │
+│ --help                        Show this message and exit.                                                        │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
 ```
 
+`model_key` possible values are:
+- A HF location for a pretrained / finetuned model 
+- "" to load a model by default and train from scratch: `microsoft/BiomedNLP-PubMedBERT-base-uncased-abstract`
+
+Besides those arguments, feel free to add any other TrainingArgument from Hugging Face or Wand DB. Examples:
+```commandline
+grants-tagger train bertmesh \
+    "" \
+    data/raw/allMeSH_2021.jsonl \
+    --test-size 0.05 \
+    --max-samples 1000 \
+    --shards 100 \
+    --output_dir bertmesh_outs/pipeline_test/ \
+    --wandb_name test-train-all \
+    --wandb_api_key ${WANDB_API_KEY} \
+    --per_device_train_batch_size 256 \
+    --per_device_eval_batch_size 8 \
+    --num_train_epochs 1 \
+    --evaluation_strategy steps \
+    --eval_steps 100000 \
+    --save_strategy steps \
+    --save_steps 100000 \
+    --fp16 \
+    --torch_compile
+```
+
+## ⚙️  Preprocess
+
+This process is optional to run, since it will be managed by the `grants-tagger train bertmesh` process.
+If you run it manually, it will store the data in local.
+
+Preprocess creates a JSONL datafile with `text`, `tags` and `meta` as keys.
+Text and tags are used for training whereas meta can be useful during annotation
+or to analyse predictions and performance. Each dataset needs its own
+preprocessing so the current preprocess works with the `allMeSH_2021` one.
+If you want to use a different dataset see section on bringing
+your own data under development.
+
+
+### mesh
+```
+ Usage: grants-tagger preprocess mesh [OPTIONS] DATA_PATH SAVE_TO_PATH
+                                      MODEL_KEY
+
+╭─ Arguments ──────────────────────────────────────────────────────────────────────────────────────────────────────╮
+│ *    data_path         TEXT  Path to mesh.jsonl [default: None] [required]                                       │
+│ *    save_to_path      TEXT  Path to save the serialized PyArrow dataset after preprocessing [default: None]     │
+│                              [required]                                                                          │
+│ *    model_key         TEXT  Key to use when loading tokenizer and label2id. Leave blank if training from        │
+│                              scratch                                                                             │
+│                              [default: None]                                                                     │
+│                              [required]                                                                          │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+╭─ Options ────────────────────────────────────────────────────────────────────────────────────────────────────────╮
+│ --test-size          FLOAT    Fraction of data to use for testing [default: 0.05]                                │
+│ --num-proc           INTEGER  Number of processes to use for preprocessing [default: 8]                          │
+│ --max-samples        INTEGER  Maximum number of samples to use for preprocessing [default: -1]                   │
+│ --batch-size         INTEGER  Size of the preprocessing batch [default: 256]                                     │
+│ --help                        Show this message and exit.                                                        │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯```
+```
 
 ## 📈 Evaluate
 
@@ -143,7 +176,6 @@ not made into production this is the way to evaluate. The plan is to extend
 evaluate to all models when train starts training explicit model approaches.
 
 ```
-
  Usage: grants-tagger evaluate model [OPTIONS] MODEL_PATH DATA_PATH
 
 ╭─ Arguments ─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
@@ -163,7 +195,6 @@ evaluate to all models when train starts training explicit model approaches.
 ### grants
 Evaluate an xlinear model on grants data.
 ```
-
  Usage: grants-tagger evaluate grants [OPTIONS] MODEL_PATH DATA_PATH
                                       LABEL_BINARIZER_PATH
 
@@ -188,7 +219,6 @@ Predict assigns tags on a given abstract text that you can pass as argument.
 
 
 ```
-
  Usage: grants-tagger predict [OPTIONS] TEXT MODEL_PATH
 
 ╭─ Arguments ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
@@ -201,7 +231,6 @@ Predict assigns tags on a given abstract text that you can pass as argument.
 │ --threshold                              FLOAT    [default: 0.5]                                                                                                           │
 │ --help                                            Show this message and exit.                                                                                              │
 ╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
-
 ```
 
 ## 🎛 Tune
@@ -209,7 +238,6 @@ Optimise the threshold used for tag decisions.
 
 ### threshold
 ```
-
  Usage: grants-tagger tune threshold [OPTIONS] DATA_PATH MODEL_PATH
                                      LABEL_BINARIZER_PATH THRESHOLDS_PATH
 
@@ -230,12 +258,14 @@ Optimise the threshold used for tag decisions.
 
 ## ⬇️  Download
 
-This commands enables you to download mesh data from EPMC
+The project has references to `dvc` big files. You can just do `dvc pull` and retrieve those,
+including `allMeSH_2021.json`  and `allMeSH_2021.jsonl` to train `bertmesh`.
+
+Also, this commands enables you to download mesh data from EPMC
 
 ### epmc-mesh
 
 ```
-
  Usage: grants-tagger download epmc-mesh [OPTIONS] DOWNLOAD_PATH
 
 ╭─ Arguments ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
@@ -254,12 +284,18 @@ Install development dependencies via:
 
 ## 📋 Env variables
 
+Variable              | Required for | Description
+--------------------- |--------------| ----------
+WANDB_API_KEY         | train        | key to dump the results to Weights&Biases
+AWS_ACCESS_KEY_ID     | train        | access key to pull data from dvc on S3
+AWS_SECRET_ACCESS_KEY | train        | secret key to pull data from dvc on S3
+
 If you want to participate to BIOASQ competition you need to set some variables.
 
 Variable              | Required for       | Description
 --------------------- | ------------------ | ----------
 BIOASQ_USERNAME       | bioasq             | username with which registered in BioASQ
-BIOASQ_PASSWORD       | bioasq             | password            --//--
+BIOASQ_PASSWORD       | bioasq             | password
 
 If you use [direnv](https://direnv.net) then you can use it to populate
 your `.envrc` which will export the variables automatically, otherwise
