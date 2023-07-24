@@ -19,7 +19,6 @@ from grants_tagger_light.training.dataloaders import (
 from sklearn.metrics import classification_report
 from loguru import logger
 from pprint import pformat
-from datasets import load_dataset
 import typer
 import numpy as np
 import os
@@ -28,7 +27,6 @@ import json
 from datasets import load_from_disk
 
 from grants_tagger_light.utils.sharding import Sharding
-from grants_tagger_light.utils.utils import calculate_max_steps
 
 transformers.set_seed(42)
 
@@ -41,7 +39,6 @@ def train_bertmesh(
     max_samples: int = -1,
     test_size: float = 0.05,
     num_proc: int = os.cpu_count(),
-    batch_size: int = 256,
     shards: int = -1
 ):
     if not model_key:
@@ -69,14 +66,14 @@ def train_bertmesh(
                     test_size=test_size,
                     num_proc=num_proc,
                     max_samples=max_samples,
-                    batch_size=batch_size)
+                    batch_size=training_args.per_device_train_batch_size)
 
         train_dset, val_dset = dset["train"], dset["test"]
         train_dset_size = len(train_dset)
         if max_samples > 0:
-            max_samples = min(max_samples, train_dset_size)
-            logger.info(f"Training max samples: {max_samples}.")
-            train_dset.filter(lambda example, idx: idx < max_samples, with_indices=True)
+            train_dset_size = min(max_samples, train_dset_size)
+            logger.info(f"Training max samples: {train_dset_size}.")
+            train_dset.filter(lambda example, idx: idx < train_dset_size, with_indices=True)
         else:
             logger.info(f"Training with all data...")
 
@@ -117,14 +114,14 @@ def train_bertmesh(
                 test_size=test_size,
                 num_proc=num_proc,
                 max_samples=max_samples,
-                batch_size=batch_size)
+                batch_size=training_args.per_device_train_batch_size)
 
         train_dset, val_dset = dset["train"], dset["test"]
         train_dset_size = len(train_dset)
         if max_samples > 0:
-            max_samples = min(max_samples, train_dset_size)
-            logger.info(f"Training max samples: {max_samples}.")
-            train_dset.filter(lambda example, idx: idx < max_samples, with_indices=True)
+            train_dset_size = min(max_samples, train_dset_size)
+            logger.info(f"Training max samples: {train_dset_size}.")
+            train_dset.filter(lambda example, idx: idx < train_dset_size, with_indices=True)
         else:
             logger.info(f"Training with all data...")
 
@@ -157,7 +154,7 @@ def train_bertmesh(
 
     if shards > 0:
         logger.info(f"Calculating max steps for IterableDatasets shards...")
-        max_steps = calculate_max_steps(training_args, dset)
+        max_steps = Sharding.calculate_max_steps(training_args, train_dset_size)
         training_args.max_steps = max_steps
 
     logger.info(f"Initializing Trainer...")
@@ -195,17 +192,18 @@ def train_bertmesh_cli(
         ...,
         help="Path to allMeSH_2021.jsonl (or similar) or to a folder after preprocessing and saving to disk"
     ),
-    test_size: float = typer.Option(0.05, help="Fraction of data to use for testing"),
+    test_size: float = typer.Option(
+        0.05,
+        help="Fraction of data to use for testing"
+    ),
     num_proc: int = typer.Option(
-        os.cpu_count(), help="Number of processes to use for preprocessing"
+        os.cpu_count(),
+        help="Number of processes to use for preprocessing"
     ),
     max_samples: int = typer.Option(
         -1,
-        help="Maximum number of samples to use for preprocessing",
+        help="Maximum number of samples to use from the json",
     ),
-    batch_size: int = typer.Option(
-        256,
-        help="Size of the preprocessing batch"),
     shards: int = typer.Option(
         -1,
         help="Number os shards to divide training IterativeDataset to (improves performance)")
@@ -227,34 +225,4 @@ def train_bertmesh_cli(
     logger.info("Training args: {}".format(pformat(training_args)))
     logger.info("Wandb args: {}".format(pformat(wandb_args)))
 
-    train_bertmesh(model_key, data_path, training_args, model_args, max_samples, test_size, num_proc, batch_size, shards)
-
-"""
-if __name__ == "__main__":
-    from dataclasses import dataclass
-
-    @dataclass
-    class TrainFuncArgs:
-        model_key: str
-        data_path: str
-        max_samples: int = np.inf
-
-    func_args, training_args, wandb_args, model_args = HfArgumentParser(
-        (
-            TrainFuncArgs,
-            BertMeshTrainingArguments,
-            WandbArguments,
-            BertMeshModelArguments,
-        )
-    ).parse_args_into_dataclasses()
-
-    train_bertmesh(
-        func_args.model_key,
-        func_args.data_path,
-        training_args,
-        model_args,
-        max_samples,
-        test_size,
-        batch_size
-    )
-"""
+    train_bertmesh(model_key, data_path, training_args, model_args, max_samples, test_size, num_proc, shards)

@@ -152,7 +152,8 @@ def preprocess_mesh_cli(
     ),
     test_size: float = typer.Option(
         0.05,
-        help="Fraction of data to use for testing"),
+        help="Fraction of data to use for testing"
+    ),
     num_proc: int = typer.Option(
         os.cpu_count(),
         help="Number of processes to use for preprocessing"
@@ -163,13 +164,13 @@ def preprocess_mesh_cli(
     ),
     batch_size: int = typer.Option(
         256,
-        help="Size of the preprocessing batch")
+        help="Size of the preprocessing batch"
+    )
 ):
-    print("\033[96mRunning preprocessing will save the data as a PyArrow dataset which is a very time consuming "
-          "operation. If you don't need the data to be saved, you can save much time just by running:\n"
-          "\t`grants-tagger train bertmesh {model_key} {path_to_jsonl}`\033[0m")
-
-    if input('Do You Want To Continue? [Y/n]') != 'Y':
+    if input("\033[96mRunning preprocessing will save the data as a PyArrow dataset which is a very time consuming "
+             "operation. If you don't need the data to be saved, you can save much time just by running:\n"
+             "\t`grants-tagger train bertmesh {model_key} {path_to_jsonl}`\033[0m\n\n"
+             "Do You Want To Continue? [Y/n]") != 'Y':
         exit(1)
 
     if not data_path.endswith('jsonl'):
