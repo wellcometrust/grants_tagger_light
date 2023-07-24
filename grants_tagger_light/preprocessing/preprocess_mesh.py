@@ -51,9 +51,7 @@ def preprocess_mesh(
     max_samples: int = -1,
     batch_size: int = 256,
 ):
-    if max_samples == -1:
-        max_samples = np.inf
-    else:
+    if max_samples != -1:
         data_path = create_sample_file(data_path, max_samples)
 
     if not model_key:
@@ -88,6 +86,7 @@ def preprocess_mesh(
         remove_columns=["abstractText"],
     )
 
+    columns_to_remove = ["meshMajor"]
     # Generate label2id if None
     if label2id is None:
         logger.info("Getting the labels...")
@@ -113,6 +112,8 @@ def preprocess_mesh(
         for idx, label in enumerate(tqdm(unique_labels_set)):
             label2id.update({label: idx})
 
+        columns_to_remove.append("labels")
+
     dset = dset.map(
         _encode_labels,
         batched=True,
@@ -120,7 +121,7 @@ def preprocess_mesh(
         desc="Encoding labels",
         num_proc=num_proc,
         fn_kwargs={"label2id": label2id},
-        remove_columns=["meshMajor", "labels"],
+        remove_columns=columns_to_remove,
     )
 
     logger.info("Preparing train/test split....")

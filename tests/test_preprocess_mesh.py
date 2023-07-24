@@ -16,6 +16,7 @@ json_data = """{"articles":[
 {"journal":"dummyJournal","meshMajor":["Malaria"],"year":"2023","abstractText":"This is an article about malaria", "title": "article3", "pmid": "pmid3"},
 """
 
+
 @pytest.fixture
 def json_data_path():
     with tempfile.TemporaryDirectory() as tmpdirname:
@@ -23,6 +24,7 @@ def json_data_path():
         with open(data_path, "w") as f:
             f.write(json_data)
         yield data_path
+
 
 @pytest.fixture
 def jsonl_data_path():

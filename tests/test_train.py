@@ -6,11 +6,8 @@ import pytest
 import numpy as np
 
 # Note dummy data is not necessarily annotated correctly
-dummy_data = """{"articles":[
-{"journal":"dummyJournal","meshMajor":["COVID-19","SARS-CoV-2"],"year":"2023","abstractText":"This is an article about coronavirus.","title":"article1","pmid":"pmid1"},
-{"journal":"dummyJournal","meshMajor":["COVID-19","SARS-CoV-2"],"year":"2023","abstractText":"This is an article about COVID-19.","title":"article2","pmid":"pmid2"},
-{"journal":"dummyJournal","meshMajor":["Malaria"],"year":"2023","abstractText":"This is an article about malaria", "title": "article3", "pmid": "pmid3"},
-"""  # noqa
+dummy_data = """{"journal":"dummyJournal","meshMajor":["COVID-19","SARS-CoV-2"],"year":"2023","abstractText":"This is an article about coronavirus.","title":"article1","pmid":"pmid1"}
+{"journal":"dummyJournal","meshMajor":["Malaria"],"year":"2023","abstractText":"This is an article about malaria", "title": "article3", "pmid": "pmid3"}"""
 
 
 @pytest.fixture
@@ -28,9 +25,7 @@ def save_path():
         yield tmpdirname + "/model"
 
 
-def test_train_bertmesh(data_path, save_path):
-    model_key = "Wellcome/WellcomeBertMesh"
-
+def _train_bertmesh_from_model_key(data_path, save_path, model_key):
     # 1 train step, 1 eval step, save after training
     training_args = TrainingArguments(
         output_dir=save_path,
@@ -50,7 +45,18 @@ def test_train_bertmesh(data_path, save_path):
     train_bertmesh(
         model_key=model_key,
         data_path=data_path,
-        max_samples=np.inf,
+        max_samples=-1,
         training_args=training_args,
         model_args=model_args,
+        num_proc=2,
+        test_size=0.5
     )
+
+
+def test_train_bertmesh_from_model_key(data_path, save_path):
+    _train_bertmesh_from_model_key(data_path, save_path, "Wellcome/WellcomeBertMesh")
+
+
+def test_train_bertmesh_from_scratch(data_path, save_path):
+    _train_bertmesh_from_model_key(data_path, save_path, "")
+
