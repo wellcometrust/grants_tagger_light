@@ -1,14 +1,16 @@
 import json
 import tempfile
 
-import numpy as np
 import typer
 from transformers import AutoTokenizer
-from datasets import Dataset, disable_caching, load_dataset
+from datasets import load_dataset
 from grants_tagger_light.models.bert_mesh import BertMesh
 import os
 from loguru import logger
 from tqdm import tqdm
+
+# from datasets import disable_caching
+# disable_caching()
 
 preprocess_app = typer.Typer()
 
@@ -128,8 +130,8 @@ def preprocess_mesh(
     # Split into train and test
     dset = dset.train_test_split(test_size=test_size)
 
-    # If running from Training, by default it will be None so that we don't spend time on serializing the data
-    # to disk if we are going to load it afterwards
+    # If running from Training, by default it will be None so that we don't spend time
+    # on serializing the data # to disk if we are going to load it afterwards
     if save_to_path is not None:
         logger.info("Saving to disk...")
         dset.save_to_disk(os.path.join(save_to_path, 'dataset'), num_proc=num_proc)
@@ -151,7 +153,8 @@ def preprocess_mesh_cli(
     ),
     model_key: str = typer.Argument(
         ...,
-        help="Key to use when loading tokenizer and label2id. Leave blank if training from scratch",  # noqa
+        help="Key to use when loading tokenizer and label2id. "
+             "Leave blank if training from scratch",  # noqa
     ),
     test_size: float = typer.Option(
         0.05,
@@ -170,9 +173,10 @@ def preprocess_mesh_cli(
         help="Size of the preprocessing batch"
     )
 ):
-    if input("\033[96mRunning preprocessing will save the data as a PyArrow dataset which is a very time consuming "
-             "operation. If you don't need the data to be saved, you can save much time just by running:\n"
-             "\t`grants-tagger train bertmesh {model_key} {path_to_jsonl}`\033[0m\n\n"
+    if input("\033[96mRunning preprocessing will save the data as a PyArrow dataset "
+             "which is a very time consuming operation. If you don't need the data "
+             "to be saved, you can save much time just by running:\n"
+             "> `grants-tagger train bertmesh {model_key} {path_to_jsonl}`\033[0m\n\n"
              "Do You Want To Continue? [Y/n]") != 'Y':
         exit(1)
 

@@ -1,5 +1,4 @@
 from transformers import (
-    AutoTokenizer,
     Trainer,
     TrainingArguments,
     EvalPrediction,
@@ -54,12 +53,13 @@ def train_bertmesh(
 
         logger.info(f"Preprocessing the dataset at {data_path}...")
         if os.path.isdir(data_path):
-            logger.info(f"Folder found, which means you preprocessed and save the data before. Loading from disk...")
+            logger.info("Folder found, which means you preprocessed and save the data before. "
+                        "Loading from disk...")
             dset = load_from_disk(os.path.join(data_path, 'dataset'))
             with open(os.path.join(data_path, 'label2id'), 'r') as f:
                 label2id = json.load(f)
         else:
-            logger.info(f"Preprocessing the data on the fly...")
+            logger.info("Preprocessing the data on the fly...")
             dset, label2id = preprocess_mesh(
                     data_path=data_path,
                     model_key=model_key,
