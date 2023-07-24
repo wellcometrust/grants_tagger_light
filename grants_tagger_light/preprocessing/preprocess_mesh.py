@@ -2,6 +2,7 @@ import json
 import tempfile
 
 import typer
+import time
 from transformers import AutoTokenizer
 from datasets import load_dataset
 from grants_tagger_light.models.bert_mesh import BertMesh
@@ -53,6 +54,7 @@ def preprocess_mesh(
     max_samples: int = -1,
     batch_size: int = 256,
 ):
+
     if max_samples != -1:
         data_path = create_sample_file(data_path, max_samples)
 
@@ -75,9 +77,11 @@ def preprocess_mesh(
     if "train" in dset:
         dset = dset["train"]
 
+
     # Remove unused columns to save space & time
     dset = dset.remove_columns(["journal", "year", "pmid", "title"])
 
+    t1 = time.time()
     dset = dset.map(
         _tokenize,
         batched=True,
@@ -86,7 +90,9 @@ def preprocess_mesh(
         desc="Tokenizing",
         fn_kwargs={"tokenizer": tokenizer, "x_col": "abstractText"},
         remove_columns=["abstractText"],
+        load_from_cache_file=False,
     )
+    logger.info("Time taken to tokenize: {}".format(time.time() - t1))
 
     columns_to_remove = ["meshMajor"]
     # Generate label2id if None
@@ -116,6 +122,7 @@ def preprocess_mesh(
 
         columns_to_remove.append("labels")
 
+    t1 = time.time()
     dset = dset.map(
         _encode_labels,
         batched=True,
@@ -124,11 +131,15 @@ def preprocess_mesh(
         num_proc=num_proc,
         fn_kwargs={"label2id": label2id},
         remove_columns=columns_to_remove,
+
     )
+    logger.info("Time taken to encode labels: {}".format(time.time() - t1))
 
     logger.info("Preparing train/test split....")
     # Split into train and test
+    t1 = time.time()
     dset = dset.train_test_split(test_size=test_size)
+    logger.info("Time taken to split into train and test: {}".format(time.time() - t1))
 
     # If running from Training, by default it will be None so that we don't spend time
     # on serializing the data # to disk if we are going to load it afterwards
