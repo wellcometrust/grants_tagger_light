@@ -38,13 +38,13 @@ def train_bertmesh(
     max_samples: int = -1,
     test_size: float = 0.05,
     num_proc: int = os.cpu_count(),
-    shards: int = -1
+    shards: int = -1,
 ):
     if not model_key:
-        assert isinstance(
-            model_args, BertMeshModelArguments
-        ), "If model_key is not provided, " \
-           "must provide model_args of type BertMeshModelArguments"  # noqa
+        assert isinstance(model_args, BertMeshModelArguments), (
+            "If model_key is not provided, "
+            "must provide model_args of type BertMeshModelArguments"
+        )  # noqa
 
         logger.info("No model key provided. Training model from scratch")
 
@@ -54,28 +54,32 @@ def train_bertmesh(
 
         logger.info(f"Preprocessing the dataset at {data_path}...")
         if os.path.isdir(data_path):
-            logger.info("Folder found, which means you preprocessed and "
-                        "save the data before. Loading from disk...")
-            dset = load_from_disk(os.path.join(data_path, 'dataset'))
-            with open(os.path.join(data_path, 'label2id'), 'r') as f:
+            logger.info(
+                "Folder found, which means you preprocessed and "
+                "save the data before. Loading from disk..."
+            )
+            dset = load_from_disk(os.path.join(data_path, "dataset"))
+            with open(os.path.join(data_path, "label2id"), "r") as f:
                 label2id = json.load(f)
         else:
             logger.info("Preprocessing the data on the fly...")
             dset, label2id = preprocess_mesh(
-                    data_path=data_path,
-                    model_key=model_key,
-                    test_size=test_size,
-                    num_proc=num_proc,
-                    max_samples=max_samples,
-                    batch_size=training_args.per_device_train_batch_size)
+                data_path=data_path,
+                model_key=model_key,
+                test_size=test_size,
+                num_proc=num_proc,
+                max_samples=max_samples,
+                batch_size=training_args.per_device_train_batch_size,
+            )
 
         train_dset, val_dset = dset["train"], dset["test"]
         train_dset_size = len(train_dset)
         if max_samples > 0:
             train_dset_size = min(max_samples, train_dset_size)
             logger.info(f"Training max samples: {train_dset_size}.")
-            train_dset.filter(lambda example, idx: idx < train_dset_size,
-                              with_indices=True)
+            train_dset.filter(
+                lambda example, idx: idx < train_dset_size, with_indices=True
+            )
         else:
             logger.info("Training with all data...")
 
@@ -105,10 +109,12 @@ def train_bertmesh(
 
         logger.info(f"Preprocessing the dataset at {data_path}...")
         if os.path.isdir(data_path):
-            logger.info("Folder found, which means you preprocessed and "
-                        "save the data before. Loading from disk...")
-            dset = load_from_disk(os.path.join(data_path, 'dataset'))
-            with open(os.path.join(data_path, 'label2id'), 'r') as f:
+            logger.info(
+                "Folder found, which means you preprocessed and "
+                "save the data before. Loading from disk..."
+            )
+            dset = load_from_disk(os.path.join(data_path, "dataset"))
+            with open(os.path.join(data_path, "label2id"), "r") as f:
                 label2id = json.load(f)
         else:
             logger.info("Preprocessing the data on the fly...")
@@ -118,15 +124,17 @@ def train_bertmesh(
                 test_size=test_size,
                 num_proc=num_proc,
                 max_samples=max_samples,
-                batch_size=training_args.per_device_train_batch_size)
+                batch_size=training_args.per_device_train_batch_size,
+            )
 
         train_dset, val_dset = dset["train"], dset["test"]
         train_dset_size = len(train_dset)
         if max_samples > 0:
             train_dset_size = min(max_samples, train_dset_size)
             logger.info(f"Training max samples: {train_dset_size}.")
-            train_dset.filter(lambda example, idx: idx < train_dset_size,
-                              with_indices=True)
+            train_dset.filter(
+                lambda example, idx: idx < train_dset_size, with_indices=True
+            )
         else:
             logger.info("Training with all data...")
 
@@ -144,9 +152,7 @@ def train_bertmesh(
 
         y_pred = np.int64(y_pred > 0.5)
 
-        report = classification_report(y_true,
-                                       y_pred,
-                                       output_dict=True)
+        report = classification_report(y_true, y_pred, output_dict=True)
 
         metric_dict = {
             "micro_avg": report["micro avg"],
@@ -161,18 +167,17 @@ def train_bertmesh(
     collator = MultilabelDataCollator(label2id=label2id)
 
     if shards > 0:
-        logger.info(f"Calculating max steps for "
-                    f"IterableDatasets shards...")
-        max_steps = Sharding.calculate_max_steps(training_args,
-                                                 train_dset_size)
+        logger.info(f"Calculating max steps for " f"IterableDatasets shards...")
+        max_steps = Sharding.calculate_max_steps(training_args, train_dset_size)
         training_args.max_steps = max_steps
 
-    logger.info(f"Initializing Trainer:\n"
-                f"* per_device_train_batch_size="
-                f"{training_args.per_device_train_batch_size}\n"
-                f"* max_steps = {training_args.max_steps}\n"
-                f"* epochs = {training_args.num_train_epochs}\n"
-                )
+    logger.info(
+        f"Initializing Trainer:\n"
+        f"* per_device_train_batch_size="
+        f"{training_args.per_device_train_batch_size}\n"
+        f"* max_steps = {training_args.max_steps}\n"
+        f"* epochs = {training_args.num_train_epochs}\n"
+    )
 
     trainer = Trainer(
         model=model,
@@ -180,7 +185,7 @@ def train_bertmesh(
         train_dataset=train_dset,
         eval_dataset=val_dset,
         data_collator=collator,
-        compute_metrics=sklearn_metrics
+        compute_metrics=sklearn_metrics,
     )
 
     logger.info("Training...")
@@ -202,21 +207,16 @@ train_app = typer.Typer()
 def train_bertmesh_cli(
     ctx: typer.Context,
     model_key: str = typer.Argument(
-        ..., help="Pretrained model key. "
-                  "Local path or HF location"
+        ..., help="Pretrained model key. " "Local path or HF location"
     ),
     data_path: str = typer.Argument(
         ...,
         help="Path to allMeSH_2021.jsonl (or similar) "
-             "or to a folder after preprocessing and saving to disk"
+        "or to a folder after preprocessing and saving to disk",
     ),
-    test_size: float = typer.Option(
-        0.05,
-        help="Fraction of data to use for testing"
-    ),
+    test_size: float = typer.Option(0.05, help="Fraction of data to use for testing"),
     num_proc: int = typer.Option(
-        os.cpu_count(),
-        help="Number of processes to use for preprocessing"
+        os.cpu_count(), help="Number of processes to use for preprocessing"
     ),
     max_samples: int = typer.Option(
         -1,
@@ -225,9 +225,9 @@ def train_bertmesh_cli(
     shards: int = typer.Option(
         -1,
         help="Number os shards to divide training "
-             "IterativeDataset to (improves performance)")
+        "IterativeDataset to (improves performance)",
+    ),
 ):
-
     parser = HfArgumentParser(
         (
             BertMeshTrainingArguments,
@@ -244,11 +244,13 @@ def train_bertmesh_cli(
     logger.info("Training args: {}".format(pformat(training_args)))
     logger.info("Wandb args: {}".format(pformat(wandb_args)))
 
-    train_bertmesh(model_key,
-                   data_path,
-                   training_args,
-                   model_args,
-                   max_samples,
-                   test_size,
-                   num_proc,
-                   shards)
+    train_bertmesh(
+        model_key,
+        data_path,
+        training_args,
+        model_args,
+        max_samples,
+        test_size,
+        num_proc,
+        shards,
+    )

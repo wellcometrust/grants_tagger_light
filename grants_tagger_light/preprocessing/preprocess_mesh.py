@@ -29,12 +29,12 @@ def _map_label_to_ids(labels, label2id):
 
 
 def _encode_labels(sample, label2id):
-    return {'label_ids': [_map_label_to_ids(x, label2id) for x in sample['meshMajor']]}
+    return {"label_ids": [_map_label_to_ids(x, label2id) for x in sample["meshMajor"]]}
 
 
 def create_sample_file(jsonl_file, lines):
-    with open(jsonl_file, 'r') as input_file:
-        with tempfile.NamedTemporaryFile(mode='w', delete=False) as tmp_file:
+    with open(jsonl_file, "r") as input_file:
+        with tempfile.NamedTemporaryFile(mode="w", delete=False) as tmp_file:
             for _ in range(lines):
                 line = input_file.readline()
                 if not line:
@@ -72,8 +72,8 @@ def preprocess_mesh(
     # We only have 1 file, so no sharding is available https://huggingface.co/docs/datasets/loading#multiprocessing
     dset = load_dataset("json", data_files=data_path, num_proc=1)
     # By default, any dataset loaded is set to 'train' using the previous command
-    if 'train' in dset:
-        dset = dset['train']
+    if "train" in dset:
+        dset = dset["train"]
 
     # Remove unused columns to save space & time
     dset = dset.remove_columns(["journal", "year", "pmid", "title"])
@@ -93,11 +93,11 @@ def preprocess_mesh(
     if label2id is None:
         logger.info("Getting the labels...")
         dset = dset.map(
-            lambda x: {'labels': x["meshMajor"]},
+            lambda x: {"labels": x["meshMajor"]},
             batched=True,
             batch_size=batch_size,
             num_proc=num_proc,
-            desc="Getting labels"
+            desc="Getting labels",
         )
 
         # Most efficient way to do dedup of labels
@@ -105,7 +105,7 @@ def preprocess_mesh(
 
         logger.info("Obtaining unique values from the labels...")
         # Iterate through the lists and add elements to the set
-        for arr in tqdm(dset['labels']):
+        for arr in tqdm(dset["labels"]):
             unique_labels_set.update(arr)
 
         # Most efficient way to do dictionary creation
@@ -134,8 +134,8 @@ def preprocess_mesh(
     # on serializing the data # to disk if we are going to load it afterwards
     if save_to_path is not None:
         logger.info("Saving to disk...")
-        dset.save_to_disk(os.path.join(save_to_path, 'dataset'), num_proc=num_proc)
-        with open(os.path.join(save_to_path, 'label2id'), 'w') as f:
+        dset.save_to_disk(os.path.join(save_to_path, "dataset"), num_proc=num_proc)
+        with open(os.path.join(save_to_path, "label2id"), "w") as f:
             json.dump(label2id, f)
 
     return dset, label2id
@@ -143,53 +143,50 @@ def preprocess_mesh(
 
 @preprocess_app.command()
 def preprocess_mesh_cli(
-    data_path: str = typer.Argument(
-        ...,
-        help="Path to mesh.jsonl"
-    ),
+    data_path: str = typer.Argument(..., help="Path to mesh.jsonl"),
     save_to_path: str = typer.Argument(
-        ...,
-        help="Path to save the serialized PyArrow dataset after preprocessing"
+        ..., help="Path to save the serialized PyArrow dataset after preprocessing"
     ),
     model_key: str = typer.Argument(
         ...,
         help="Key to use when loading tokenizer and label2id. "
-             "Leave blank if training from scratch",  # noqa
+        "Leave blank if training from scratch",  # noqa
     ),
-    test_size: float = typer.Option(
-        0.05,
-        help="Fraction of data to use for testing"
-    ),
+    test_size: float = typer.Option(0.05, help="Fraction of data to use for testing"),
     num_proc: int = typer.Option(
-        os.cpu_count(),
-        help="Number of processes to use for preprocessing"
+        os.cpu_count(), help="Number of processes to use for preprocessing"
     ),
     max_samples: int = typer.Option(
         -1,
         help="Maximum number of samples to use for preprocessing",
     ),
-    batch_size: int = typer.Option(
-        256,
-        help="Size of the preprocessing batch"
-    )
+    batch_size: int = typer.Option(256, help="Size of the preprocessing batch"),
 ):
-    if input("\033[96mRunning preprocessing will save the data as a PyArrow dataset "
-             "which is a very time consuming operation. If you don't need the data "
-             "to be saved, you can save much time just by running:\n"
-             "> `grants-tagger train bertmesh {model_key} {path_to_jsonl}`\033[0m\n\n"
-             "Do You Want To Continue? [Y/n]") != 'Y':
+    if (
+        input(
+            "\033[96mRunning preprocessing will save the data as a PyArrow dataset "
+            "which is a very time consuming operation. If you don't need the data "
+            "to be saved, you can save much time just by running:\n"
+            "> `grants-tagger train bertmesh {model_key} {path_to_jsonl}`\033[0m\n\n"
+            "Do You Want To Continue? [Y/n]"
+        )
+        != "Y"
+    ):
         exit(1)
 
-    if not data_path.endswith('jsonl'):
-        logger.error("It seems your input MeSH data is not in `jsonl` format. "
-                     "Please, run first `scripts/mesh_json_to_jsonlpy.`")
+    if not data_path.endswith("jsonl"):
+        logger.error(
+            "It seems your input MeSH data is not in `jsonl` format. "
+            "Please, run first `scripts/mesh_json_to_jsonlpy.`"
+        )
         exit(1)
 
     preprocess_mesh(
-                data_path=data_path,
-                model_key=model_key,
-                test_size=test_size,
-                num_proc=num_proc,
-                max_samples=max_samples,
-                batch_size=batch_size,
-                save_to_path=save_to_path)
+        data_path=data_path,
+        model_key=model_key,
+        test_size=test_size,
+        num_proc=num_proc,
+        max_samples=max_samples,
+        batch_size=batch_size,
+        save_to_path=save_to_path,
+    )
