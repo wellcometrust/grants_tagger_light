@@ -3,7 +3,6 @@ from grants_tagger_light.training.cli_args import BertMeshModelArguments
 from transformers import TrainingArguments
 import tempfile
 import pytest
-import numpy as np
 
 # Note dummy data is not necessarily annotated correctly
 dummy_data = """{"journal":"dummyJournal","meshMajor":["COVID-19","SARS-CoV-2"],"year":"2023","abstractText":"This is an article about coronavirus.","title":"article1","pmid":"pmid1"}

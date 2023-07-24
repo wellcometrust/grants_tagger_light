@@ -128,6 +128,8 @@ def preprocess_mesh(
     # Split into train and test
     dset = dset.train_test_split(test_size=test_size)
 
+    # If running from Training, by default it will be None so that we don't spend time on serializing the data
+    # to disk if we are going to load it afterwards
     if save_to_path is not None:
         logger.info("Saving to disk...")
         dset.save_to_disk(os.path.join(save_to_path, 'dataset'), num_proc=num_proc)
