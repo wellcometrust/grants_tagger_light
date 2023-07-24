@@ -45,11 +45,11 @@ def create_sample_file(jsonl_file, lines):
 def preprocess_mesh(
     data_path: str,
     model_key: str,
+    save_to_path: str = None,
     test_size: float = 0.05,
     num_proc: int = os.cpu_count(),
     max_samples: int = -1,
     batch_size: int = 256,
-    save_to_path: str = None
 ):
     if max_samples == -1:
         max_samples = np.inf
