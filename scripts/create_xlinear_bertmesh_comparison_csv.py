@@ -176,10 +176,6 @@ def create_comparison_csv(
             axis=1,
         )
 
-    import pdb
-
-    pdb.set_trace()
-
     # Output df to csv
     grants_sample.to_csv(output_path, index=False)
 
