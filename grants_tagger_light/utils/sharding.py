@@ -39,7 +39,7 @@ class Sharding:
                 >  14781199.15 / 8 = 1847649.89375
                 if accumulation_steps is 1, then
                 > 1847649.89375 / 1 = 1847649.89375
-        """ # noqa
+        """  # noqa
 
         train_batch_size = training_args.per_device_train_batch_size
         accumulation_steps = training_args.gradient_accumulation_steps
