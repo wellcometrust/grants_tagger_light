@@ -8,9 +8,12 @@ import torch
 from tqdm import tqdm
 from grants_tagger_light.predict import predict_tags as predict_tags_bertmesh
 from grants_tagger_light.models.xlinear import MeshXLinear
+from loguru import logger
 
 random.seed(42)
 torch.manual_seed(42)
+
+WELLCOME_FUNDER_ID = "grid.52788.30"
 
 
 def load_mesh_terms_from_file(mesh_terms_list_path):
@@ -87,6 +90,7 @@ def create_comparison_csv(
     s3_url: str,
     num_parquet_files_to_consider: int,
     num_samples_per_cat: int,
+    num_wellcome_grants_to_add: int,
     mesh_metadata_path: str,
     mesh_terms_list_path: str,
     pre_annotate_bertmesh: bool,
@@ -117,10 +121,39 @@ def create_comparison_csv(
     # Filter out rows where abstract is na
     all_grants = all_grants[~all_grants["abstract"].isna()]
 
+    # Reshuffle parquet files, search for Wellcome grants to add
+    random.shuffle(parquet_files)
+    wellcome_grants = []
+    idx = 0
+    total_len = 0
+
+    while len(wellcome_grants) < num_wellcome_grants_to_add and idx <= len(
+        parquet_files
+    ):
+        pq_file = parquet_files[idx]
+        pq_df = wr.s3.read_parquet(pq_file)
+        pq_df = pq_df[pq_df["funder"] == WELLCOME_FUNDER_ID]
+
+        if len(pq_df.index) > 0:
+            wellcome_grants.append(pq_df)
+            total_len += len(pq_df.index)
+            logger.info("Added {} Wellcome grants".format(len(pq_df)))
+        idx += 1
+
+        # If already exceeds num_wellcome_grants_to_add, break
+        if total_len >= num_wellcome_grants_to_add:
+            break
+
     # Do stratified sampling based on for_first_level_name column
     grants_sample = all_grants.groupby("for_first_level_name", group_keys=False).apply(
         lambda x: x.sample(min(len(x), num_samples_per_cat))
     )
+
+    wellcome_grants = pd.concat(wellcome_grants)
+    wellcome_grants = wellcome_grants[~wellcome_grants["abstract"].isna()]
+    wellcome_grants = wellcome_grants[:num_wellcome_grants_to_add]
+
+    grants_sample = pd.concat([grants_sample, wellcome_grants])
 
     abstracts = grants_sample["abstract"].tolist()
 
@@ -176,6 +209,11 @@ def create_comparison_csv(
             axis=1,
         )
 
+    # Add column for whether it is a Wellcome grant or not
+    grants_sample["is_wellcome_grant"] = grants_sample["funder"].apply(
+        lambda x: x == "grid.52788.30"
+    )
+
     # Output df to csv
     grants_sample.to_csv(output_path, index=False)
 
@@ -185,6 +223,7 @@ if __name__ == "__main__":
     parser.add_argument("--s3-url", type=str)
     parser.add_argument("--num-parquet-files-to-consider", type=int, default=1)
     parser.add_argument("--num-samples-per-cat", type=int, default=10)
+    parser.add_argument("--num-wellcome-grants-to-add", type=int, default=100)
     parser.add_argument("--mesh-metadata-path", type=str)
     parser.add_argument("--mesh-terms-list-path", type=str)
     parser.add_argument("--pre-annotate-bertmesh", action="store_true")
@@ -204,6 +243,7 @@ if __name__ == "__main__":
         s3_url=args.s3_url,
         num_parquet_files_to_consider=args.num_parquet_files_to_consider,
         num_samples_per_cat=args.num_samples_per_cat,
+        num_wellcome_grants_to_add=args.num_wellcome_grants_to_add,
         mesh_metadata_path=args.mesh_metadata_path,
         mesh_terms_list_path=args.mesh_terms_list_path,
         pre_annotate_bertmesh=args.pre_annotate_bertmesh,
