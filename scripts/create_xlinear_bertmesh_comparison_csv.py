@@ -158,6 +158,24 @@ def create_comparison_csv(
             )
         ]
 
+    if pre_annotate_bertmesh and pre_annotate_xlinear:
+        # Add column with common terms
+        grants_sample["common_terms"] = grants_sample.apply(
+            lambda x: set(x["bertmesh_terms"]).intersection(set(x["xlinear_terms"])),
+            axis=1,
+        )
+
+        # Add columns with bertmesh_only and xlinear_only
+        grants_sample["bertmesh_only"] = grants_sample.apply(
+            lambda x: set(x["bertmesh_terms"]).difference(set(x["xlinear_terms"])),
+            axis=1,
+        )
+
+        grants_sample["xlinear_only"] = grants_sample.apply(
+            lambda x: set(x["xlinear_terms"]).difference(set(x["bertmesh_terms"])),
+            axis=1,
+        )
+
     # Output df to csv
     grants_sample.to_csv(output_path, index=False)
 
