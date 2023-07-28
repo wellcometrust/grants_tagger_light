@@ -1,7 +1,7 @@
 # Run on p2.8xlarge instance
 grants-tagger train bertmesh \
     "" \
-    kk/1.json \
+    data/raw/allMeSH_2021.jsonl \
     --test-size 0.005 \
     --shards 250 \
     --output_dir bertmesh_outs/pipeline_test/ \
