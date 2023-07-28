@@ -74,6 +74,7 @@ def train_bertmesh(
 
         train_dset, val_dset = dset["train"], dset["test"]
         train_dset_size = len(train_dset)
+        logger.info(f"Training dataset size: {train_dset_size}")
         if max_samples > 0:
             train_dset_size = min(max_samples, train_dset_size)
             logger.info(f"Training max samples: {train_dset_size}.")
@@ -129,6 +130,7 @@ def train_bertmesh(
 
         train_dset, val_dset = dset["train"], dset["test"]
         train_dset_size = len(train_dset)
+        logger.info(f"Training dataset size: {train_dset_size}")
         if max_samples > 0:
             train_dset_size = min(max_samples, train_dset_size)
             logger.info(f"Training max samples: {train_dset_size}.")
@@ -187,7 +189,7 @@ def train_bertmesh(
         data_collator=collator,
         compute_metrics=sklearn_metrics,
     )
-
+    logger.info(training_args)
     logger.info("Training...")
     trainer.train()
 

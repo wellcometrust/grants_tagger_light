@@ -1,4 +1,6 @@
 from datasets import IterableDataset
+from loguru import logger
+import math
 
 
 class Sharding:
@@ -41,6 +43,31 @@ class Sharding:
                 > 1847649.89375 / 1 = 1847649.89375
         """  # noqa
 
+        # From https://huggingface.co/transformers/v4.2.2/_modules/transformers/trainer_tf.html
         train_batch_size = training_args.per_device_train_batch_size
-        accumulation_steps = training_args.gradient_accumulation_steps
-        return (train_dset_size / train_batch_size) / accumulation_steps
+        logger.info(f"train_dset_size: {train_dset_size}")
+        logger.info(f"train_batch_size: {train_batch_size}")
+
+        num_update_steps_per_epoch = train_dset_size / train_batch_size
+        num_update_steps_per_epoch = math.ceil(num_update_steps_per_epoch)
+        logger.info(f"num_update_steps_per_epoch: {num_update_steps_per_epoch}")
+
+        accumulation_steps = max(training_args.gradient_accumulation_steps, 1)
+        logger.info(f"accumulation steps: {accumulation_steps}")
+
+        num_update_steps_per_epoch /= accumulation_steps
+        num_update_steps_per_epoch = max(num_update_steps_per_epoch, 1)
+        logger.info(f"num_update_steps_per_epoch: {num_update_steps_per_epoch}")
+
+        epochs = max(training_args.num_train_epochs, 1)
+        logger.info(f"epochs: {epochs}")
+
+        gpus = max(training_args._n_gpu, 1)
+        logger.info(f"gpus using HF: {gpus}")
+
+        total_steps = num_update_steps_per_epoch * epochs
+        logger.info(f"total_steps: {total_steps}")
+
+        total_steps_per_gpu = math.ceil(total_steps / gpus)
+        logger.info(f"total_steps_per_gpu: {total_steps_per_gpu}")
+        return total_steps_per_gpu
