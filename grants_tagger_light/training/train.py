@@ -40,6 +40,44 @@ def train_bertmesh(
     num_proc: int = os.cpu_count(),
     shards: int = -1,
 ):
+    logger.info(f"Preprocessing the dataset at {data_path}...")
+    if os.path.isdir(data_path):
+        logger.info(
+            "Folder found, which means you preprocessed and "
+            "save the data before. Loading from disk..."
+        )
+        dset = load_from_disk(os.path.join(data_path, "dataset"))
+        with open(os.path.join(data_path, "label2id"), "r") as f:
+            label2id = json.load(f)
+    else:
+        logger.info("Preprocessing the data on the fly...")
+        dset, label2id = preprocess_mesh(
+            data_path=data_path,
+            model_key=model_key,
+            test_size=test_size,
+            num_proc=num_proc,
+            max_samples=max_samples,
+            batch_size=training_args.per_device_train_batch_size,
+        )
+
+    id2label =
+
+    train_dset, val_dset = dset["train"], dset["test"]
+    train_dset_size = len(train_dset)
+    logger.info(f"Training dataset size: {train_dset_size}")
+    if max_samples > 0:
+        train_dset_size = min(max_samples, train_dset_size)
+        logger.info(f"Training max samples: {train_dset_size}.")
+        train_dset.filter(
+            lambda example, idx: idx < train_dset_size, with_indices=True
+        )
+    else:
+        logger.info("Training with all data...")
+
+    if shards > 0:
+        logger.info("Sharding training dataset...")
+        train_dset = Sharding(num_shards=shards).shard(train_dset)
+
     if not model_key:
         assert isinstance(model_args, BertMeshModelArguments), (
             "If model_key is not provided, "
@@ -51,42 +89,6 @@ def train_bertmesh(
         # Instantiate model from scratch
         logger.info(f"Loading `{model_args.pretrained_model_key}` tokenizer...")
         config = AutoConfig.from_pretrained(model_args.pretrained_model_key)
-
-        logger.info(f"Preprocessing the dataset at {data_path}...")
-        if os.path.isdir(data_path):
-            logger.info(
-                "Folder found, which means you preprocessed and "
-                "save the data before. Loading from disk..."
-            )
-            dset = load_from_disk(os.path.join(data_path, "dataset"))
-            with open(os.path.join(data_path, "label2id"), "r") as f:
-                label2id = json.load(f)
-        else:
-            logger.info("Preprocessing the data on the fly...")
-            dset, label2id = preprocess_mesh(
-                data_path=data_path,
-                model_key=model_key,
-                test_size=test_size,
-                num_proc=num_proc,
-                max_samples=max_samples,
-                batch_size=training_args.per_device_train_batch_size,
-            )
-
-        train_dset, val_dset = dset["train"], dset["test"]
-        train_dset_size = len(train_dset)
-        logger.info(f"Training dataset size: {train_dset_size}")
-        if max_samples > 0:
-            train_dset_size = min(max_samples, train_dset_size)
-            logger.info(f"Training max samples: {train_dset_size}.")
-            train_dset.filter(
-                lambda example, idx: idx < train_dset_size, with_indices=True
-            )
-        else:
-            logger.info("Training with all data...")
-
-        if shards > 0:
-            logger.info("Sharding training dataset...")
-            train_dset = Sharding(num_shards=shards).shard(train_dset)
 
         config.update(
             {
@@ -107,38 +109,6 @@ def train_bertmesh(
         # Instantiate from pretrained
         logger.info(f"Loading `{model_key}` tokenizer...")
         model = BertMesh.from_pretrained(model_key, trust_remote_code=True)
-
-        logger.info(f"Preprocessing the dataset at {data_path}...")
-        if os.path.isdir(data_path):
-            logger.info(
-                "Folder found, which means you preprocessed and "
-                "save the data before. Loading from disk..."
-            )
-            dset = load_from_disk(os.path.join(data_path, "dataset"))
-            with open(os.path.join(data_path, "label2id"), "r") as f:
-                label2id = json.load(f)
-        else:
-            logger.info("Preprocessing the data on the fly...")
-            dset, label2id = preprocess_mesh(
-                data_path=data_path,
-                model_key=model_key,
-                test_size=test_size,
-                num_proc=num_proc,
-                max_samples=max_samples,
-                batch_size=training_args.per_device_train_batch_size,
-            )
-
-        train_dset, val_dset = dset["train"], dset["test"]
-        train_dset_size = len(train_dset)
-        logger.info(f"Training dataset size: {train_dset_size}")
-        if max_samples > 0:
-            train_dset_size = min(max_samples, train_dset_size)
-            logger.info(f"Training max samples: {train_dset_size}.")
-            train_dset.filter(
-                lambda example, idx: idx < train_dset_size, with_indices=True
-            )
-        else:
-            logger.info("Training with all data...")
 
     if model_args.freeze_backbone:
         logger.info("Freezing backbone")
@@ -172,14 +142,6 @@ def train_bertmesh(
         logger.info("Calculating max steps for IterableDatasets shards...")
         max_steps = Sharding.calculate_max_steps(training_args, train_dset_size)
         training_args.max_steps = max_steps
-
-    logger.info(
-        f"Initializing Trainer:\n"
-        f"* per_device_train_batch_size="
-        f"{training_args.per_device_train_batch_size}\n"
-        f"* max_steps = {training_args.max_steps}\n"
-        f"* epochs = {training_args.num_train_epochs}\n"
-    )
 
     trainer = Trainer(
         model=model,
