@@ -2,7 +2,6 @@
 grants-tagger train bertmesh \
     "" \
     kk/1.json \
-    --report_to none \
     --test-size 0.05 \
     --shards 250 \
     --output_dir bertmesh_outs/pipeline_test/ \
@@ -15,7 +14,7 @@ grants-tagger train bertmesh \
     --save_steps 100000 \
     --fp16 \
     --torch_compile \
-    --report_to none \
     --wandb_project wellcome-mesh \
     --wandb_name test-train-all \
     --wandb_api_key ${WANDB_API_KEY}
+    # --report_to none \
