@@ -15,6 +15,7 @@ grants-tagger train bertmesh \
     --save_steps 100000 \
     --fp16 \
     --torch_compile \
-    --report_to none
-    # --wandb_name test-train-all \
-    # --wandb_api_key ${WANDB_API_KEY} \
+    --report_to none \
+    --wandb_project wellcome-mesh \
+    --wandb_name test-train-all \
+    --wandb_api_key ${WANDB_API_KEY}
