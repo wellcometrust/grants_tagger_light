@@ -40,6 +40,13 @@ def train_bertmesh(
     num_proc: int = os.cpu_count(),
     shards: int = -1,
 ):
+    if not model_key:
+        assert isinstance(model_args, BertMeshModelArguments), (
+            "If model_key is not provided, "
+            "must provide model_args of type BertMeshModelArguments"
+        )  # noqa
+        exit(-1)
+
     logger.info(f"Preprocessing the dataset at {data_path}...")
     if os.path.isdir(data_path):
         logger.info(
@@ -60,8 +67,6 @@ def train_bertmesh(
             batch_size=training_args.per_device_train_batch_size,
         )
 
-    id2label =
-
     train_dset, val_dset = dset["train"], dset["test"]
     train_dset_size = len(train_dset)
     logger.info(f"Training dataset size: {train_dset_size}")
@@ -79,11 +84,6 @@ def train_bertmesh(
         train_dset = Sharding(num_shards=shards).shard(train_dset)
 
     if not model_key:
-        assert isinstance(model_args, BertMeshModelArguments), (
-            "If model_key is not provided, "
-            "must provide model_args of type BertMeshModelArguments"
-        )  # noqa
-
         logger.info("No model key provided. Training model from scratch")
 
         # Instantiate model from scratch
@@ -97,6 +97,7 @@ def train_bertmesh(
                 "hidden_size": model_args.hidden_size,
                 "dropout": model_args.dropout,
                 "multilabel_attention": model_args.multilabel_attention,
+                "label2id": label2id,
                 "id2label": {v: k for k, v in label2id.items()},
                 "freeze_backbone": model_args.freeze_backbone,
             }
