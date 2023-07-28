@@ -45,7 +45,6 @@ def train_bertmesh(
             "If model_key is not provided, "
             "must provide model_args of type BertMeshModelArguments"
         )  # noqa
-        exit(-1)
 
     logger.info(f"Preprocessing the dataset at {data_path}...")
     if os.path.isdir(data_path):
