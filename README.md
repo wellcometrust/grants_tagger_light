@@ -111,21 +111,21 @@ Besides those arguments, feel free to add any other TrainingArgument from Huggin
 grants-tagger train bertmesh \
     "" \
     data/raw/allMeSH_2021.jsonl \
-    --test-size 0.05 \
-    --max-samples 1000 \
-    --shards 100 \
+    --test-size 0.005 \
+    --shards 250 \
     --output_dir bertmesh_outs/pipeline_test/ \
+    --per_device_train_batch_size 32 \
+    --num_train_epochs 1 \
+    --save_strategy steps \
+    --save_steps 50000 \
+    --fp16 \
+    --torch_compile \
+    --wandb_project wellcome-mesh \
     --wandb_name test-train-all \
     --wandb_api_key ${WANDB_API_KEY} \
-    --per_device_train_batch_size 256 \
     --per_device_eval_batch_size 8 \
-    --num_train_epochs 1 \
-    --evaluation_strategy steps \
-    --eval_steps 100000 \
-    --save_strategy steps \
-    --save_steps 100000 \
-    --fp16 \
-    --torch_compile
+    --eval_steps 50000 \
+    --evaluation_strategy steps
 ```
 
 ## ⚙️  Preprocess
@@ -133,10 +133,7 @@ grants-tagger train bertmesh \
 This process is optional to run, since it will be managed by the `grants-tagger train bertmesh` process.
 If you run it manually, it will store the data in local.
 
-Preprocess creates a JSONL datafile with `text`, `tags` and `meta` as keys.
-Text and tags are used for training whereas meta can be useful during annotation
-or to analyse predictions and performance. Each dataset needs its own
-preprocessing so the current preprocess works with the `allMeSH_2021` one.
+Each dataset needs its own preprocessing so the current preprocess works with the `allMeSH_2021` one.
 If you want to use a different dataset see section on bringing
 your own data under development.
 
