@@ -159,6 +159,8 @@ def train_bertmesh(
     metrics = trainer.evaluate(eval_dataset=val_dset)
 
     logger.info(pformat(metrics))
+    with open(os.path.join(training_args.output_dir, "metrics"), 'w') as f:
+        f.write(pformat(metrics))        
 
     logger.info("Saving the model...")
     trainer.save_model(os.path.join(training_args.output_dir, "best"))
