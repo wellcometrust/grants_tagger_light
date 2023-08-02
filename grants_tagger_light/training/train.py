@@ -81,7 +81,10 @@ def train_bertmesh(
         logger.info("Sharding training dataset...")
         train_dset = Sharding(num_shards=shards).shard(train_dset)
 
-    if not model_key:
+    if from_checkpoint:
+        logger.info("Loading from checkpoint...")
+        model = BertMesh.from_pretrained(from_checkpoint).to("cuda")
+    elif not model_key:
         logger.info("No model key provided. Training model from scratch")
 
         # Instantiate model from scratch
@@ -103,10 +106,7 @@ def train_bertmesh(
         model = BertMesh(config)
 
     else:
-        logger.info(f"Training model from pretrained key {model_key}")
-
-        # Instantiate from pretrained
-        logger.info(f"Loading `{model_key}` tokenizer...")
+        logger.info(f"Training from pretrained key {model_key}")
         model = BertMesh.from_pretrained(model_key, trust_remote_code=True)
 
     if model_args.freeze_backbone:
