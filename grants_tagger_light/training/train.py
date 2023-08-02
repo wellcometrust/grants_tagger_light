@@ -39,6 +39,7 @@ def train_bertmesh(
     test_size: float = 0.05,
     num_proc: int = os.cpu_count(),
     shards: int = -1,
+    from_checkpoint: str = None
 ):
     if not model_key:
         assert isinstance(model_args, BertMeshModelArguments), (
@@ -150,8 +151,13 @@ def train_bertmesh(
         compute_metrics=sklearn_metrics,
     )
     logger.info(training_args)
-    logger.info("Training...")
-    trainer.train()
+
+    if from_checkpoint is None:
+        logger.info("Training...")
+        trainer.train()
+    else:
+        logger.info(f"Resuming training from checkpoint: {from_checkpoint}")
+        trainer.train(from_checkpoint)
 
     logger.info("Saving the model...")
     trainer.save_model(os.path.join(training_args.output_dir, "best"))
@@ -191,6 +197,10 @@ def train_bertmesh_cli(
         help="Number os shards to divide training "
         "IterativeDataset to (improves performance)",
     ),
+    from_checkpoint: str = typer.Option(
+        None,
+        help="Name of the checkpoint to resume training"
+    )
 ):
     parser = HfArgumentParser(
         (
@@ -217,4 +227,5 @@ def train_bertmesh_cli(
         test_size,
         num_proc,
         shards,
+        from_checkpoint
     )
