@@ -81,10 +81,7 @@ def train_bertmesh(
         logger.info("Sharding training dataset...")
         train_dset = Sharding(num_shards=shards).shard(train_dset)
 
-    if from_checkpoint:
-        logger.info("Loading from checkpoint...")
-        model = BertMesh.from_pretrained(from_checkpoint).to("cuda")
-    elif not model_key:
+    if not model_key:
         logger.info("No model key provided. Training model from scratch")
 
         # Instantiate model from scratch
@@ -154,10 +151,9 @@ def train_bertmesh(
 
     if from_checkpoint is None:
         logger.info("Training...")
-        trainer.train()
     else:
         logger.info(f"Resuming training from checkpoint: {from_checkpoint}")
-        trainer.train(from_checkpoint)
+    trainer.train()
 
     logger.info("Saving the model...")
     trainer.save_model(os.path.join(training_args.output_dir, "best"))
