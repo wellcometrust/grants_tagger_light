@@ -1,7 +1,14 @@
-# Run on p2.8xlarge instance
+# Run on g5.12xlargeinstance
+
+# Without preprocessing (on-the-fly)
+SOURCE="data/raw/allMeSH_2021.jsonl"
+
+# After preprocessing first
+# SOURCE="output_folder_from_preprocessing"
+
 grants-tagger train bertmesh \
     "" \
-    data/raw/allMeSH_2021.jsonl \
+    $SOURCE \
     --test-size 0.0025 \
     --shards 48 \
     --output_dir bertmesh_outs/pipeline_test/ \

@@ -1,8 +1,18 @@
-# Run on p2.8xlarge instance
+# Run on g5.12xlarge instance
+
+# Without preprocessing (on-the-fly)
+SOURCE="data/raw/allMeSH_2021.jsonl"
+
+# After preprocessing first
+# SOURCE="output_folder_from_preprocessing"
+
+# Checkpoint
+CHECKPOINT="checkpoint-100000"
+
 grants-tagger train bertmesh \
-    bertmesh_outs/pipeline_test/checkpoint-100000 \
-    kk \
-    --output_dir bertmesh_outs/pipeline_test_from_100000/ \
+    bertmesh_outs/pipeline_test/$CHECKPOINT \
+    $SOURCE \
+    --output_dir bertmesh_outs/pipeline_test_from_$CHECKPOINT/ \
     --ignore_data_skip=True \
     --shards 48 \
     --per_device_train_batch_size 32 \
