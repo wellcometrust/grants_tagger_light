@@ -38,7 +38,7 @@ def train_bertmesh(
     max_samples: int = -1,
     test_size: float = 0.05,
     num_proc: int = os.cpu_count(),
-    shards: int = -1,
+    shards: int = os.cpu_count(),
     from_checkpoint: str = None
 ):
     if not model_key:
@@ -189,7 +189,7 @@ def train_bertmesh_cli(
         help="Maximum number of samples to use from the json",
     ),
     shards: int = typer.Option(
-        -1,
+        os.cpu_count(),
         help="Number os shards to divide training "
         "IterativeDataset to (improves performance)",
     ),
