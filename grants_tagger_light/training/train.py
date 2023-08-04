@@ -50,8 +50,8 @@ def train_bertmesh(
     logger.info(f"Preprocessing the dataset at {data_path}...")
     if os.path.isdir(data_path):
         logger.info(
-            "Folder found, which means you preprocessed and "
-            "save the data before. Loading from disk..."
+            "Train/test data found in a folder, which means you preprocessed and "
+            "save the data before. Loading that split from disk..."
         )
         dset = load_from_disk(os.path.join(data_path, "dataset"))
         with open(os.path.join(data_path, "label2id"), "r") as f:
