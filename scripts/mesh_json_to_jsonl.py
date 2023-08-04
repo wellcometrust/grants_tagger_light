@@ -15,6 +15,7 @@ def process_data(item, filter_tags: list = None, filter_years: list = None):
     if check_years and "year" not in item:
         logger.warning("`year` not found in the fields. Unable to filter tags.")
         check_years = False
+
     if check_tags:
         if filter_tags is None:
             filter_tags = []

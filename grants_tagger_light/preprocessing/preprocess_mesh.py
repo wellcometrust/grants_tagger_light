@@ -9,9 +9,8 @@ from grants_tagger_light.models.bert_mesh import BertMesh
 import os
 from loguru import logger
 from tqdm import tqdm
+import numpy as np
 
-# from datasets import disable_caching
-# disable_caching()
 
 preprocess_app = typer.Typer()
 
@@ -53,8 +52,12 @@ def preprocess_mesh(
     num_proc: int = os.cpu_count(),
     max_samples: int = -1,
     batch_size: int = 256,
+    tags: str = None,
+    years: str = None
 ):
+
     if max_samples != -1:
+        logger.info(f"Filtering examples to {max_samples}")
         data_path = create_sample_file(data_path, max_samples)
 
     if not model_key:
@@ -75,6 +78,17 @@ def preprocess_mesh(
     # By default, any dataset loaded is set to 'train' using the previous command
     if "train" in dset:
         dset = dset["train"]
+
+    if years is not None:
+        logger.info(f"Filtering years: {years}")
+        filter_years_list = list(filter(lambda x: x.strip() != "", years.split(",")))
+        filter_years_list = [str(y) for y in filter_years_list]
+        dset = dset.filter(lambda x: any(np.isin(filter_years_list, [str(x["year"])])))
+
+    if tags is not None:
+        logger.info(f"Filtering tags: {tags}")
+        filter_tags_list = list(filter(lambda x: x.strip() != "", tags.split(",")))
+        dset = dset.filter(lambda x: any(np.isin(filter_tags_list, x["meshMajor"])))
 
     # Remove unused columns to save space & time
     dset = dset.remove_columns(["journal", "year", "pmid", "title"])
@@ -169,18 +183,11 @@ def preprocess_mesh_cli(
         help="Maximum number of samples to use for preprocessing",
     ),
     batch_size: int = typer.Option(256, help="Size of the preprocessing batch"),
+    tags: str = typer.Option(None, help="Comma-separated tags you want to include in the dataset "
+                                               "(the rest will be discarded)"),
+    years: str = typer.Option(None, help="Comma-separated yeasr you want to include in the dataset "
+                                                "(the rest will be discarded)"),
 ):
-    if (
-        input(
-            "\033[96mRunning preprocessing will save the data as a PyArrow dataset "
-            "which is a very time consuming operation. If you don't need the data "
-            "to be saved, you can save much time just by running:\n"
-            "> `grants-tagger train bertmesh {model_key} {path_to_jsonl}`\033[0m\n\n"
-            "Do You Want To Continue? [Y/n]"
-        )
-        != "Y"
-    ):
-        exit(1)
 
     if not data_path.endswith("jsonl"):
         logger.error(
@@ -197,4 +204,6 @@ def preprocess_mesh_cli(
         max_samples=max_samples,
         batch_size=batch_size,
         save_to_path=save_to_path,
+        tags=tags,
+        years=years
     )

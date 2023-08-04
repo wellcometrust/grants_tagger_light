@@ -4,7 +4,7 @@ import tempfile
 from grants_tagger_light.preprocessing.preprocess_mesh import (
     preprocess_mesh,
 )
-from scripts.jsonl_preprocessing import process_data, mesh_json_to_jsonl
+from scripts.mesh_json_to_jsonl import process_data, mesh_json_to_jsonl
 import pytest
 
 

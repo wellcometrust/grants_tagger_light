@@ -69,6 +69,56 @@ And then connect and attach to your machine with a tunnel
 
 in square brackets the commands that are not implemented yet
 
+## ⚙️Preprocess
+
+This process is optional to run, since it will be managed by the `Train` process.
+- If you run it manually, it will store the data in local first, which can help if you need finetune in the future, 
+rerun, etc.
+- If not, the project will preprocess and then run, without any extra I/O operations on disk, 
+which may add latency depending on the infrastructure.
+
+It requires data in `jsonl` format for parallelization purposes. In `data/raw` you can find `allMesH_2021.jsonl` 
+already prepared for the preprocessing step.
+
+If your data is in `json` format, trasnform it to `jsonl` with tools as `jq` or using Python.
+You can use an example of `allMeSH_2021.json` conversion to `jsonl` in `scripts/mesh_json_to_jsonl.py`:
+
+```bash
+python scripts/mesh_json_to_jsonl.py --input_path data/raw/allMeSH_2021.json --output_path data/raw/test.jsonl --filter_years 2020,2021
+```
+
+Each dataset needs its own preprocessing so the current preprocess works with the `allMeSH_2021.jsonl` one.
+
+If you want to use a different dataset see section on bringing
+your own data under development.
+
+
+### Preprocessing allMeSH
+
+```
+ Usage: grants-tagger preprocess mesh [OPTIONS] DATA_PATH SAVE_TO_PATH
+                                      MODEL_KEY
+
+╭─ Arguments ──────────────────────────────────────────────────────────────────────────────────────────────────────╮
+│ *    data_path         TEXT  Path to mesh.jsonl [default: None] [required]                                       │
+│ *    save_to_path      TEXT  Path to save the serialized PyArrow dataset after preprocessing [default: None]     │
+│                              [required]                                                                          │
+│ *    model_key         TEXT  Key to use when loading tokenizer and label2id. Leave blank if training from        │
+│                              scratch                                                                             │
+│                              [default: None]                                                                     │
+│                              [required]                                                                          │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+╭─ Options ────────────────────────────────────────────────────────────────────────────────────────────────────────╮
+│ --test-size          FLOAT    Fraction of data to use for testing [default: 0.05]                                │
+│ --num-proc           INTEGER  Number of processes to use for preprocessing [default: 8]                          │
+│ --max-samples        INTEGER  Maximum number of samples to use for preprocessing [default: -1]                   │
+│ --batch-size         INTEGER  Size of the preprocessing batch [default: 256]                                     │
+│ --years              TEXT     Comma-separated years you want to included (e.g: 2020,2021) [default: None]        │
+│ --tags               TEXT     Comma-separated tags you want to included (e.g: Pandemics,COVID19) [default: None] │
+│ --help                        Show this message and exit.                                                        │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯```
+```
+
 ## 🔥 Train
 
 Train acts as the entry point command for training all models. Currently, we only support
@@ -98,12 +148,12 @@ the BertMesh model. The command will train a model and save it to the specified 
 #### About `model_key`
 `model_key` possible values are:
 - A HF location for a pretrained / finetuned model 
-- "" to load a model by default and train from scratch: `microsoft/BiomedNLP-PubMedBERT-base-uncased-abstract`
+- "" to load a model by default and train from scratch (`microsoft/BiomedNLP-PubMedBERT-base-uncased-abstract`)
 
 #### About `sharding`
 `sharding` was proposed by [Hugging Face](https://github.com/huggingface/datasets/issues/2252#issuecomment-825596467)
 to improve performance on big datasets. To enable it:
-- set shards to something bigger than 1 (Recommended: 100)
+- set shards to something bigger than 1 (Recommended: same number as cpu cores)
 
 #### Other arguments
 Besides those arguments, feel free to add any other TrainingArgument from Hugging Face or Wand DB. Examples:
@@ -128,38 +178,7 @@ grants-tagger train bertmesh \
     --evaluation_strategy steps
 ```
 
-## ⚙️  Preprocess
 
-This process is optional to run, since it will be managed by the `grants-tagger train bertmesh` process.
-If you run it manually, it will store the data in local.
-
-Each dataset needs its own preprocessing so the current preprocess works with the `allMeSH_2021` one.
-If you want to use a different dataset see section on bringing
-your own data under development.
-
-
-### mesh
-```
- Usage: grants-tagger preprocess mesh [OPTIONS] DATA_PATH SAVE_TO_PATH
-                                      MODEL_KEY
-
-╭─ Arguments ──────────────────────────────────────────────────────────────────────────────────────────────────────╮
-│ *    data_path         TEXT  Path to mesh.jsonl [default: None] [required]                                       │
-│ *    save_to_path      TEXT  Path to save the serialized PyArrow dataset after preprocessing [default: None]     │
-│                              [required]                                                                          │
-│ *    model_key         TEXT  Key to use when loading tokenizer and label2id. Leave blank if training from        │
-│                              scratch                                                                             │
-│                              [default: None]                                                                     │
-│                              [required]                                                                          │
-╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
-╭─ Options ────────────────────────────────────────────────────────────────────────────────────────────────────────╮
-│ --test-size          FLOAT    Fraction of data to use for testing [default: 0.05]                                │
-│ --num-proc           INTEGER  Number of processes to use for preprocessing [default: 8]                          │
-│ --max-samples        INTEGER  Maximum number of samples to use for preprocessing [default: -1]                   │
-│ --batch-size         INTEGER  Size of the preprocessing batch [default: 256]                                     │
-│ --help                        Show this message and exit.                                                        │
-╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯```
-```
 
 ## 📈 Evaluate
 
