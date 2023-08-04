@@ -1,4 +1,5 @@
 import json
+import math
 import tempfile
 
 import typer
@@ -10,7 +11,7 @@ import os
 from loguru import logger
 from tqdm import tqdm
 import numpy as np
-
+from datasets.dataset_dict import DatasetDict
 
 preprocess_app = typer.Typer()
 
@@ -53,8 +54,12 @@ def preprocess_mesh(
     max_samples: int = -1,
     batch_size: int = 256,
     tags: str = None,
-    years: str = None
+    train_years: list = None,
+    test_years: list = None
 ):
+    if test_size > 1:
+        logger.info(f"Test size found not as a fraction, but as a number of rows. Transforming {test_size} to integer")
+        test_size = int(test_size)
 
     if max_samples != -1:
         logger.info(f"Filtering examples to {max_samples}")
@@ -79,11 +84,15 @@ def preprocess_mesh(
     if "train" in dset:
         dset = dset["train"]
 
-    if years is not None:
-        logger.info(f"Filtering years: {years}")
-        filter_years_list = list(filter(lambda x: x.strip() != "", years.split(",")))
-        filter_years_list = [str(y) for y in filter_years_list]
-        dset = dset.filter(lambda x: any(np.isin(filter_years_list, [str(x["year"])])))
+    years = list()
+    if train_years is not None and len(train_years) > 0:
+        years.extend(train_years)
+    if test_years is not None and len(test_years) > 0:
+        years.extend(test_years)
+
+    if len(years) > 0:
+        logger.info(f"Removing all years which are not in {years}")
+        dset = dset.filter(lambda x: any(np.isin(years, [str(x["year"])])))
 
     if tags is not None:
         logger.info(f"Filtering tags: {tags}")
@@ -91,7 +100,7 @@ def preprocess_mesh(
         dset = dset.filter(lambda x: any(np.isin(filter_tags_list, x["meshMajor"])))
 
     # Remove unused columns to save space & time
-    dset = dset.remove_columns(["journal", "year", "pmid", "title"])
+    dset = dset.remove_columns(["journal", "pmid", "title"])
 
     t1 = time.time()
     dset = dset.map(
@@ -149,7 +158,16 @@ def preprocess_mesh(
     logger.info("Preparing train/test split....")
     # Split into train and test
     t1 = time.time()
-    dset = dset.train_test_split(test_size=test_size)
+    if len(years) > 0:
+        logger.info("Splitting the dataset by training and test years")
+        train_dset = dset.filter(lambda x: any(np.isin(train_years, [str(x["year"])])))
+        test_dset = dset.filter(lambda x: any(np.isin(test_years, [str(x["year"])])))
+
+        dset = DatasetDict({'train': train_dset, 'test': test_dset.train_test_split(test_size)['test']})
+    else:
+        logger.info(f"Splitting the dataset randomly by a fraction of {test_size}")
+        dset = dset.train_test_split(test_size=test_size)
+
     logger.info("Time taken to split into train and test: {}".format(time.time() - t1))
 
     # If running from Training, by default it will be None so that we don't spend time
@@ -174,7 +192,7 @@ def preprocess_mesh_cli(
         help="Key to use when loading tokenizer and label2id. "
         "Leave blank if training from scratch",  # noqa
     ),
-    test_size: float = typer.Option(0.05, help="Fraction of data to use for testing"),
+    test_size: float = typer.Option(0.05, help="Fraction of data to use for testing or number of rows"),
     num_proc: int = typer.Option(
         os.cpu_count(), help="Number of processes to use for preprocessing"
     ),
@@ -185,8 +203,8 @@ def preprocess_mesh_cli(
     batch_size: int = typer.Option(256, help="Size of the preprocessing batch"),
     tags: str = typer.Option(None, help="Comma-separated tags you want to include in the dataset "
                                                "(the rest will be discarded)"),
-    years: str = typer.Option(None, help="Comma-separated yeasr you want to include in the dataset "
-                                                "(the rest will be discarded)"),
+    train_years: str = typer.Option(None, help="Comma-separated years you want to include in the training dataset"),
+    test_years: str = typer.Option(None, help="Comma-separated years you want to include in the test dataset"),
 ):
 
     if not data_path.endswith("jsonl"):
@@ -194,7 +212,26 @@ def preprocess_mesh_cli(
             "It seems your input MeSH data is not in `jsonl` format. "
             "Please, run first `scripts/mesh_json_to_jsonlpy.`"
         )
-        exit(1)
+        exit(-1)
+
+    train_years_list = []
+    test_years_list = []
+
+    if train_years is not None:
+        if test_years is None:
+            logger.error("--train-years require --test-years")
+            exit(-1)
+        filter_years_list = list(filter(lambda x: x.strip() != "", train_years.split(",")))
+        train_years_list = [str(y) for y in filter_years_list]
+        logger.info(f"Training years to be considered: {train_years_list}")
+
+    if test_years is not None:
+        if train_years is None:
+            logger.error("--test-years require --train-years")
+            exit(-1)
+        filter_years_list = list(filter(lambda x: x.strip() != "", test_years.split(",")))
+        test_years_list = [str(y) for y in filter_years_list]
+        logger.info(f"Test years to be considered: {test_years_list}")
 
     preprocess_mesh(
         data_path=data_path,
@@ -205,5 +242,6 @@ def preprocess_mesh_cli(
         batch_size=batch_size,
         save_to_path=save_to_path,
         tags=tags,
-        years=years
+        train_years=train_years_list,
+        test_years=test_years_list
     )
