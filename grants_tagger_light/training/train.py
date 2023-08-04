@@ -26,6 +26,7 @@ import json
 from datasets import load_from_disk
 
 from grants_tagger_light.utils.sharding import Sharding
+from grants_tagger_light.utils.years_tags_parser import parse_years, parse_tags
 
 transformers.set_seed(42)
 
@@ -39,7 +40,10 @@ def train_bertmesh(
     test_size: float = 0.05,
     num_proc: int = os.cpu_count(),
     shards: int = os.cpu_count(),
-    from_checkpoint: str = None
+    from_checkpoint: str = None,
+    tags: list = None,
+    train_years: list = None,
+    test_years: list = None
 ):
     if not model_key:
         assert isinstance(model_args, BertMeshModelArguments), (
@@ -65,6 +69,9 @@ def train_bertmesh(
             num_proc=num_proc,
             max_samples=max_samples,
             batch_size=training_args.per_device_train_batch_size,
+            tags=tags,
+            train_years=train_years,
+            test_years=test_years
         )
 
     train_dset, val_dset = dset["train"], dset["test"]
@@ -196,7 +203,11 @@ def train_bertmesh_cli(
     from_checkpoint: str = typer.Option(
         None,
         help="Name of the checkpoint to resume training"
-    )
+    ),
+    tags: str = typer.Option(None, help="Comma-separated tags you want to include in the dataset "
+                                        "(the rest will be discarded)"),
+    train_years: str = typer.Option(None, help="Comma-separated years you want to include in the training dataset"),
+    test_years: str = typer.Option(None, help="Comma-separated years you want to include in the test dataset")
 ):
     parser = HfArgumentParser(
         (
@@ -215,13 +226,16 @@ def train_bertmesh_cli(
     logger.info("Wandb args: {}".format(pformat(wandb_args)))
 
     train_bertmesh(
-        model_key,
-        data_path,
-        training_args,
-        model_args,
-        max_samples,
-        test_size,
-        num_proc,
-        shards,
-        from_checkpoint
+        model_key=model_key,
+        data_path=data_path,
+        training_args=training_args,
+        model_args=model_args,
+        max_samples=max_samples,
+        test_size=test_size,
+        num_proc=num_proc,
+        shards=shards,
+        from_checkpoint=from_checkpoint,
+        tags=parse_tags(tags),
+        train_years=parse_years(train_years),
+        test_years=parse_years(test_years)
     )

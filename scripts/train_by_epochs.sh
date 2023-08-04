@@ -9,7 +9,10 @@ SOURCE="data/raw/allMeSH_2021.jsonl"
 grants-tagger train bertmesh \
     "" \
     $SOURCE \
+    --test-size 10000 \
     --output_dir bertmesh_outs/pipeline_test/ \
+    --train-years 2021 \
+    --test-years 2020 \
     --per_device_train_batch_size 32 \
     --per_device_eval_batch_size 1 \
     --num_train_epochs 5 \

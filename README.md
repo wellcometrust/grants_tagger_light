@@ -71,7 +71,7 @@ in square brackets the commands that are not implemented yet
 
 ## ⚙️Preprocess
 
-This process is optional to run, since it will be managed by the `Train` process.
+This process is optional to run, since it can be directly managed by the `Train` process.
 - If you run it manually, it will store the data in local first, which can help if you need finetune in the future, 
 rerun, etc.
 - If not, the project will preprocess and then run, without any extra I/O operations on disk, 
@@ -109,12 +109,16 @@ your own data under development.
 │                              [required]                                                                          │
 ╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
 ╭─ Options ────────────────────────────────────────────────────────────────────────────────────────────────────────╮
-│ --test-size          FLOAT    Fraction of data to use for testing [default: 0.05]                                │
+│ --test-size          FLOAT    Fraction of data to use for testing (if less than 1) or number of rows             │
+│                               [default: 0.05]                                                                    │
 │ --num-proc           INTEGER  Number of processes to use for preprocessing [default: 8]                          │
 │ --max-samples        INTEGER  Maximum number of samples to use for preprocessing [default: -1]                   │
 │ --batch-size         INTEGER  Size of the preprocessing batch [default: 256]                                     │
-│ --years              TEXT     Comma-separated years you want to included (e.g: 2020,2021) [default: None]        │
-│ --tags               TEXT     Comma-separated tags you want to included (e.g: Pandemics,COVID19) [default: None] │
+│ --train-years        TEXT     Comma-separated years you want to include in training (e.g: 2020,2021)             │
+│                               [default: None, meaning all years]                                                 │
+│ --test-years         TEXT     Comma-separated years you want to include in test (e.g: 2020,2021)                 │
+│                               [default: None, meaning all years]                                                 │
+│ --tags               TEXT     Comma-separated tags you want to included (e.g: Pandemics,COVID19)                 │
 │ --help                        Show this message and exit.                                                        │
 ╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯```
 ```
@@ -134,14 +138,22 @@ the BertMesh model. The command will train a model and save it to the specified 
 │                           to disk                                                                                │
 │                           [default: None]                                                                        │
 │                           [required]                                                                             │
+│ --shards             INTEGER  Number os shards to divide training IterativeDataset to (improves performance)     │
+│                               [default: -1, meaning no shards]. Recommended: os.cpu_count()                      │
+│ --num-proc           INTEGER  Number of processes to use for preprocessing [default: os.cpu_count()]             │
+│ --help                        Show this message and exit.                                                        │
 ╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+
+If you are running directly training without calling preprocess, you can specify the same parameters as preprocess:
+
 ╭─ Options ────────────────────────────────────────────────────────────────────────────────────────────────────────╮
 │ --test-size          FLOAT    Fraction of data to use for testing [default: 0.05]                                │
-│ --num-proc           INTEGER  Number of processes to use for preprocessing [default: 8]                          │
 │ --max-samples        INTEGER  Maximum number of samples to use from the json [default: -1]                       │
-│ --shards             INTEGER  Number os shards to divide training IterativeDataset to (improves performance)     │
-│                               [default: -1, meaning no shards]. Recommended: 100                                 │
-│ --help                        Show this message and exit.                                                        │
+│ --train-years        TEXT     Comma-separated years you want to include in training (e.g: 2020,2021)             │
+│                               [default: None, meaning all years]                                                 │
+│ --test-years         TEXT     Comma-separated years you want to include in test (e.g: 2020,2021)                 │
+│                               [default: None, meaning all years]                                                 │
+│ --tags               TEXT     Comma-separated tags you want to included (e.g: Pandemics,COVID19)                 │
 ╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
 ```
 

@@ -13,6 +13,8 @@ from tqdm import tqdm
 import numpy as np
 from datasets.dataset_dict import DatasetDict
 
+from grants_tagger_light.utils.years_tags_parser import parse_tags, parse_years
+
 preprocess_app = typer.Typer()
 
 
@@ -57,7 +59,7 @@ def preprocess_mesh(
     num_proc: int = os.cpu_count(),
     max_samples: int = -1,
     batch_size: int = 256,
-    tags: str = None,
+    tags: list = None,
     train_years: list = None,
     test_years: list = None
 ):
@@ -98,10 +100,9 @@ def preprocess_mesh(
         logger.info(f"Removing all years which are not in {years}")
         dset = dset.filter(lambda x: any(np.isin(years, [str(x["year"])])))
 
-    if tags is not None:
-        logger.info(f"Filtering tags: {tags}")
-        filter_tags_list = list(filter(lambda x: x.strip() != "", tags.split(",")))
-        dset = dset.filter(lambda x: any(np.isin(filter_tags_list, x["meshMajor"])))
+    if len(tags) > 0:
+        logger.info(f"Removing all tags which are not in {tags}")
+        dset = dset.filter(lambda x: any(np.isin(tags, x["meshMajor"])))
 
     # Remove unused columns to save space & time
     dset = dset.remove_columns(["journal", "pmid", "title"])
@@ -228,24 +229,15 @@ def preprocess_mesh_cli(
         )
         exit(-1)
 
-    train_years_list = []
-    test_years_list = []
-
     if train_years is not None:
         if test_years is None:
             logger.error("--train-years require --test-years")
             exit(-1)
-        filter_years_list = list(filter(lambda x: x.strip() != "", train_years.split(",")))
-        train_years_list = [str(y) for y in filter_years_list]
-        logger.info(f"Training years to be considered: {train_years_list}")
 
     if test_years is not None:
         if train_years is None:
             logger.error("--test-years require --train-years")
             exit(-1)
-        filter_years_list = list(filter(lambda x: x.strip() != "", test_years.split(",")))
-        test_years_list = [str(y) for y in filter_years_list]
-        logger.info(f"Test years to be considered: {test_years_list}")
 
     preprocess_mesh(
         data_path=data_path,
@@ -255,7 +247,7 @@ def preprocess_mesh_cli(
         max_samples=max_samples,
         batch_size=batch_size,
         save_to_path=save_to_path,
-        tags=tags,
-        train_years=train_years_list,
-        test_years=test_years_list
+        tags=parse_tags(tags),
+        train_years=parse_years(train_years),
+        test_years=parse_years(test_years)
     )

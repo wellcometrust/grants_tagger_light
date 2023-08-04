@@ -14,7 +14,6 @@ grants-tagger train bertmesh \
     $SOURCE \
     --output_dir bertmesh_outs/pipeline_test_from_$CHECKPOINT/ \
     --ignore_data_skip=True \
-    --shards 48 \
     --per_device_train_batch_size 32 \
     --per_device_eval_batch_size 1 \
     --num_train_epochs 2 \

@@ -9,12 +9,14 @@ SOURCE="data/raw/allMeSH_2021.jsonl"
 grants-tagger train bertmesh \
     "" \
     $SOURCE \
-    --test-size 0.0025 \
-    --shards 48 \
+    --test-size 10000 \
     --output_dir bertmesh_outs/pipeline_test/ \
     --per_device_train_batch_size 32 \
     --per_device_eval_batch_size 1 \
     --num_train_epochs 1 \
+    --learning_rate 5e-5 \
+    --dropout 1.0 \
+    --warmup_steps 1000 \
     --fp16 \
     --torch_compile \
     --evaluation_strategy steps \
