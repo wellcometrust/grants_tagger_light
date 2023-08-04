@@ -14,13 +14,13 @@ grants-tagger train bertmesh \
     --per_device_eval_batch_size 1 \
     --num_train_epochs 5 \
     --learning_rate 5e-5 \
-    - dropout 1.0 \
+    --dropout 1.0 \
     --warmup_steps 1000 \
     --fp16 \
     --torch_compile \
-    --evaluation_strategy epochs \
+    --evaluation_strategy epoch \
     --eval_accumulation_steps 20 \
-    --save_strategy epochs \
+    --save_strategy epoch \
     --wandb_project wellcome-mesh \
     --wandb_name test-train-all \
     --wandb_api_key ${WANDB_API_KEY}
