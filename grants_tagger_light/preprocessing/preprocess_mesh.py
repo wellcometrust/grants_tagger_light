@@ -33,6 +33,10 @@ def _encode_labels(sample, label2id):
     return {"label_ids": [_map_label_to_ids(x, label2id) for x in sample["meshMajor"]]}
 
 
+def _filter_rows_by_years(sample, years):
+    return [x in years for x in sample["year"]]
+
+
 def create_sample_file(jsonl_file, lines):
     with open(jsonl_file, "r") as input_file:
         with tempfile.NamedTemporaryFile(mode="w", delete=False) as tmp_file:
@@ -160,8 +164,18 @@ def preprocess_mesh(
     t1 = time.time()
     if len(years) > 0:
         logger.info("Splitting the dataset by training and test years")
-        train_dset = dset.filter(lambda x: any(np.isin(train_years, [str(x["year"])])))
-        test_dset = dset.filter(lambda x: any(np.isin(test_years, [str(x["year"])])))
+        train_dset = dset.filter(_filter_rows_by_years,
+                                 batched=True,
+                                 batch_size=batch_size,
+                                 desc=f"Creating training dataset with years {train_years}",
+                                 num_proc=num_proc,
+                                 fn_kwargs={"years": train_years})
+        test_dset = dset.filter(_filter_rows_by_years,
+                                batched=True,
+                                batch_size=batch_size,
+                                desc=f"Creating test dataset with years {test_years}",
+                                num_proc=num_proc,
+                                fn_kwargs={"years": test_years})
 
         dset = DatasetDict({'train': train_dset, 'test': test_dset.train_test_split(test_size)['test']})
     else:

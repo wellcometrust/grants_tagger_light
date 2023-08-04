@@ -93,7 +93,7 @@ If you want to use a different dataset see section on bringing
 your own data under development.
 
 
-### Preprocessing allMeSH
+### Preprocessing bertmesh
 
 ```
  Usage: grants-tagger preprocess mesh [OPTIONS] DATA_PATH SAVE_TO_PATH
