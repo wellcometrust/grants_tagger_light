@@ -16,7 +16,10 @@ grants-tagger train bertmesh \
     --ignore_data_skip=True \
     --per_device_train_batch_size 32 \
     --per_device_eval_batch_size 1 \
-    --num_train_epochs 2 \
+    --num_train_epochs 1 \
+    --learning_rate 5e-5 \
+    --dropout 0.1 \
+    --warmup_steps 1000 \
     --fp16 \
     --torch_compile \
     --evaluation_strategy steps \

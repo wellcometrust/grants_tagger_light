@@ -3,19 +3,22 @@
 # Without preprocessing (on-the-fly)
 SOURCE="data/raw/allMeSH_2021.jsonl"
 
-# After preprocessing first
+# If you have already preprocessed the data, you will have a folder. Use the folder instead.
 # SOURCE="output_folder_from_preprocessing"
+# In that case, `test-size`, `train-years` and `test-years` will be ignored.
 
 grants-tagger train bertmesh \
     "" \
     $SOURCE \
     --test-size 10000 \
     --output_dir bertmesh_outs/pipeline_test/ \
+    --train-years 2021 \
+    --test-years 2020 \
     --per_device_train_batch_size 32 \
     --per_device_eval_batch_size 1 \
     --num_train_epochs 1 \
     --learning_rate 5e-5 \
-    --dropout 1.0 \
+    --dropout 0.1 \
     --warmup_steps 1000 \
     --fp16 \
     --torch_compile \
