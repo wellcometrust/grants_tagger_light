@@ -27,23 +27,6 @@ def _tokenize(batch, tokenizer: AutoTokenizer, x_col: str):
     )
 
 
-def _parse_test_size(test_dset, test_size):
-    if test_size is None or test_size == 1.0:
-        if test_dset is not None:
-            test_size = len(test_dset)
-            logger.info(f"Test size not gounf, set to number of rows of the whole test dataset: {test_size}")
-        else:
-            test_size = 0.05
-            logger.info(f"Test size not found, setting to a fraction of all dataset: {test_size}")
-    elif test_size > 1.0:
-        test_size = int(test_size)
-        logger.info(f"Test size found as number of rows: {test_size}")
-    else:
-        logger.info(f"Test size found as fraction: {test_size}")
-
-    return test_size
-
-
 def _map_label_to_ids(labels, label2id):
     return [label2id[label] for label in labels]
 
@@ -191,11 +174,18 @@ def preprocess_mesh(
                                 num_proc=num_proc,
                                 fn_kwargs={"years": test_years})
 
-        test_size = _parse_test_size(test_dset, test_size)
-        logger.info(f"Splitting the dataset by years with a test_size of {test_size}")
-        dset = DatasetDict({'train': train_dset, 'test': test_dset.train_test_split(test_size)['test']})
+        if test_size is None or test_size == 1.0:
+            test_size = len(test_dset)
+            logger.info(f"Using the whole dataset of {test_size} rows")
+            dset = DatasetDict({'train': train_dset, 'test': test_dset})
+        else:
+            logger.info(f"Using a test_size frac or number of rows of of {test_size}")
+            dset = DatasetDict({'train': train_dset, 'test': test_dset.train_test_split(test_size)['test']})
+
     else:
-        test_size = _parse_test_size(None, test_size)
+        if test_size is None:
+            test_size = 0.05
+            logger.info(f"Test size not found. Setting it to a frac of the whole dataset equal to {test_size}")
         dset = dset.train_test_split(test_size=test_size)
 
     logger.info("Time taken to split into train and test: {}".format(time.time() - t1))
