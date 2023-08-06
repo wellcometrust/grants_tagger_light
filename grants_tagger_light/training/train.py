@@ -37,7 +37,7 @@ def train_bertmesh(
     training_args: TrainingArguments,
     model_args: BertMeshModelArguments = None,
     max_samples: int = -1,
-    test_size: float = 0.05,
+    test_size: float = None,
     num_proc: int = os.cpu_count(),
     shards: int = os.cpu_count(),
     from_checkpoint: str = None,
@@ -187,7 +187,7 @@ def train_bertmesh_cli(
         help="Path to allMeSH_2021.jsonl (or similar) "
         "or to a folder after preprocessing and saving to disk",
     ),
-    test_size: float = typer.Option(0.05, help="Fraction of data to use for testing"),
+    test_size: float = typer.Option(None, help="Fraction of data to use for testing (0,1] or number of rows"),
     num_proc: int = typer.Option(
         os.cpu_count(), help="Number of processes to use for preprocessing"
     ),

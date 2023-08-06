@@ -27,6 +27,18 @@ def _tokenize(batch, tokenizer: AutoTokenizer, x_col: str):
     )
 
 
+def _parse_test_size(test_dset, test_size):
+    if test_size is None or test_size == 1.0:
+        test_size = len(test_dset)
+        logger.info(f"Test size set to number of rows of the whole test dataset: {test_size}")
+    elif test_size > 1.0:
+        test_size = int(test_size)
+        logger.info(f"Test size found as number of rows: {test_size}")
+    else:
+        logger.info(f"Test size found as fraction: {test_size}")
+    return test_size
+
+
 def _map_label_to_ids(labels, label2id):
     return [label2id[label] for label in labels]
 
@@ -55,7 +67,7 @@ def preprocess_mesh(
     data_path: str,
     model_key: str,
     save_to_path: str = None,
-    test_size: float = 0.05,
+    test_size: float = None,
     num_proc: int = os.cpu_count(),
     max_samples: int = -1,
     batch_size: int = 256,
@@ -63,12 +75,6 @@ def preprocess_mesh(
     train_years: list = None,
     test_years: list = None
 ):
-    if test_size > 1.0:
-        test_size = int(test_size)
-        logger.info(f"Test size found as number of rows: {test_size}")
-    else:
-        logger.info(f"Test size found as fraction: {test_size}")
-
     if max_samples != -1:
         logger.info(f"Filtering examples to {max_samples}")
         data_path = create_sample_file(data_path, max_samples)
@@ -180,9 +186,16 @@ def preprocess_mesh(
                                 num_proc=num_proc,
                                 fn_kwargs={"years": test_years})
 
+        test_size = _parse_test_size(test_dset, test_size)
+        logger.info(f"Splitting the dataset by years with a test_size of {test_size}")
         dset = DatasetDict({'train': train_dset, 'test': test_dset.train_test_split(test_size)['test']})
     else:
-        logger.info(f"Splitting the dataset randomly by a fraction of {test_size}")
+        if test_size is None:
+            test_size = 0.05
+        if test_size >= 1.0:
+            logger.info(f"Splitting the dataset randomly (not by years) by number of rows: {test_size}")
+        else:
+            logger.info(f"Splitting the dataset randomly (not by years) by frac: {test_size}")
         dset = dset.train_test_split(test_size=test_size)
 
     logger.info("Time taken to split into train and test: {}".format(time.time() - t1))
@@ -209,7 +222,7 @@ def preprocess_mesh_cli(
         help="Key to use when loading tokenizer and label2id. "
         "Leave blank if training from scratch",  # noqa
     ),
-    test_size: float = typer.Option(0.05, help="Fraction of data to use for testing or number of rows"),
+    test_size: float = typer.Option(None, help="Fraction of data to use for testing in (0,1] or number of rows"),
     num_proc: int = typer.Option(
         os.cpu_count(), help="Number of processes to use for preprocessing"
     ),
