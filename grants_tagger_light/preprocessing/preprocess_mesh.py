@@ -63,9 +63,11 @@ def preprocess_mesh(
     train_years: list = None,
     test_years: list = None
 ):
-    if test_size > 1:
-        logger.info(f"Test size found not as a fraction, but as a number of rows. Transforming {test_size} to integer")
+    if test_size > 1.0:
         test_size = int(test_size)
+        logger.info(f"Test size found as number of rows: {test_size}")
+    else:
+        logger.info(f"Test size found as fraction: {test_size}")
 
     if max_samples != -1:
         logger.info(f"Filtering examples to {max_samples}")
