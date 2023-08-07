@@ -179,6 +179,8 @@ def preprocess_mesh(
             logger.info(f"Using the whole dataset of {test_size} rows")
             dset = DatasetDict({'train': train_dset, 'test': test_dset})
         else:
+            if test_size > 1.0:
+                test_size = int(test_size)
             logger.info(f"Using a test_size frac or number of rows of of {test_size}")
             dset = DatasetDict({'train': train_dset, 'test': test_dset.train_test_split(test_size)['test']})
 
