@@ -105,8 +105,8 @@ def train_bertmesh(
                 "id2label": {v: k for k, v in label2id.items()},
                 "freeze_backbone": model_args.freeze_backbone,
             })
-        logger.info(f"Hidden size: {config['hidden_size']}")
-        logger.info(f"Dropout: {config['dropout']}")
+        logger.info(f"Hidden size: {config.hidden_size}")
+        logger.info(f"Dropout: {config.dropout}")
 
         model = BertMesh(config)
 
