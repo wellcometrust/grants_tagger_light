@@ -95,7 +95,7 @@ def train_bertmesh(
         logger.info(f"Loading `{model_args.pretrained_model_key}` tokenizer...")
         config = AutoConfig.from_pretrained(model_args.pretrained_model_key)
 
-        overwritten_params = {
+        config.update({
                 "pretrained_model": model_args.pretrained_model_key,
                 "num_labels": len(label2id),
                 "hidden_size": model_args.hidden_size,
@@ -104,10 +104,10 @@ def train_bertmesh(
                 "label2id": label2id,
                 "id2label": {v: k for k, v in label2id.items()},
                 "freeze_backbone": model_args.freeze_backbone,
-            }
-        logger.info(f"Updating model params:\n{overwritten_params}")
+            })
+        logger.info(f"Hidden size: {config['hidden_size']}")
+        logger.info(f"Dropout: {config['dropout']}")
 
-        config.update(overwritten_params)
         model = BertMesh(config)
 
     else:
