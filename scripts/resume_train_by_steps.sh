@@ -19,6 +19,7 @@ grants-tagger train bertmesh \
     --num_train_epochs 1 \
     --learning_rate 5e-5 \
     --dropout 0.1 \
+    --hidden_size 1024 \
     --warmup_steps 1000 \
     --fp16 \
     --torch_compile \

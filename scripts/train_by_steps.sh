@@ -5,7 +5,7 @@ SOURCE="data/raw/allMeSH_2021.jsonl"
 
 # If you have already preprocessed the data, you will have a folder. Use the folder instead.
 # SOURCE="output_folder_from_preprocessing"
-# In that case, `test-size`, `train-years` and `test-years` will be ignored.
+# In that case, `test-size`, `train-years` and `test-years` will be taken from the preprocessed folder
 
 grants-tagger train bertmesh \
     "" \
@@ -19,6 +19,7 @@ grants-tagger train bertmesh \
     --num_train_epochs 1 \
     --learning_rate 5e-5 \
     --dropout 0.1 \
+    --hidden_size 1024 \
     --warmup_steps 1000 \
     --fp16 \
     --torch_compile \
