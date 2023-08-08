@@ -16,7 +16,9 @@ grants-tagger train bertmesh \
     --test-years 2020,2021 \
     --per_device_train_batch_size 32 \
     --per_device_eval_batch_size 1 \
-    --num_train_epochs 1 \
+    --multilabel_attention True \
+    --freeze_backbone False \
+    --num_train_epochs 5 \
     --learning_rate 5e-5 \
     --dropout 0.1 \
     --hidden_size 1024 \

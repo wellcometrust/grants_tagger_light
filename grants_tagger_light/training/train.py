@@ -89,7 +89,7 @@ def train_bertmesh(
         train_dset = Sharding(num_shards=shards).shard(train_dset)
 
     if not model_key:
-        logger.info("No model key provided. Training model from scratch")
+        logger.info(f"Model key not found. Training from scratch {model_args.pretrained_model_key}")
 
         # Instantiate model from scratch
         logger.info(f"Loading `{model_args.pretrained_model_key}` tokenizer...")
@@ -107,6 +107,8 @@ def train_bertmesh(
             })
         logger.info(f"Hidden size: {config.hidden_size}")
         logger.info(f"Dropout: {config.dropout}")
+        logger.info(f"Multilabel Attention: {config.multilabel_attention}")
+        logger.info(f"Freeze Backbone: {config.freeze_backbone}")
 
         model = BertMesh(config)
 
@@ -188,9 +190,12 @@ def train_bertmesh_cli(
         help="Path to allMeSH_2021.jsonl (or similar) "
         "or to a folder after preprocessing and saving to disk",
     ),
-    test_size: float = typer.Option(None, help="Fraction of data to use for testing (0,1] or number of rows"),
+    test_size: float = typer.Option(
+        None,
+        help="Fraction of data to use for testing (0,1] or number of rows"),
     num_proc: int = typer.Option(
-        os.cpu_count(), help="Number of processes to use for preprocessing"
+        os.cpu_count(),
+        help="Number of processes to use for preprocessing"
     ),
     max_samples: int = typer.Option(
         -1,
@@ -205,10 +210,18 @@ def train_bertmesh_cli(
         None,
         help="Name of the checkpoint to resume training"
     ),
-    tags: str = typer.Option(None, help="Comma-separated tags you want to include in the dataset "
-                                        "(the rest will be discarded)"),
-    train_years: str = typer.Option(None, help="Comma-separated years you want to include in the training dataset"),
-    test_years: str = typer.Option(None, help="Comma-separated years you want to include in the test dataset")
+    tags: str = typer.Option(
+        None,
+        help="Comma-separated tags you want to include in the dataset "
+             "(the rest will be discarded)"),
+    train_years: str = typer.Option(
+        None,
+        help="Comma-separated years you want to include in the training dataset"
+    ),
+    test_years: str = typer.Option(
+        None,
+        help="Comma-separated years you want to include in the test dataset"
+    )
 ):
     parser = HfArgumentParser(
         (
