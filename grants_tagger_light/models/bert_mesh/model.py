@@ -72,7 +72,6 @@ class BertMesh(PreTrainedModel):
             input_ids = torch.tensor(input_ids)
 
         if self.multilabel_attention:
-            logger.info(f"Forward: multilabel_attention!")
             hidden_states = self.bert(input_ids=input_ids)[0]
             attention_outs = self.multilabel_attention_layer(hidden_states)
             outs = torch.nn.functional.relu(self.linear_1(attention_outs))
@@ -80,7 +79,6 @@ class BertMesh(PreTrainedModel):
             outs = self.linear_2(outs)
             outs = torch.flatten(outs, start_dim=1)
         else:
-            logger.info(f"Forward: non-multilabel_attention!")
             cls = self.bert(input_ids=input_ids)[1]
             outs = torch.nn.functional.relu(self.linear_1(cls))
             outs = self.dropout_layer(outs)
@@ -90,7 +88,6 @@ class BertMesh(PreTrainedModel):
             loss = F.binary_cross_entropy_with_logits(outs, labels.float())
         else:
             loss = -1
-        logger.info(f"loss: {loss}")
         return SequenceClassifierOutput(
             loss=loss,
             logits=outs,
