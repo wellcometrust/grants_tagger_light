@@ -121,6 +121,7 @@ def train_bertmesh(
         logger.info("Freezing backbone")
         model.freeze_backbone()
     else:
+        logger.info("Unfreezing backbone")
         model.unfreeze_backbone()
 
     def sklearn_metrics(prediction: EvalPrediction):

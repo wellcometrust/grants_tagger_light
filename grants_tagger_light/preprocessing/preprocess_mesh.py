@@ -188,6 +188,8 @@ def preprocess_mesh(
         if test_size is None:
             test_size = 0.05
             logger.info(f"Test size not found. Setting it to a frac of the whole dataset equal to {test_size}")
+        elif test_size > 1.0:
+            test_size = int(test_size)
         dset = dset.train_test_split(test_size=test_size)
 
     logger.info("Time taken to split into train and test: {}".format(time.time() - t1))
