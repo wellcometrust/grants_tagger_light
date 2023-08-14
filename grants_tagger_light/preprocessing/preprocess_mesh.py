@@ -1,5 +1,4 @@
 import json
-import math
 import tempfile
 
 import typer
@@ -94,11 +93,11 @@ def preprocess_mesh(
 
     if len(years) > 0:
         logger.info(f"Removing all years which are not in {years}")
-        dset = dset.filter(lambda x: any(np.isin(years, [str(x["year"])])))
+        dset = dset.filter(lambda x: any(np.isin(years, [str(x["year"])])), num_proc=num_proc)
 
     if len(tags) > 0:
         logger.info(f"Removing all tags which are not in {tags}")
-        dset = dset.filter(lambda x: any(np.isin(tags, x["meshMajor"])))
+        dset = dset.filter(lambda x: any(np.isin(tags, x["meshMajor"])), num_proc=num_proc)
 
     # Remove unused columns to save space & time
     dset = dset.remove_columns(["journal", "pmid", "title"])
@@ -207,28 +206,42 @@ def preprocess_mesh(
 
 @preprocess_app.command()
 def preprocess_mesh_cli(
-    data_path: str = typer.Argument(..., help="Path to mesh.jsonl"),
+    data_path: str = typer.Argument(
+        ...,
+        help="Path to mesh.jsonl"),
     save_to_path: str = typer.Argument(
-        ..., help="Path to save the serialized PyArrow dataset after preprocessing"
+        ...,
+        help="Path to save the serialized PyArrow dataset after preprocessing"
     ),
     model_key: str = typer.Argument(
         ...,
         help="Key to use when loading tokenizer and label2id. "
         "Leave blank if training from scratch",  # noqa
     ),
-    test_size: float = typer.Option(None, help="Fraction of data to use for testing in (0,1] or number of rows"),
+    test_size: float = typer.Option(
+        None,
+        help="Fraction of data to use for testing in (0,1] or number of rows"),
     num_proc: int = typer.Option(
-        os.cpu_count(), help="Number of processes to use for preprocessing"
+        os.cpu_count(),
+        help="Number of processes to use for preprocessing"
     ),
     max_samples: int = typer.Option(
         -1,
         help="Maximum number of samples to use for preprocessing",
     ),
-    batch_size: int = typer.Option(256, help="Size of the preprocessing batch"),
-    tags: str = typer.Option(None, help="Comma-separated tags you want to include in the dataset "
+    batch_size: int = typer.Option(
+        256,
+        help="Size of the preprocessing batch"),
+    tags: str = typer.Option(
+        None,
+        help="Comma-separated tags you want to include in the dataset "
                                                "(the rest will be discarded)"),
-    train_years: str = typer.Option(None, help="Comma-separated years you want to include in the training dataset"),
-    test_years: str = typer.Option(None, help="Comma-separated years you want to include in the test dataset"),
+    train_years: str = typer.Option(
+        None,
+        help="Comma-separated years you want to include in the training dataset"),
+    test_years: str = typer.Option(
+        None,
+        help="Comma-separated years you want to include in the test dataset"),
 ):
 
     if not data_path.endswith("jsonl"):

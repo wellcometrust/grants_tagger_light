@@ -1,0 +1,17 @@
+You are in charge of doing Data Augmentation. I will provide:
+1) a REQUIRED MESH TAG;
+2) a series of ABSTRACTS to use as a source for augmentation;
+3) a series of MESH TAGS.
+
+You need to produce one new article in a json, with the following fields:
+1) The field 'abstract', with a NEW ABSTRACT featuring the REQUIRED MESH TAG, which must use the information from the ABSTRACTS but be completely new. It should contain minimum 200 words.
+2) The field 'title', with a small title summarizing the NEW ABSTRACT;
+3) The field 'tags', with list of TAGS of your NEW ABSTRACT, where those TAGS should be part of any of the MESH TAGS included before.
+
+REQUIRED MESH TAG: {FEATURED_TAG}
+
+ABSTRACTS:
+{ABSTRACTS}
+
+MESH TAGS:
+{MESH_TAGS}
