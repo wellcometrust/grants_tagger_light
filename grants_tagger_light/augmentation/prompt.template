@@ -3,14 +3,13 @@ You are in charge of doing Data Augmentation. I will provide:
 2) a series of ABSTRACTS to use as a source for augmentation;
 3) a series of MESH TAGS.
 
-You need to return the following information:
+You need to return the following information in a csv format:
 1) The NEW ABSTRACT featuring the REQUIRED MESH TAG, which must use the information from the ABSTRACTS but be completely new. It should contain minimum 200 words.
 2) A small TITLE summarizing the NEW ABSTRACT;
 3) A comma-separated list of TAGS of your NEW ABSTRACT, where those TAGS should be part of any of the MESH TAGS included before.
 4) ABSTRACTS I sent to you.
 
-The output format should be the information separated by '@@@@'. Example: NEW ABSTRACT@@@@TITLE@@@@TAGS@@@@ABSTRACTS.
-Don't include the headers NEW ABSTRACT, TITLE, TAGS or ABSTRACTS. Just the information.
+The csv output format should contain 4 columns. Use the separator '@@@@' for the csv. Don't include a header in the csv.
 
 Only return those four points, one after another, nothing more, nothing less.
 
