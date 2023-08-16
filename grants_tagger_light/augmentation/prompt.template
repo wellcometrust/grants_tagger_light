@@ -4,14 +4,13 @@ You are in charge of doing Data Augmentation. I will provide:
 3) a series of MESH TAGS.
 
 You need to return a json file containing:
-1) Field "abstract": the NEW ABSTRACT featuring the REQUIRED MESH TAG, which must use the information from the ABSTRACTS but be completely new. It should contain minimum 200 words.
-2) Field "title": a small TITLE summarizing the NEW ABSTRACT;
-3) Field "tags": a comma-separated list of TAGS of your NEW ABSTRACT, where those TAGS should be part of any of the MESH TAGS included before.
-4) Field "inspiration", a list of the ABSTRACTS I sent to you, one after another.
+1) Field "abstract": the NEW ABSTRACT featuring the REQUIRED MESH TAG, which must use the information from the ABSTRACTS but be completely new. It should contain minimum 200 words. Make sure the generated text has all the quotes escaped except the initial and final ones.
+2) Field "title": a small TITLE summarizing the NEW ABSTRACT. Make sure the generated title has all the quotes escaped except the initial and final ones.
+3) Field "tags": a list of TAGS of your NEW ABSTRACT, where those TAGS should be part of any of the MESH TAGS included before. Make sure each tag have all the quotes escaped except the initial and final ones.
+4) Field "inspiration", a list of the ABSTRACTS I sent to you, one after another. Make sure each element of the list has all the quotes escaped except the initial and final ones.
 
 Don't include anything else besides those 4 fields in the json.
-Make sure the in the values of the json, there are no quotes. If there are, escape them so there is no problem parsing the json.
-
+Make sure the in the values of the json, all the quotes are escaped excepted the initial and final ones.
 
 REQUIRED MESH TAG: {FEATURED_TAG}
 
