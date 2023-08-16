@@ -74,15 +74,17 @@ class AugmentOpenAI:
             for r in result.response['choices']:
                 if 'message' in r:
                     if 'content' in r['message']:
-                        print(r['message']['content'])
                         try:
                             r_json = json.loads(r['message']['content'])
                             a = r_json['abstract']
                             # Make sure it does not hallucinate and adds anything new which may not be a MeSH tag
                             t = [x for x in r_json['tags'] if x in tags]
                             tl = r_json['title']
+                            print("YIELD!!!!!!!!!!!!!!")
                             yield {'abstract': a, 'tags': t, 'title': tl}
                         except Exception as e:
+
+                            print("ERROR!!!!!!!!!!!!!!")
                             logger.info("OpenAI did not return a proper json format.")
                             yield None
 
