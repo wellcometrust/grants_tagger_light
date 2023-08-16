@@ -80,12 +80,12 @@ class AugmentOpenAI:
                             a = pieces['abstract']
                             t = pieces['tags']
                             tl = pieces['title']
-                            i = pieces['inspiration']
+                            i = pieces['inspiration_example']
                             ait = pieces['all_inspiration_tags']
                             yield {'abstract': a,
                                    'tags': t,
                                    'title': tl,
-                                   'inspiration': i,
+                                   'inspiration_example': i,
                                    'all_inspiration_tags': ait
                                    }
                         except Exception as e:
