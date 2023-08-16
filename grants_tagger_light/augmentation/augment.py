@@ -130,7 +130,7 @@ def augment(
         else:
             if tags_to_augment_counts[t] < min_examples:
                 missing = min_examples - tags_to_augment_counts[t]
-                collect_concurrent_calls.append((tags_to_augment_counts[t], missing))
+                collect_concurrent_calls.append((t, missing))
 
 
 @augment_app.command()
