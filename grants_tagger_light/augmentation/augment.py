@@ -119,7 +119,7 @@ def augment(
         with_indices=True,
         batched=True,
         batch_size=batch_size,
-        desc="Encoding labels",
+        desc="Creating idx",
         num_proc=num_proc,
     )
     collect_concurrent_calls = []
