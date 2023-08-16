@@ -29,8 +29,22 @@ class AugmentOpenAI:
 
         return [{"role": "user", "content": prompt}]
 
-    def _make_requests(self, collect_concurrent_calls, dset, few_shot_examples=10, temperature=1.5, top_p=1,
-                       frequence_penalty=0, presence_penalty=0, num_proc=os.cpu_count()):
+    def _make_requests(self, *kwargs):
+        temperature = kwargs['temperature']
+        print(temperature)
+
+        top_p = kwargs['top_p']
+        print(top_p)
+
+        frequence_penalty = kwargs['frequence_penalty']
+        print(frequence_penalty)
+
+        presence_penalty = kwargs['presence_penalty']
+        print(presence_penalty)
+
+        num_proc = kwargs['num_proc']
+        print(num_proc)
+
         for num in range(len(collect_concurrent_calls)):
             t = collect_concurrent_calls[num][0]
             n = collect_concurrent_calls[num][1]
