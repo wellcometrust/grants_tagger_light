@@ -3,11 +3,14 @@ You are in charge of doing Data Augmentation. I will provide:
 2) a series of ABSTRACTS to use as a source for augmentation;
 3) a series of MESH TAGS.
 
-You need to return the following information, one after another, separated by '@@@@':
+You need to return the following information:
 1) The NEW ABSTRACT featuring the REQUIRED MESH TAG, which must use the information from the ABSTRACTS but be completely new. It should contain minimum 200 words.
-2) A small title summarizing the NEW ABSTRACT;
-3) The list of TAGS of your NEW ABSTRACT, where those TAGS should be part of any of the MESH TAGS included before.
+2) A small TITLE summarizing the NEW ABSTRACT;
+3) A comma-separated list of TAGS of your NEW ABSTRACT, where those TAGS should be part of any of the MESH TAGS included before.
 4) ABSTRACTS I sent to you.
+
+The output format should be the information separated by '@@@@'. Example: NEW ABSTRACT@@@@TITLE@@@@TAGS@@@@ABSTRACTS.
+Don't include the headers NEW ABSTRACT, TITLE, TAGS or ABSTRACTS. Just the information.
 
 Only return those four points, one after another, nothing more, nothing less.
 
