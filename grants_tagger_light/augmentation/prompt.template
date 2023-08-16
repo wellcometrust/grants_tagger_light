@@ -10,6 +10,8 @@ You need to produce one new article in a json, with the following fields:
 4) The field 'inspiration', returning the ABSTRACTS I sent to you.
 
 Only return a json, don't add any explanation or any other information besides the `abstract`, `title`, `tags` and `inspiration` fields.
+In the json, in the value (not in the field names), replace all the quotes (") with single quotes (').
+
 REQUIRED MESH TAG: {FEATURED_TAG}
 
 ABSTRACTS:
