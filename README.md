@@ -3,7 +3,7 @@ Lightweight repository for grant tagger model deployment and inference.
 Adapted from [the original repository](https://github.com/wellcometrust/grants_tagger)
 
 Grants tagger is a machine learning powered tool that
-assigns biomedical related tags to grant proposals.
+assigns biomedical-related tags to grant proposals.
 Those tags can be custom to the organisation
 or based upon a preexisting ontology like MeSH.
 

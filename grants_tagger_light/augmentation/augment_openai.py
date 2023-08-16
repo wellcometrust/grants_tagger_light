@@ -2,6 +2,7 @@ import json
 import os
 from loguru import logger
 import openai
+from openai_multi_client import OpenAIMultiClient
 
 
 class AugmentOpenAI:
@@ -11,42 +12,64 @@ class AugmentOpenAI:
         with open(prompt_template_path, 'r') as f:
             self.prompt_template = f.read()
         self.model_key = model_key
+        self.api = OpenAIMultiClient(endpoint="chats", data_template={"model": self.model_key})
 
-    def generate(self, featured_tag, dataset, n=1, few_shot_examples=10, temperature=1.5, top_p=1, frequence_penalty=0,
-                 presence_penalty=0):
-        size = min(len(dataset), few_shot_examples)
-        dataset = dataset[:size]
-        abstracts = "\n".join(dataset['abstractText'])
+    def _create_message(self, featured_tag, featured_tag_dset):
+        abstracts = "\n".join(featured_tag_dset['abstractText'])
         tags = []
         for x in dataset['meshMajor']:
             tags.extend(x)
+
         mesh_tags = ",".join(list(set(tags)))
 
         prompt = self.prompt_template.replace('{FEATURED_TAG}', featured_tag)
         prompt = prompt.replace('{ABSTRACTS}', abstracts)
         prompt = prompt.replace('{MESH_TAGS}', mesh_tags)
 
-        response = openai.ChatCompletion.create(
-            model=self.model_key,
-            messages=[
-                {"role": "user", "content": prompt}],
-            n=n,
-            temperature=temperature,
-            top_p=top_p,
-            frequency_penalty=frequence_penalty,
-            presence_penalty=presence_penalty
-        )
-        for r in response['choices']:
-            if 'message' in r:
-                if 'content' in r['message']:
-                    print(r['message']['content'])
-                    try:
-                        r_json = json.loads(r['message']['content'])
-                        a = r_json['abstract']
-                        # Make sure it does not hallucinate and adds anything new which may not be a MeSH tag
-                        t = [x for x in r_json['tags'] if x in tags]
-                        tl = r_json['title']
-                        yield {'abstract': a, 'tags': t, 'title': tl}
-                    except Exception as e:
-                        logger.info("OpenAI did not return a proper json format.")
-                        yield None
+        return [{"role": "user", "content": prompt}]
+
+    def _make_requests(self, collect_concurrent_calls, dset, few_shot_examples=10, temperature=1.5, top_p=1,
+                       frequence_penalty=0, presence_penalty=0):
+        for num in range(len(collect_concurrent_calls)):
+            t = collect_concurrent_calls[num][0]
+            n = collect_concurrent_calls[num][1]
+            # RAG: I select similar articles to provide them to the LLM
+            tmp_dset = dset.filter(lambda x: any(np.isin([t], x["meshMajor"])), num_proc=num_proc)
+            # I remove them from the dataset to process to make it smaller and quicker over time
+            dset = dset.filter(lambda example, idx: idx not in tmp_dset['idx'], with_indices=True,
+                               num_proc=num_proc)
+            size = min(len(tmp_dset), few_shot_examples)
+            tmp_dset = tmp_dset[:size]
+
+            self.api.request(data={
+                "model": self.model_key,
+                "n": n,
+                "temperature": temperature,
+                "top_p": top_p,
+                "frequence_penalty": frequence_penalty,
+                "presence_penalty": presence_penalty,
+                "messages": self._create_message(t, tmp_dset)
+            }, metadata={'num': num})
+
+    def generate(self, collect_concurrent_calls, dset, few_shot_examples=10, temperature=1.5, top_p=1,
+                 frequence_penalty=0, presence_penalty=0):
+
+        self.api.run_request_function(self._make_requests, collect_concurrent_calls, dset, few_shot_examples,
+                                      temperature, top_p, frequence_penalty, presence_penalty)
+
+        for response in self.api:
+            for r in response['choices']:
+                if 'message' in r:
+                    if 'content' in r['message']:
+                        print(r['message']['content'])
+                        try:
+                            r_json = json.loads(r['message']['content'])
+                            a = r_json['abstract']
+                            # Make sure it does not hallucinate and adds anything new which may not be a MeSH tag
+                            t = [x for x in r_json['tags'] if x in tags]
+                            tl = r_json['title']
+                            yield {'abstract': a, 'tags': t, 'title': tl}
+                        except Exception as e:
+                            logger.info("OpenAI did not return a proper json format.")
+                            yield None
+

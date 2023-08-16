@@ -22,6 +22,7 @@ libpecos = "^1.0.0"
 loguru = "^0.7.0"
 wandb = "^0.15.4"
 openai = "0.27.8"
+openai-multi-client = "^0.1.1"
 
 
 [tool.poetry.group.dev]

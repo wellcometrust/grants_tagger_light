@@ -80,7 +80,7 @@ def train_bertmesh(
     if max_samples > 0:
         train_dset_size = min(max_samples, train_dset_size)
         logger.info(f"Training max samples: {train_dset_size}.")
-        train_dset.filter(lambda example, idx: idx < train_dset_size, with_indices=True)
+        train_dset.filter(lambda example, idx: idx < train_dset_size, with_indices=True, num_proc=num_proc)
     else:
         logger.info("Training with all data...")
 

@@ -16,7 +16,7 @@ from grants_tagger_light.utils.years_tags_parser import parse_years
 augment_app = typer.Typer()
 
 
-def count_elements_in_sublist(sublist):
+def _count_elements_in_sublist(sublist):
     element_count = {}
     for element in sublist:
         if element in element_count:
@@ -26,7 +26,7 @@ def count_elements_in_sublist(sublist):
     return element_count
 
 
-def merge_dicts(dict_list):
+def _merge_dicts(dict_list):
     merged_dict = {}
     for d in dict_list:
         for key, value in d.items():
@@ -37,6 +37,26 @@ def merge_dicts(dict_list):
     return merged_dict
 
 
+def _generate(collect_concurrent_calls, dset, few_shot_examples, save_to_path,
+              augmentation_engine):
+    logger.info(f"Generating {missing} examples for class {tag}")
+    counter = 0
+    with open(save_to_path, 'a') as f:
+        for a in augmentation_engine.generate(collect_concurrent_calls, dset, few_shot_examples=few_shot_examples):
+            if a is None:
+                break
+            f.write(json.dumps({
+                "journal": model_key,
+                "meshMajor": a['tags'],
+                "year": [random.choice(train_years) if len(train_years) > 0 else datetime.date.today().year],
+                "abstractText": a['abstract'],
+                "pmid": f"augmented_{tag}_{counter}",
+                "title": a['title']
+            }))
+            f.write('\n')
+            f.flush()
+            counter += 1
+
 def augment(
     data_path: str,
     save_to_path: str,
@@ -44,14 +64,15 @@ def augment(
     num_proc: int = os.cpu_count(),
     train_years: list = None,
     test_years: list = None,
-    min_examples: int = 25,
+    min_examples: int = 15,
     prompt_template: str = 'grants_tagger_light/augmentation/prompt.template',
-    few_shot_examples: int = 5
+    few_shot_examples: int = 5,
+    concurrent_calls: int = 5
 ):
     if model_key.strip().lower().startswith('gpt-3.5-turbo') or \
             model_key.strip().lower().startswith('text-davinci') or \
             model_key.strip().lower().startswith('gpt-4'):
-        augment_engine = AugmentOpenAI(prompt_template_path=prompt_template, model_key=model_key)
+        augmentation_engine = AugmentOpenAI(prompt_template_path=prompt_template, model_key=model_key)
     else:
         raise NotImplementedError(f"{model_key} not implemented as an augmentation framework")
 
@@ -68,11 +89,11 @@ def augment(
 
     logger.info("Obtaining count values from the labels...")
     pool = multiprocessing.Pool(processes=num_proc)
-    element_counts_list = pool.map(count_elements_in_sublist, dset['meshMajor'])
+    element_counts_list = pool.map(_count_elements_in_sublist, dset['meshMajor'])
     pool.close()
     pool.join()
 
-    merged_element_counts = merge_dicts(element_counts_list)
+    merged_element_counts = _merge_dicts(element_counts_list)
     sorted_merged_element_counts = sorted(merged_element_counts.items(), key=lambda x: x[1], reverse=True)
     sorted_merged_element_counts_dict = dict(sorted_merged_element_counts)
 
@@ -89,28 +110,24 @@ def augment(
 
     logger.info(f"Collecting existing examples of those tags to send in the prompt")
     dset = dset.filter(lambda x: any(np.isin(tags_to_augment, x["meshMajor"])), num_proc=num_proc)
-
-    counter = 0
-    with open(save_to_path, 'w') as f:
-        for t in tags_to_augment:
+    dset = dset.map(
+        lambda _, y: {'idx': y},
+        with_indices=True,
+        batched=True,
+        batch_size=batch_size,
+        desc="Encoding labels",
+        num_proc=num_proc,
+    )
+    print(dset['idx'])
+    collect_concurrent_calls = []
+    for t in tags_to_augment:
+        if len(collect_concurrent_calls) >= concurrent_calls:
+            _generate(collect_concurrent_calls, tag, dset, few_shot_examples, save_to_path, augmentation_engine)
+        else:
             if tags_to_augment_counts[t] < min_examples:
-                tmp_dset = dset.filter(lambda x: any(np.isin([t], x["meshMajor"])), num_proc=num_proc)
-                missing = min_examples - len(tmp_dset)
-                logger.info(f"Generating {missing} examples for class {t}")
-                for a in augment_engine.generate(t, tmp_dset, n=missing, few_shot_examples=few_shot_examples):
-                    if a is None:
-                        break
-                    f.write(json.dumps({
-                        "journal": model_key,
-                        "meshMajor": a['tags'],
-                        "year": [random.choice(train_years) if len(train_years) > 0 else datetime.date.today().year],
-                        "abstractText": a['abstract'],
-                        "pmid": str(counter),
-                        "title": a['title']
-                    }))
-                    f.write('\n')
-                    f.flush()
-                    counter += 1
+                missing = min_examples - tags_to_augment_counts[tag]
+                collect_concurrent_calls.append((tags_to_augment_counts[t], missing))
+
 
 
 @augment_app.command()
@@ -138,7 +155,7 @@ def augment_cli(
         help="If set, Comma-separated years you want to exclude in the data augmentation process"
     ),
     min_examples: int = typer.Option(
-        25,
+        15,
         help="If set, Comma-separated years you want to exclude in the data augmentation process"
     ),
     prompt_template: str = typer.Option(
@@ -148,6 +165,10 @@ def augment_cli(
     few_shot_examples: int = typer.Option(
         5,
         help="If available, try to send this number of examples to the LLM so that it can generate better abstracts"
+    ),
+    concurrent_calls: int = typer.Option(
+        5,
+        help="Concurrent calls with 1 tag each to the different model"
     ),
 ):
     if not data_path.endswith("jsonl"):
@@ -165,5 +186,6 @@ def augment_cli(
             test_years=parse_years(test_years),
             min_examples=min_examples,
             prompt_template=prompt_template,
-            few_shot_examples=few_shot_examples
+            few_shot_examples=few_shot_examples,
+            concurrent_calls=concurrent_calls
     )
