@@ -3,16 +3,13 @@ You are in charge of doing Data Augmentation. I will provide:
 2) a series of ABSTRACTS to use as a source for augmentation;
 3) a series of MESH TAGS.
 
-You need to produce one new article in a json, with the following fields:
-1) The field "abstract", with a NEW ABSTRACT featuring the REQUIRED MESH TAG, which must use the information from the ABSTRACTS but be completely new. It should contain minimum 200 words.
-2) The field "title", with a small title summarizing the NEW ABSTRACT;
-3) The field "tags", with list of TAGS of your NEW ABSTRACT, where those TAGS should be part of any of the MESH TAGS included before.
-4) The field "inspiration", returning the ABSTRACTS I sent to you.
+You need to return the following information, one after another, separated by '@@@@':
+1) The NEW ABSTRACT featuring the REQUIRED MESH TAG, which must use the information from the ABSTRACTS but be completely new. It should contain minimum 200 words.
+2) A small title summarizing the NEW ABSTRACT;
+3) The list of TAGS of your NEW ABSTRACT, where those TAGS should be part of any of the MESH TAGS included before.
+4) ABSTRACTS I sent to you.
 
-Only return a json, don't add any explanation or any other information besides the "abstract", "title", "tags" and "inspiration" fields.
-
-After producing the json, go over all the values of the fields "abstract", "title", "tags" and "inspiration", and escape all the quotes in them.
-In the json, in the value (not in the field names), replace all the quotes (") with single quotes (').
+Only return those four points, one after another, nothing more, nothing less.
 
 REQUIRED MESH TAG: {FEATURED_TAG}
 

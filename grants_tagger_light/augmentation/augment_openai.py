@@ -75,11 +75,11 @@ class AugmentOpenAI:
                 if 'message' in r:
                     if 'content' in r['message']:
                         try:
-                            r_json = json.loads(r['message']['content'])
-                            a = r_json['abstract']
-                            t = r_json['tags']
-                            tl = r_json['title']
-                            i = r_json['inspiration']
+                            pieces = r['message']['content'].split('@@@@')
+                            a = pieces[0]
+                            t = pieces[1]
+                            tl = pieces[2]
+                            i = pieces[3]
                             print("YIELD!!!!!!!!!!!!!!")
                             yield {'abstract': a, 'tags': t, 'title': tl, 'inspiration': i}
                         except Exception as e:
