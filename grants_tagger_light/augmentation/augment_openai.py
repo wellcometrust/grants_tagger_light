@@ -77,8 +77,7 @@ class AugmentOpenAI:
                         try:
                             r_json = json.loads(r['message']['content'])
                             a = r_json['abstract']
-                            # Make sure it does not hallucinate and adds anything new which may not be a MeSH tag
-                            t = [x for x in r_json['tags'] if x in tags]
+                            t = r_json['tags']
                             tl = r_json['title']
                             print("YIELD!!!!!!!!!!!!!!")
                             yield {'abstract': a, 'tags': t, 'title': tl}
