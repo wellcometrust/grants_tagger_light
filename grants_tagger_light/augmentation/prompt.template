@@ -11,6 +11,10 @@ You need to return a json file containing:
 
 Don't include anything else besides the four mentioned fields. "abstract", "title", "tags" and "inspiration".
 
+Make sure each tag starts and finishes with a double quote.
+
+Make sure there is only starting and ending quotes in both keys and values. Remove any other quotes.
+
 REQUIRED MESH TAG: {FEATURED_TAG}
 
 ABSTRACTS:
