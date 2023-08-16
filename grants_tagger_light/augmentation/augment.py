@@ -123,10 +123,10 @@ def augment(
     collect_concurrent_calls = []
     for t in tags_to_augment:
         if len(collect_concurrent_calls) >= concurrent_calls:
-            _generate(collect_concurrent_calls, tag, dset, few_shot_examples, save_to_path, augmentation_engine)
+            _generate(collect_concurrent_calls, dset, few_shot_examples, save_to_path, augmentation_engine)
         else:
             if tags_to_augment_counts[t] < min_examples:
-                missing = min_examples - tags_to_augment_counts[tag]
+                missing = min_examples - tags_to_augment_counts[t]
                 collect_concurrent_calls.append((tags_to_augment_counts[t], missing))
 
 
