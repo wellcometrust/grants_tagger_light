@@ -81,7 +81,13 @@ class AugmentOpenAI:
                             t = pieces['tags']
                             tl = pieces['title']
                             i = pieces['inspiration']
-                            yield {'abstract': a, 'tags': t, 'title': tl, 'inspiration': i}
+                            ait = pieces['all_inspiration_tags']
+                            yield {'abstract': a,
+                                   'tags': t,
+                                   'title': tl,
+                                   'inspiration': i,
+                                   'all_inspiration_tags': ait
+                                   }
                         except Exception as e:
                             with open(f'{save_to_path}.err', 'w') as f:
                                 f.write(r['message']['content'])

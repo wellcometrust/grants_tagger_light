@@ -8,8 +8,9 @@ You need to return a json file containing:
 2) Field "title": a small TITLE summarizing the NEW ABSTRACT. Remove all quotes from the generated TITLE.
 3) Field "tags": a list of TAGS of your NEW ABSTRACT, where those TAGS should be part of any of the MESH TAGS included before. Remove all quotes from the generated TAGS.
 4) Field "inspiration": a text showing the first abstract in ABSTRACT I sent to you. Remove all quotes from the ABSTRACTS.
+5) Field "all_inspiration_tags": the unique MESH TAGS I sent you. Remove all quotes from the tags.
 
-Don't include anything else besides the four mentioned fields. "abstract", "title", "tags" and "inspiration".
+Don't include anything else besides the four mentioned fields. "abstract", "title", "tags", "inspiration" and "inspiration_tags".
 
 Make sure each tag starts and finishes with a double quote.
 Make sure there is only starting and ending quotes in both keys and values. Remove any other quotes.

@@ -53,7 +53,8 @@ def _generate(collect_concurrent_calls, dset, few_shot_examples, save_to_path,
                 "abstractText": a['abstract'],
                 "pmid": uuid.uuid4().hex,
                 "title": a['title'],
-                "inspiration": a['inspiration']
+                "inspiration": a['inspiration'],
+                "all_inspiration_tags": a['all_inspiration_tags']
             }))
             f.write('\n')
             f.flush()
