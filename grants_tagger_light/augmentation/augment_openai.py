@@ -38,11 +38,6 @@ class AugmentOpenAI:
                        frequence_penalty,
                        presence_penalty,
                        num_proc):
-        print(temperature)
-        print(top_p)
-        print(frequence_penalty)
-        print(presence_penalty)
-        print(num_proc)
         for num in range(len(collect_concurrent_calls)):
             t = collect_concurrent_calls[num][0]
             n = collect_concurrent_calls[num][1]
@@ -59,7 +54,7 @@ class AugmentOpenAI:
                 "n": n,
                 "temperature": temperature,
                 "top_p": top_p,
-                "frequence_penalty": frequence_penalty,
+                # "frequence_penalty": frequence_penalty,
                 "presence_penalty": presence_penalty,
                 "messages": self._create_message(t, tmp_dset)
             }, metadata={'num': num})
