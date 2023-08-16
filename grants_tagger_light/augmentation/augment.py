@@ -44,7 +44,7 @@ def _generate(collect_concurrent_calls, dset, few_shot_examples, save_to_path,
     counter = 0
     with open(save_to_path, 'a') as f:
         for a in augmentation_engine.generate(collect_concurrent_calls, dset, few_shot_examples=few_shot_examples,
-            num_proc=num_proc):
+                                              num_proc=num_proc):
             if a is None:
                 break
             f.write(json.dumps({
@@ -122,7 +122,6 @@ def augment(
         desc="Encoding labels",
         num_proc=num_proc,
     )
-    print(dset['idx'])
     collect_concurrent_calls = []
     for t in tags_to_augment:
         if len(collect_concurrent_calls) >= concurrent_calls:
