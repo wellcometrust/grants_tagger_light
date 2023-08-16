@@ -79,8 +79,9 @@ class AugmentOpenAI:
                             a = r_json['abstract']
                             t = r_json['tags']
                             tl = r_json['title']
+                            i = r_json['inspiration']
                             print("YIELD!!!!!!!!!!!!!!")
-                            yield {'abstract': a, 'tags': t, 'title': tl}
+                            yield {'abstract': a, 'tags': t, 'title': tl, 'inspiration': i}
                         except Exception as e:
                             print("ERROR!!!!!!!!!!!!!!")
                             print(e)

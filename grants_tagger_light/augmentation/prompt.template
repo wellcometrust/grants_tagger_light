@@ -7,7 +7,9 @@ You need to produce one new article in a json, with the following fields:
 1) The field 'abstract', with a NEW ABSTRACT featuring the REQUIRED MESH TAG, which must use the information from the ABSTRACTS but be completely new. It should contain minimum 200 words.
 2) The field 'title', with a small title summarizing the NEW ABSTRACT;
 3) The field 'tags', with list of TAGS of your NEW ABSTRACT, where those TAGS should be part of any of the MESH TAGS included before.
+4) The field 'inspiration', returning the ABSTRACTS I sent to you.
 
+Only return a json, don't add any explanation or any other information besides the `abstract`, `title`, `tags` and `inspiration` fields.
 REQUIRED MESH TAG: {FEATURED_TAG}
 
 ABSTRACTS:
