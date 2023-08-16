@@ -18,7 +18,7 @@ class AugmentOpenAI:
     def _create_message(self, featured_tag, featured_tag_dset):
         abstracts = "\n".join(featured_tag_dset['abstractText'])
         tags = []
-        for x in dataset['meshMajor']:
+        for x in featured_tag_dset['meshMajor']:
             tags.extend(x)
 
         mesh_tags = ",".join(list(set(tags)))
