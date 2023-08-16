@@ -3,6 +3,7 @@ import os
 from loguru import logger
 import openai
 from openai_multi_client import OpenAIMultiClient
+import numpy as np
 
 
 class AugmentOpenAI:
