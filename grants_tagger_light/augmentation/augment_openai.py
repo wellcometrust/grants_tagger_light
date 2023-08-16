@@ -40,6 +40,7 @@ class AugmentOpenAI:
         for num in range(len(collect_concurrent_calls)):
             t = collect_concurrent_calls[num][0]
             n = collect_concurrent_calls[num][1]
+            logger.info(f"Augmenting {t} with {n} examples")
             # RAG: I select similar articles to provide them to the LLM
             tmp_dset = dset.filter(lambda x: any(np.isin([t], x["meshMajor"])), num_proc=num_proc)
             # I remove them from the dataset to process to make it smaller and quicker over time
