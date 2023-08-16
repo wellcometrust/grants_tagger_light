@@ -153,6 +153,12 @@ def train_bertmesh(
         max_steps = Sharding.calculate_max_steps(training_args, train_dset_size)
         training_args.max_steps = max_steps
 
+    # Instantiate the AdamW optimizer with a constant learning rate
+    optimizer = AdamW(model.parameters(), lr=training_args.learning_rate)  # Set your desired learning rate
+
+    # Create a learning rate scheduler
+    scheduler = get_constant_scheduler(optimizer, num_warmup_steps=0, num_training_steps=training_args.max_steps)
+
     trainer = Trainer(
         model=model,
         args=training_args,
@@ -160,6 +166,8 @@ def train_bertmesh(
         eval_dataset=val_dset,
         data_collator=collator,
         compute_metrics=sklearn_metrics,
+        optimizer=optimizer,
+        scheduler=scheduler,
     )
     logger.info(training_args)
 

@@ -62,6 +62,7 @@ def augment(
     save_to_path: str,
     model_key: str = 'gpt-3.5-turbo',
     num_proc: int = os.cpu_count(),
+    batch_size: int = 64,
     train_years: list = None,
     test_years: list = None,
     min_examples: int = 15,
@@ -146,6 +147,10 @@ def augment_cli(
         os.cpu_count(),
         help="Number of processes to use for data augmentation"
     ),
+    batch_size: int = typer.Option(
+        64,
+        help="Preprocessing batch size (for dataset, filter, map, ...)"
+    ),
     train_years: str = typer.Option(
         None,
         help="If set, Comma-separated years you want to include in the data augmentation process"
@@ -182,6 +187,7 @@ def augment_cli(
             save_to_path,
             model_key=model_key,
             num_proc=num_proc,
+            batch_size=batch_size,
             train_years=parse_years(train_years),
             test_years=parse_years(test_years),
             min_examples=min_examples,
