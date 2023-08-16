@@ -7,13 +7,13 @@ You need to return a json file containing:
 1) Field "abstract": the NEW ABSTRACT featuring the REQUIRED MESH TAG, which must use the information from the ABSTRACTS but be completely new. It should contain minimum 200 words. Remove all quotes from the generated NEW ABSTRACT.
 2) Field "title": a small TITLE summarizing the NEW ABSTRACT. Remove all quotes from the generated TITLE.
 3) Field "tags": a list of TAGS of your NEW ABSTRACT, where those TAGS should be part of any of the MESH TAGS included before. Remove all quotes from the generated TAGS.
-4) Field "inspiration": a text concatenating all the ABSTRACTS I sent to you, one after another. Remove all quotes from the ABSTRACTS.
+4) Field "inspiration": a text showing the first abstract in ABSTRACT I sent to you. Remove all quotes from the ABSTRACTS.
 
 Don't include anything else besides the four mentioned fields. "abstract", "title", "tags" and "inspiration".
 
 Make sure each tag starts and finishes with a double quote.
-
 Make sure there is only starting and ending quotes in both keys and values. Remove any other quotes.
+Make sure the json is well formed and can be parsed.
 
 REQUIRED MESH TAG: {FEATURED_TAG}
 
