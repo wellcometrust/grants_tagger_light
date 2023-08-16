@@ -69,8 +69,9 @@ class AugmentOpenAI:
                                       presence_penalty=presence_penalty,
                                       num_proc=num_proc)
 
-        for response in self.api:
-            for r in response['choices']:
+        for result in self.api:
+            num = result.metadata['num']
+            for r in result.response['choices']:
                 if 'message' in r:
                     if 'content' in r['message']:
                         print(r['message']['content'])
