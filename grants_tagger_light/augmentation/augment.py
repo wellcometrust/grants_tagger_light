@@ -39,11 +39,12 @@ def _merge_dicts(dict_list):
 
 
 def _generate(collect_concurrent_calls, dset, few_shot_examples, save_to_path,
-              augmentation_engine, train_years):
+              augmentation_engine, train_years, num_proc):
     logger.info(f"Generating missing examples for classes...")
     counter = 0
     with open(save_to_path, 'a') as f:
-        for a in augmentation_engine.generate(collect_concurrent_calls, dset, few_shot_examples=few_shot_examples):
+        for a in augmentation_engine.generate(collect_concurrent_calls, dset, few_shot_examples=few_shot_examples,
+            num_proc=num_proc):
             if a is None:
                 break
             f.write(json.dumps({
@@ -125,7 +126,8 @@ def augment(
     collect_concurrent_calls = []
     for t in tags_to_augment:
         if len(collect_concurrent_calls) >= concurrent_calls:
-            _generate(collect_concurrent_calls, dset, few_shot_examples, save_to_path, augmentation_engine, train_years)
+            _generate(collect_concurrent_calls, dset, few_shot_examples, save_to_path, augmentation_engine,
+                      train_years, num_proc)
         else:
             if tags_to_augment_counts[t] < min_examples:
                 missing = min_examples - tags_to_augment_counts[t]

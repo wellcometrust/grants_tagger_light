@@ -29,7 +29,7 @@ class AugmentOpenAI:
         return [{"role": "user", "content": prompt}]
 
     def _make_requests(self, collect_concurrent_calls, dset, few_shot_examples=10, temperature=1.5, top_p=1,
-                       frequence_penalty=0, presence_penalty=0):
+                       frequence_penalty=0, presence_penalty=0, num_proc=os.cpu.count()):
         for num in range(len(collect_concurrent_calls)):
             t = collect_concurrent_calls[num][0]
             n = collect_concurrent_calls[num][1]
@@ -52,10 +52,10 @@ class AugmentOpenAI:
             }, metadata={'num': num})
 
     def generate(self, collect_concurrent_calls, dset, few_shot_examples=10, temperature=1.5, top_p=1,
-                 frequence_penalty=0, presence_penalty=0):
+                 frequence_penalty=0, presence_penalty=0, num_proc=os.cpu.count()):
 
         self.api.run_request_function(self._make_requests, collect_concurrent_calls, dset, few_shot_examples,
-                                      temperature, top_p, frequence_penalty, presence_penalty)
+                                      temperature, top_p, frequence_penalty, presence_penalty, num_proc)
 
         for response in self.api:
             for r in response['choices']:
