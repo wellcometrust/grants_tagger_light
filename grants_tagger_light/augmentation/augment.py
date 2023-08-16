@@ -8,6 +8,7 @@ from loguru import logger
 from datasets import load_dataset
 import numpy as np
 import datetime
+import uuid
 
 
 from grants_tagger_light.augmentation.augment_openai import AugmentOpenAI
@@ -38,8 +39,8 @@ def _merge_dicts(dict_list):
 
 
 def _generate(collect_concurrent_calls, dset, few_shot_examples, save_to_path,
-              augmentation_engine):
-    logger.info(f"Generating {missing} examples for class {tag}")
+              augmentation_engine, train_years):
+    logger.info(f"Generating missing examples for classes...")
     counter = 0
     with open(save_to_path, 'a') as f:
         for a in augmentation_engine.generate(collect_concurrent_calls, dset, few_shot_examples=few_shot_examples):
@@ -50,12 +51,13 @@ def _generate(collect_concurrent_calls, dset, few_shot_examples, save_to_path,
                 "meshMajor": a['tags'],
                 "year": [random.choice(train_years) if len(train_years) > 0 else datetime.date.today().year],
                 "abstractText": a['abstract'],
-                "pmid": f"augmented_{tag}_{counter}",
+                "pmid": uuid.uuid4.hex(),
                 "title": a['title']
             }))
             f.write('\n')
             f.flush()
             counter += 1
+
 
 def augment(
     data_path: str,
@@ -123,12 +125,11 @@ def augment(
     collect_concurrent_calls = []
     for t in tags_to_augment:
         if len(collect_concurrent_calls) >= concurrent_calls:
-            _generate(collect_concurrent_calls, dset, few_shot_examples, save_to_path, augmentation_engine)
+            _generate(collect_concurrent_calls, dset, few_shot_examples, save_to_path, augmentation_engine, train_years)
         else:
             if tags_to_augment_counts[t] < min_examples:
                 missing = min_examples - tags_to_augment_counts[t]
                 collect_concurrent_calls.append((tags_to_augment_counts[t], missing))
-
 
 
 @augment_app.command()
@@ -194,4 +195,4 @@ def augment_cli(
             prompt_template=prompt_template,
             few_shot_examples=few_shot_examples,
             concurrent_calls=concurrent_calls
-    )
+            )
