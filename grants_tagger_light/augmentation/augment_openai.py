@@ -89,13 +89,6 @@ class AugmentOpenAI:
                                    'all_inspiration_tags': ait
                                    }
                         except Exception as e:
-                            with open(f'{save_to_path}.err', 'w') as f:
-                                err = {'tags': [x[0] for x in collect_concurrent_calls],
-                                       'tags_missing_examples': [x[1] for x in collect_concurrent_calls],
-                                       'response_from_llm': r['message']['content']
-                                }
-                                f.write(json.dumps(err))
-                                f.write("\n")
                             logger.info("OpenAI did not return a proper json format...")
                             yield None
 
