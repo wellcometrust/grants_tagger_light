@@ -6,9 +6,9 @@ You are in charge of doing Data Augmentation. I will provide:
 You need to return a json file containing:
 1) Field "abstract": the NEW ABSTRACT featuring the REQUIRED MESH TAG, which must use the information from the ABSTRACTS but be completely new. It should contain minimum 200 words. Remove all quotes from the generated NEW ABSTRACT.
 2) Field "title": a small TITLE summarizing the NEW ABSTRACT. Remove all quotes from the generated TITLE.
-3) Field "tags": a list of TAGS of your NEW ABSTRACT, where those TAGS should be part of any of the MESH TAGS I've sent you. Don't create new tags not contained in MESH TAGS. Don't modify them, write exactly as they are in MESH TAGS. Remove all quotes from the generated TAGS.
-4) Field "inspiration_example": a text showing the first abstract in ABSTRACT I sent to you. Remove all quotes from the ABSTRACTS.
-5) Field "all_inspiration_tags": the MESH TAGS
+3) Field "tags": all the MESH TAGS which are relevant to the "abstract" you generated. Remove those not relevant. Don't create new tags not contained in MESH TAGS. Don't modify them, write exactly as they are in MESH TAGS. Remove all quotes from the generated tags.
+4) Field "inspiration_example": the first abstract in ABSTRACT I sent to you. Remove all quotes from the ABSTRACTS.
+5) Field "all_inspiration_tags": a list of first, the REQUIRED MESH TAG, and then, all the rest of MESH TAGS.
 
 Don't include anything else besides the four mentioned fields. "abstract", "title", "tags", "inspiration_example" and "all_inspiration_tags".
 
