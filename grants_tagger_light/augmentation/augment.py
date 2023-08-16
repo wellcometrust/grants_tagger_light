@@ -52,7 +52,7 @@ def _generate(collect_concurrent_calls, dset, few_shot_examples, save_to_path,
                 "meshMajor": a['tags'],
                 "year": [random.choice(train_years) if len(train_years) > 0 else datetime.date.today().year],
                 "abstractText": a['abstract'],
-                "pmid": uuid.uuid4.hex(),
+                "pmid": uuid.uuid4().hex,
                 "title": a['title']
             }))
             f.write('\n')
