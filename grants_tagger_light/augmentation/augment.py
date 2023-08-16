@@ -44,7 +44,7 @@ def _generate(collect_concurrent_calls, dset, few_shot_examples, save_to_path,
     counter = 0
     with open(save_to_path, 'a') as f:
         for a in augmentation_engine.generate(collect_concurrent_calls, dset, few_shot_examples=few_shot_examples,
-                                              num_proc=num_proc, save_to_path=save_to_path)
+                                              num_proc=num_proc, save_to_path=save_to_path):
             if a is None:
                 break
             f.write(json.dumps({
