@@ -83,8 +83,10 @@ class AugmentOpenAI:
                             print("YIELD!!!!!!!!!!!!!!")
                             yield {'abstract': a, 'tags': t, 'title': tl}
                         except Exception as e:
-
                             print("ERROR!!!!!!!!!!!!!!")
+                            print(e)
+                            print(r['message']['content'])
+                            exit(-1)
                             logger.info("OpenAI did not return a proper json format.")
                             yield None
 
