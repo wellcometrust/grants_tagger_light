@@ -58,7 +58,7 @@ class AugmentOpenAI:
             }, metadata={'num': num})
 
     def generate(self, collect_concurrent_calls, dset, few_shot_examples=10, temperature=1.5, top_p=1,
-                 presence_penalty=0, num_proc=os.cpu_count()):
+                 presence_penalty=0, num_proc=os.cpu_count(), save_to_path='err'):
 
         self.api.run_request_function(self._make_requests,
                                       collect_concurrent_calls=collect_concurrent_calls,
@@ -83,9 +83,10 @@ class AugmentOpenAI:
                             print("YIELD!!!!!!!!!!!!!!")
                             yield {'abstract': a, 'tags': t, 'title': tl, 'inspiration': i}
                         except Exception as e:
+                            with open(f'{save_to_path}.err', 'w') as f:
+                                f.write(r['message']['content'])
+                                f.write("\n")
                             print("ERROR!!!!!!!!!!!!!!")
-                            print(e)
-                            print(r['message']['content'])
                             exit(-1)
                             logger.info("OpenAI did not return a proper json format.")
                             yield None
