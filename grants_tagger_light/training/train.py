@@ -4,6 +4,8 @@ from transformers import (
     EvalPrediction,
     HfArgumentParser,
     AutoConfig,
+    AdamW,
+    get_cosine_schedule_with_warmup
 )
 from grants_tagger_light.models.bert_mesh import BertMesh
 from grants_tagger_light.preprocessing.preprocess_mesh import preprocess_mesh
@@ -27,7 +29,6 @@ from datasets import load_from_disk
 
 from grants_tagger_light.utils.sharding import Sharding
 from grants_tagger_light.utils.years_tags_parser import parse_years, parse_tags
-from transformers import get_cosine_schedule_with_warmup
 
 transformers.set_seed(42)
 
