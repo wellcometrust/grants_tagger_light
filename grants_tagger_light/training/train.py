@@ -164,6 +164,9 @@ def train_bertmesh(
                                                 num_warmup_steps=training_args.warmup_steps,
                                                 num_training_steps=training_args.max_steps)
 
+    training_args.optim = optimizer
+    training_args.lr_scheduler_type = scheduler
+
     trainer = Trainer(
         model=model,
         args=training_args,
@@ -171,7 +174,8 @@ def train_bertmesh(
         eval_dataset=val_dset,
         data_collator=collator,
         compute_metrics=sklearn_metrics,
-        optimizers=(optimizer, scheduler)
+        optimizers=(optimizer, scheduler),
+
     )
     logger.info(training_args)
 
