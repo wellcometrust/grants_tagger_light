@@ -163,7 +163,6 @@ def train_bertmesh(
     scheduler = get_cosine_schedule_with_warmup(optimizer,
                                                 num_warmup_steps=training_args.warmup_steps,
                                                 num_training_steps=training_args.max_steps)
-    logger.info(f"Scheduler: {self.lr_scheduler}")
 
     trainer = Trainer(
         model=model,
