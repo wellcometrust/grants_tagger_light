@@ -23,6 +23,7 @@ grants-tagger train bertmesh \
     --dropout 0.1 \
     --hidden_size 1024 \
     --warmup_steps 1000 \
+    --max_grad_norm 5.0 \
     --fp16 \
     --torch_compile \
     --evaluation_strategy steps \

@@ -27,6 +27,7 @@ from datasets import load_from_disk
 
 from grants_tagger_light.utils.sharding import Sharding
 from grants_tagger_light.utils.years_tags_parser import parse_years, parse_tags
+from transformers import get_cosine_schedule_with_warmup
 
 transformers.set_seed(42)
 
@@ -157,7 +158,9 @@ def train_bertmesh(
     optimizer = AdamW(model.parameters(), lr=training_args.learning_rate)  # Set your desired learning rate
 
     # Create a learning rate scheduler
-    scheduler = get_constant_scheduler(optimizer, num_warmup_steps=0, num_training_steps=training_args.max_steps)
+    scheduler = get_cosine_schedule_with_warmup(optimizer,
+                                                num_warmup_steps=training_args.warmup_steps,
+                                                num_training_steps=training_args.max_steps)
 
     trainer = Trainer(
         model=model,
