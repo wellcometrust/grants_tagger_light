@@ -155,13 +155,22 @@ def train_bertmesh(
         max_steps = Sharding.calculate_max_steps(training_args, train_dset_size)
         training_args.max_steps = max_steps
 
-    trainer = CustomTrainer(
+    optimizer = AdamW(model.parameters(),
+                      lr=training_args.learning_rate)  # Set your desired learning rate
+    # Create a learning rate scheduler
+    scheduler = get_cosine_schedule_with_warmup(optimizer,
+                                                num_warmup_steps=training_args.warmup_steps,
+                                                num_training_steps=training_args.max_steps)
+    logger.info(f"Scheduler: {self.lr_scheduler}")
+
+    trainer = Trainer(
         model=model,
         args=training_args,
         train_dataset=train_dset,
         eval_dataset=val_dset,
         data_collator=collator,
-        compute_metrics=sklearn_metrics
+        compute_metrics=sklearn_metrics,
+        optimizers=(optimizer, scheduler)
     )
     logger.info(training_args)
 
