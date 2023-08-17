@@ -3,7 +3,9 @@ from transformers import (
     TrainingArguments,
     EvalPrediction,
     HfArgumentParser,
-    AutoConfig
+    AutoConfig,
+    AdamW,
+    et_cosine_schedule_with_warmup
 )
 from grants_tagger_light.models.bert_mesh import BertMesh
 from grants_tagger_light.preprocessing.preprocess_mesh import preprocess_mesh

@@ -1,6 +1,7 @@
 from transformers import Trainer, AdamW, get_cosine_schedule_with_warmup
 from loguru import logger
 
+
 class CustomTrainer(Trainer):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
