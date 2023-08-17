@@ -28,7 +28,7 @@ from datasets import load_from_disk
 from grants_tagger_light.utils.sharding import Sharding
 from grants_tagger_light.utils.years_tags_parser import parse_years, parse_tags
 
-from grants_tagger_light.custom_trainer import CustomTrainer
+from grants_tagger_light.training.custom_trainer import CustomTrainer
 
 transformers.set_seed(42)
 
