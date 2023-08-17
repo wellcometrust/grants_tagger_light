@@ -3,9 +3,7 @@ from transformers import (
     TrainingArguments,
     EvalPrediction,
     HfArgumentParser,
-    AutoConfig,
-    AdamW,
-    get_cosine_schedule_with_warmup
+    AutoConfig
 )
 from grants_tagger_light.models.bert_mesh import BertMesh
 from grants_tagger_light.preprocessing.preprocess_mesh import preprocess_mesh
@@ -29,6 +27,8 @@ from datasets import load_from_disk
 
 from grants_tagger_light.utils.sharding import Sharding
 from grants_tagger_light.utils.years_tags_parser import parse_years, parse_tags
+
+from custom_trainer import CustomTrainer
 
 transformers.set_seed(42)
 
@@ -155,15 +155,7 @@ def train_bertmesh(
         max_steps = Sharding.calculate_max_steps(training_args, train_dset_size)
         training_args.max_steps = max_steps
 
-    # Instantiate the AdamW optimizer with a constant learning rate
-    optimizer = AdamW(model.parameters(), lr=training_args.learning_rate)  # Set your desired learning rate
-
-    # Create a learning rate scheduler
-    scheduler = get_cosine_schedule_with_warmup(optimizer,
-                                                num_warmup_steps=training_args.warmup_steps,
-                                                num_training_steps=training_args.max_steps)
-
-    trainer = Trainer(
+    trainer = CustomTrainer(
         model=model,
         args=training_args,
         train_dataset=train_dset,
