@@ -161,9 +161,7 @@ def train_bertmesh(
         train_dataset=train_dset,
         eval_dataset=val_dset,
         data_collator=collator,
-        compute_metrics=sklearn_metrics,
-        optimizer=optimizer,
-        scheduler=scheduler,
+        compute_metrics=sklearn_metrics
     )
     logger.info(training_args)
 
