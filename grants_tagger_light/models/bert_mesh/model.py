@@ -66,9 +66,9 @@ class BertMesh(PreTrainedModel):
         for name, param in self.bert.named_parameters():
             if 'bias' in name.lower():
                 param.requires_grad = True
+                logger.info(f"Unfreezing {name}")
             else:
                 param.requires_grad = False
-                logger.info(f"Unfreezing {name}")
 
     def forward(self, input_ids, labels=None, **kwargs):
         if type(input_ids) is list:
