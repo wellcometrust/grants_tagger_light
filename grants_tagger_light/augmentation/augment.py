@@ -45,7 +45,8 @@ def augment(
     test_years: list = None,
     min_examples: int = 15,
     prompt_template: str = 'grants_tagger_light/augmentation/prompt.template',
-    concurrent_calls: int = 5
+    concurrent_calls: int = 5,
+    temperature: float = 1.5
 ):
     if model_key.strip().lower() not in ['gpt-3.5-turbo', 'text-davinci', 'gpt-4']:
         raise NotImplementedError(f"{model_key} not implemented as an augmentation framework")
@@ -101,7 +102,7 @@ def augment(
                 save_to_path,
                 train_years,
                 model_key,
-                temperature=1.5,
+                temperature=temperature,
                 num_proc=num_proc,
             )
             collect_concurrent_calls = []
@@ -148,14 +149,24 @@ def augment_cli(
         help="File to use as a prompt. Make sure to ask the LLM to return a dict with two fields: `abstract` and `tags`"
     ),
     concurrent_calls: int = typer.Option(
-        5,
+        25,
         help="Concurrent calls with 1 tag each to the different model"
+    ),
+    temperature: float = typer.Option(
+        1.5,
+        help="A value between -2 and 2. The bigger - the more creative."
     ),
 ):
     if not data_path.endswith("jsonl"):
         logger.error(
             "It seems your input MeSH data is not in `jsonl` format. "
             "Please, run first `scripts/mesh_json_to_jsonlpy.`"
+        )
+        exit(-1)
+
+    if float(temperature) > 2.0 or float(temperature) < -2.0:
+        logger.error(
+            "Temperature should be in the range [-2, 2]"
         )
         exit(-1)
 
@@ -168,5 +179,6 @@ def augment_cli(
             test_years=parse_years(test_years),
             min_examples=min_examples,
             prompt_template=prompt_template,
-            concurrent_calls=concurrent_calls
+            concurrent_calls=concurrent_calls,
+            temperature=temperature
             )
