@@ -96,10 +96,8 @@ class AugmentOpenAI:
             for i in range(n):
                 selected_row = random.randint(0, len(tmp_dset)-1)
                 print(f"Selected row: {selected_row}")
-                print(tmp_dset['abstractText'])
-                print(len(tmp_dset['abstractText']))
+                print(f"Size of dataset: {len(tmp_dset)}")
                 abstract = tmp_dset['abstractText'][selected_row]
-                print(tmp_dset['abstractText'])
                 tags = tmp_dset['meshMajor'][selected_row]
                 data = {
                     "model": self.model_key,
