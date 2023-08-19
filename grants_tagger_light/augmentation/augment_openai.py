@@ -90,13 +90,11 @@ class AugmentOpenAI:
             # I remove them from the dataset to process to make it smaller and quicker over time
             dset = dset.filter(lambda example, idx: idx not in tmp_dset['idx'], with_indices=True,
                                num_proc=num_proc)
-            size = min(len(tmp_dset), few_shot_examples)
-            tmp_dset = tmp_dset[:size]
 
             for i in range(n):
                 selected_row = random.randint(0, len(tmp_dset)-1)
                 print(f"Selected row: {selected_row}")
-                print(f"Size of dataset: {len(tmp_dset)}")
+                print(f"Size of dataset: {len(tmp_dset['abstractText'])}")
                 abstract = tmp_dset['abstractText'][selected_row]
                 tags = tmp_dset['meshMajor'][selected_row]
                 data = {
