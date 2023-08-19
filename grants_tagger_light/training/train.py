@@ -5,7 +5,10 @@ from transformers import (
     HfArgumentParser,
     AutoConfig,
     AdamW,
-    get_cosine_schedule_with_warmup
+    get_cosine_schedule_with_warmup,
+    get_constant_scheduler_with_warmup,
+    get_cosine_with_hard_restarts_schedule_with_warmup,
+    get_linear_schedule_with_warmup
 )
 from grants_tagger_light.models.bert_mesh import BertMesh
 from grants_tagger_light.preprocessing.preprocess_mesh import preprocess_mesh
@@ -45,7 +48,8 @@ def train_bertmesh(
     from_checkpoint: str = None,
     tags: list = None,
     train_years: list = None,
-    test_years: list = None
+    test_years: list = None,
+    scheduler_type: str = 'cosine_hard_restart'
 ):
     if not model_key:
         assert isinstance(model_args, BertMeshModelArguments), (
@@ -155,16 +159,41 @@ def train_bertmesh(
         max_steps = Sharding.calculate_max_steps(training_args, train_dset_size)
         training_args.max_steps = max_steps
 
-    optimizer = AdamW(model.parameters(),
-                      lr=training_args.learning_rate)  # Set your desired learning rate
+    optimizer = AdamW(model.parameters(), lr=training_args.learning_rate)
 
-    # Create a learning rate scheduler
-    #scheduler = get_cosine_schedule_with_warmup(optimizer,
-    #                                            num_warmup_steps=training_args.warmup_steps,
-    #                                            num_training_steps=training_args.max_steps)
+    if training_args.warmup_steps is None:
+        training_args.warmup_steps = 0
+
+    if scheduler_type is None or scheduler_type.lower().strip() == '':
+        scheduler_type = 'linear'
+
+    if scheduler_type.lower().strip() == 'cosine':
+        scheduler = get_cosine_schedule_with_warmup(optimizer,
+                                                    num_warmup_steps=training_args.warmup_steps,
+                                                    num_training_steps=training_args.max_steps)
+    elif scheduler_type.lower().strip() == 'constant':
+        scheduler = get_constant_scheduler_with_warmup(optimizer,
+                                                       num_warmup_steps=training_args.warmup_steps)
+    elif scheduler_type.lower().strip() == 'cosine_hard_restart':
+        scheduler = get_cosine_with_hard_restarts_schedule_with_warmup(optimizer,
+                                                                       num_warmup_steps=training_args.warmup_steps,
+                                                                       num_training_steps=training_args.max_steps,
+                                                                       num_cycles=training_args.epochs)
+    elif scheduler_type.lower().strip() == 'linear':
+        scheduler = get_linear_schedule_with_warmup(optimizer,
+                                                    num_warmup_steps=training_args.warmup_steps,
+                                                    num_training_steps=training_args.max_steps)
+    else:
+        logger.warning(f"{scheduler_type} not recognized. Falling back to `linear`")
+        scheduler = get_linear_schedule_with_warmup(optimizer,
+                                                    num_warmup_steps=training_args.warmup_steps,
+                                                    num_training_steps=training_args.max_steps)
+
+    logger.info(f"Optimizer: {optimizer}")
+    logger.info(f"Scheduler: {scheduler}")
 
     training_args.optim = optimizer
-    # training_args.lr_scheduler_type = scheduler
+    training_args.lr_scheduler_type = scheduler
 
     trainer = Trainer(
         model=model,
@@ -173,7 +202,7 @@ def train_bertmesh(
         eval_dataset=val_dset,
         data_collator=collator,
         compute_metrics=sklearn_metrics,
-        optimizers=(optimizer, None),
+        optimizers=(optimizer, scheduler),
 
     )
     logger.info(training_args)
@@ -240,6 +269,10 @@ def train_bertmesh_cli(
     test_years: str = typer.Option(
         None,
         help="Comma-separated years you want to include in the test dataset"
+    ),
+    scheduler_type: str = typer.Option(
+        'cosine_hard_restart',
+        help="One of the following lr schedulers: `cosine`, `linear`, `constant`, `cosine_hard_restart`"
     )
 ):
     parser = HfArgumentParser(
@@ -271,5 +304,6 @@ def train_bertmesh_cli(
         from_checkpoint=from_checkpoint,
         tags=parse_tags(tags),
         train_years=parse_years(train_years),
-        test_years=parse_years(test_years)
+        test_years=parse_years(test_years),
+        scheduler_type=scheduler_type
     )
