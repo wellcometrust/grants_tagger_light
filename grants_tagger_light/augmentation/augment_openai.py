@@ -43,7 +43,7 @@ class AugmentOpenAI:
             f.write(str(result))
 
         if result.failed:
-            logger.warning(f'Failed to get augmentation from {}')
+            logger.warning(f"Failed to get augmentation for {result.metadata['featured_tag']}")
             return
 
         with open(result.metadata['save_to_path'], 'w') as f:
