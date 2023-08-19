@@ -181,7 +181,6 @@ def augment_cli(
             test_years=parse_years(test_years),
             min_examples=min_examples,
             prompt_template=prompt_template,
-            few_shot_examples=few_shot_examples,
             concurrent_calls=concurrent_calls,
             sleep=sleep
             )
