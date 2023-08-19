@@ -9,6 +9,43 @@ from openai_multi_client import OpenAIMultiClient
 import numpy as np
 
 
+def process_response(result):
+    print("Response!!!")
+    with open('kk.kk', 'w') as f:
+        f.write(str(result))
+    print(result)
+    if result.failed:
+        logger.warning(f"Failed to get augmentation for {result.metadata['featured_tag']}")
+        return
+
+    with open(result.metadata['save_to_path'], 'w') as f:
+
+        for r in result.response['choices']:
+            if 'message' in r:
+                if 'content' in r['message']:
+                    try:
+                        pieces = json.loads(r['message']['content'])
+                        a = pieces['abstract']
+                        tl = pieces['title']
+
+                        f.write(json.dumps({
+                            "journal": result.metadata['model_key'],
+                            "meshMajor": result.metadata['tags'],
+                            "year": [
+                                result.metadata['year']
+                            ],
+                            "abstractText": a,
+                            "pmid": uuid.uuid4().hex,
+                            "title": tl,
+                            "existing_example": result.metadata['example'],
+                            "required_examples": result.metadata['required_examples'],
+                            "featured_tag": result.metadata['featured_tag']
+                        }))
+                        f.write('\n')
+                        f.flush()
+                    except Exception as e:
+                        logger.info("OpenAI did not return a proper json format...")
+
 class AugmentOpenAI:
     def __init__(self, prompt_template_path, model_key='gpt-3.5-turbo'):
         if 'OPENAI_API_KEY' not in os.environ:
@@ -18,57 +55,13 @@ class AugmentOpenAI:
         self.model_key = model_key
         self.api = OpenAIMultiClient(endpoint="chats", data_template={"model": self.model_key})
 
-
-    @staticmethod
-    def _get_secondary_tags(featured_tag_dset):
-        tags = []
-        for x in featured_tag_dset['meshMajor']:
-            tags.extend(x)
-        return ",".join(list(set(tags)))
-
     def _create_message(self, abstract, tag):
         prompt = self.prompt_template.replace('{TOPIC}', tag)
         prompt = prompt.replace('{ABSTRACT}', abstract)
 
         return [{"role": "user", "content": prompt}]
 
-    @staticmethod
-    def _process_response(result):
-        print("Response!!!")
-        with open('kk.kk', 'w') as f:
-            f.write(str(result))
-        print(result)
-        if result.failed:
-            logger.warning(f"Failed to get augmentation for {result.metadata['featured_tag']}")
-            return
 
-        with open(result.metadata['save_to_path'], 'w') as f:
-
-            for r in result.response['choices']:
-                if 'message' in r:
-                    if 'content' in r['message']:
-                        try:
-                            pieces = json.loads(r['message']['content'])
-                            a = pieces['abstract']
-                            tl = pieces['title']
-
-                            f.write(json.dumps({
-                                "journal": result.metadata['model_key'],
-                                "meshMajor": result.metadata['tags'],
-                                "year": [
-                                    result.metadata['year']
-                                ],
-                                "abstractText": a,
-                                "pmid": uuid.uuid4().hex,
-                                "title": tl,
-                                "existing_example": result.metadata['example'],
-                                "required_examples": result.metadata['required_examples'],
-                                "featured_tag": result.metadata['featured_tag']
-                            }))
-                            f.write('\n')
-                            f.flush()
-                        except Exception as e:
-                            logger.info("OpenAI did not return a proper json format...")
 
     def _make_requests(self,
                        collect_concurrent_calls,
@@ -116,9 +109,7 @@ class AugmentOpenAI:
                     'save_to_path': save_to_path
                 }
 
-                print(data)
-                print(metadata)
-                self.api.request(data=data, metadata=metadata, callback=self._process_response)
+                self.api.request(data=data, metadata=metadata, callback=process_response)
 
     def generate(self, collect_concurrent_calls, dset, save_to_path, year, model_key, few_shot_examples=10,
                  temperature=1.5, top_p=1, presence_penalty=0, num_proc=os.cpu_count()):
