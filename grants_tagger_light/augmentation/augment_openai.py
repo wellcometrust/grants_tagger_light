@@ -93,9 +93,9 @@ class AugmentOpenAI:
             tmp_dset = tmp_dset[:size]
 
             for i in range(n):
-                selected_row = tmp_dset[random.randint(0, len(tmp_dset)-1)]
-                abstract = selected_row['abstractText']
-                tags = selected_row['meshMajor']
+                selected_row = random.randint(0, len(tmp_dset)-1)
+                abstract = tmp_dset['abstractText'][selected_row]
+                tags = tmp_dset['meshMajor'][selected_row]
                 data = {
                     "model": self.model_key,
                     "n": n,
