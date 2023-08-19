@@ -26,14 +26,9 @@ class AugmentOpenAI:
             tags.extend(x)
         return ",".join(list(set(tags)))
 
-
-    def _create_message(self, featured_tag, featured_tag_dset):
-        abstracts = "\n".join(featured_tag_dset['abstractText'])
-        mesh_tags = self._get_secondary_tags(featured_tag_dset)
-
-        prompt = self.prompt_template.replace('{FEATURED_TAG}', featured_tag)
-        prompt = prompt.replace('{ABSTRACTS}', abstracts)
-        prompt = prompt.replace('{MESH_TAGS}', mesh_tags)
+    def _create_message(self, abstract, tag):
+        prompt = self.prompt_template.replace('{TOPIC}', tag)
+        prompt = prompt.replace('{ABSTRACTS}', abstract)
 
         return [{"role": "user", "content": prompt}]
 
@@ -54,20 +49,18 @@ class AugmentOpenAI:
                         try:
                             pieces = json.loads(r['message']['content'])
                             a = pieces['abstract']
-                            t = pieces['tags']
                             tl = pieces['title']
 
                             f.write(json.dumps({
                                 "journal": result.metadata['model_key'],
-                                "meshMajor": t,
+                                "meshMajor": result.metadata['tags'],
                                 "year": [
                                     result.metadata['year']
                                 ],
-                                "abstractText": a['abstract'],
+                                "abstractText": a,
                                 "pmid": uuid.uuid4().hex,
                                 "title": tl,
-                                "first_existing_example": result.metadata['first_existing_example'],
-                                "all_inspiration_tags": result.metadata['all_inspiration_tags'],
+                                "existing_example": result.metadata['example'],
                                 "required_examples": result.metadata['required_examples'],
                                 "featured_tag": result.metadata['featured_tag']
                             }))
@@ -98,32 +91,34 @@ class AugmentOpenAI:
                                num_proc=num_proc)
             size = min(len(tmp_dset), few_shot_examples)
             tmp_dset = tmp_dset[:size]
-            ait = self._get_secondary_tags(dset)
 
-            data = {
-                "model": self.model_key,
-                "n": n,
-                "temperature": temperature,
-                "top_p": top_p,
-                "presence_penalty": presence_penalty,
-                "messages": self._create_message(t, tmp_dset)
-            }
+            for i in range(n):
+                selected_row = tmp_dset[random.randint(0, len(tmp_dset)-1)]
+                abstract = selected_row['abstractText']
+                tags = selected_row['meshMajor']
+                data = {
+                    "model": self.model_key,
+                    "n": n,
+                    "temperature": temperature,
+                    "top_p": top_p,
+                    "presence_penalty": presence_penalty,
+                    "messages": self._create_message(abstract, t)
+                }
 
-            metadata = {
-                'featured_tag': t,
-                'all_inspiration_tags': ait,
-                'required_examples': n,
-                'existing_examples_used': size,
-                'first_existing_example': tmp_dset['abstractText'][0],
-                'year': year,
-                'model_key': model_key,
-                'save_to_path': save_to_path
-            }
+                metadata = {
+                    'featured_tag': t,
+                    'tags': tags,
+                    'required_examples': n,
+                    'existing_examples_used': size,
+                    'existing_example': abstract,
+                    'year': year,
+                    'model_key': model_key,
+                    'save_to_path': save_to_path
+                }
 
-            print(data)
-            print(metadata)
-            self.api.request(data=data, metadata=metadata, callback=self._process_response
-            )
+                print(data)
+                print(metadata)
+                self.api.request(data=data, metadata=metadata, callback=self._process_response)
 
     def generate(self, collect_concurrent_calls, dset, save_to_path, year, model_key, few_shot_examples=10,
                  temperature=1.5, top_p=1, presence_penalty=0, num_proc=os.cpu_count()):

@@ -1,27 +1,12 @@
-You are in charge of doing Data Augmentation. I will provide:
-- ABSTRACTS to use as a source for augmentation;
-- a REQUIRED MESH TAG, the main label to use as a topic for augmentation;
-- a series of MESH TAGS, secondary labels of the ABSTRACTS.
+You are in charge of doing Data Augmentation. I will provide an ABSTRACT and a TOPIC and you will create a json with two fields:
+1. 'abstract': a variation of that ABSTRACT talking about TOPIC. Some creativity is allowed. Remove all the quotes except the starting and ending of the field.
+2. 'title': a sentence summarizing the abstract. Remove all the quotes except the starting and ending of the field.
 
-You need to return a json file containing:
-- Field "abstract": the NEW ABSTRACT featuring the REQUIRED MESH TAG, which must use the information from the ABSTRACTS but be completely new. It should contain minimum 200 words. Remove all quotes from the generated NEW ABSTRACT.
-- Field "title": a small TITLE summarizing the NEW ABSTRACT. Remove all quotes from the generated TITLE.
-- Field "tags": all the MESH TAGS which are relevant to the "abstract" you generated, taken from MESH TAGS. Remove those not relevant. Don't create new tags not contained in MESH TAGS. Don't modify them, write exactly as they are in MESH TAGS. Remove all quotes from the generated tags.
-
-There are several conditions for the output you will produce:
-- Return a well-formed json only including the fields "abstract", "title", "tags" and "tags".
-- Make sure each tag starts and finishes with a double quote.
-- Make sure there is only starting and ending quotes in both keys and values. Remove any other quotes.
-- Make sure the json is well formed and can be parsed.
-- Make sure each tag in "tags" is contained in MESH TAGS.
-
+Make sure the json is well formed.
 =======================
 
-REQUIRED MESH TAG:
-{FEATURED_TAG}
+TOPIC
+{TOPIC}
 
-ABSTRACTS:
-{ABSTRACTS}
-
-MESH TAGS:
-{MESH_TAGS}
+ABSTRACT:
+{ABSTRACT}
