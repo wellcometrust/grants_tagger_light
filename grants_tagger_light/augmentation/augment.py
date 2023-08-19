@@ -39,12 +39,10 @@ def _merge_dicts(dict_list):
     return merged_dict
 
 
-def _generate(collect_concurrent_calls, dset, few_shot_examples, save_to_path,
+def _generate(collect_concurrent_calls, dset, save_to_path,
               augmentation_engine, train_years, num_proc, model_key):
-    year = [random.choice(train_years) if train_years is not None and isinstance(train_years, list)
-            else datetime.date.year]
-    augmentation_engine.generate(collect_concurrent_calls, dset, save_to_path, year, model_key,
-                                 few_shot_examples=few_shot_examples, num_proc=num_proc)
+    augmentation_engine.generate(collect_concurrent_calls, dset, save_to_path, train_years, model_key,
+                                 num_proc=num_proc)
 
 
 def augment(
@@ -57,7 +55,6 @@ def augment(
     test_years: list = None,
     min_examples: int = 15,
     prompt_template: str = 'grants_tagger_light/augmentation/prompt.template',
-    few_shot_examples: int = 5,
     concurrent_calls: int = 5,
     sleep: int = 5
 ):
@@ -113,7 +110,7 @@ def augment(
     collect_concurrent_calls = []
     for t in tags_to_augment:
         if len(collect_concurrent_calls) >= concurrent_calls:
-            _generate(collect_concurrent_calls, dset, few_shot_examples, save_to_path, augmentation_engine,
+            _generate(collect_concurrent_calls, dset, save_to_path, augmentation_engine,
                       train_years, num_proc, model_key)
             collect_concurrent_calls = []
             time.sleep(sleep)
@@ -158,10 +155,6 @@ def augment_cli(
     prompt_template: str = typer.Option(
         'grants_tagger_light/augmentation/prompt.template',
         help="File to use as a prompt. Make sure to ask the LLM to return a dict with two fields: `abstract` and `tags`"
-    ),
-    few_shot_examples: int = typer.Option(
-        5,
-        help="If available, try to send this number of examples to the LLM so that it can generate better abstracts"
     ),
     concurrent_calls: int = typer.Option(
         5,

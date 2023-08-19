@@ -1,3 +1,4 @@
+import datetime
 import json
 import os
 import random
@@ -8,43 +9,6 @@ import openai
 from openai_multi_client import OpenAIMultiClient
 import numpy as np
 
-
-def process_response(result):
-    print("Response!!!")
-    with open('kk.kk', 'w') as f:
-        f.write(str(result))
-    print(result)
-    if result.failed:
-        logger.warning(f"Failed to get augmentation for {result.metadata['featured_tag']}")
-        return
-
-    with open(result.metadata['save_to_path'], 'w') as f:
-
-        for r in result.response['choices']:
-            if 'message' in r:
-                if 'content' in r['message']:
-                    try:
-                        pieces = json.loads(r['message']['content'])
-                        a = pieces['abstract']
-                        tl = pieces['title']
-
-                        f.write(json.dumps({
-                            "journal": result.metadata['model_key'],
-                            "meshMajor": result.metadata['tags'],
-                            "year": [
-                                result.metadata['year']
-                            ],
-                            "abstractText": a,
-                            "pmid": uuid.uuid4().hex,
-                            "title": tl,
-                            "existing_example": result.metadata['example'],
-                            "required_examples": result.metadata['required_examples'],
-                            "featured_tag": result.metadata['featured_tag']
-                        }))
-                        f.write('\n')
-                        f.flush()
-                    except Exception as e:
-                        logger.info("OpenAI did not return a proper json format...")
 
 class AugmentOpenAI:
     def __init__(self, prompt_template_path, model_key='gpt-3.5-turbo'):
@@ -61,19 +25,58 @@ class AugmentOpenAI:
 
         return [{"role": "user", "content": prompt}]
 
+    @staticmethod
+    def _process_response(result):
+        print("Response!!!")
+        with open('kk.kk', 'w') as f:
+            f.write(str(result))
+        print(result)
+        if result.failed:
+            logger.warning(f"Failed to get augmentation for {result.metadata['featured_tag']}")
+            return
 
+        with open(result.metadata['save_to_path'], 'w') as f:
+
+            for r in result.response['choices']:
+                if 'message' in r:
+                    if 'content' in r['message']:
+                        try:
+                            pieces = json.loads(r['message']['content'])
+                            a = pieces['abstract']
+                            tl = pieces['title']
+
+                            f.write(json.dumps({
+                                "journal": result.metadata['model_key'],
+                                "meshMajor": result.metadata['tags'],
+                                "year": [
+                                    result.metadata['year']
+                                ],
+                                "abstractText": a,
+                                "pmid": uuid.uuid4().hex,
+                                "title": tl,
+                                "existing_example": result.metadata['example'],
+                                "required_examples": result.metadata['required_examples'],
+                                "featured_tag": result.metadata['featured_tag']
+                            }))
+                            f.write('\n')
+                            f.flush()
+                        except Exception as e:
+                            logger.info("OpenAI did not return a proper json format...")
 
     def _make_requests(self,
                        collect_concurrent_calls,
                        dset,
-                       few_shot_examples,
                        temperature,
                        top_p,
                        presence_penalty,
                        num_proc,
-                       year,
+                       train_years,
                        model_key,
                        save_to_path):
+
+        year = [random.choice(train_years) if train_years is not None and isinstance(train_years, list)
+                else datetime.date.year]
+
         for num in range(len(collect_concurrent_calls)):
             t = collect_concurrent_calls[num][0]
             n = collect_concurrent_calls[num][1]
@@ -84,10 +87,11 @@ class AugmentOpenAI:
             dset = dset.filter(lambda example, idx: idx not in tmp_dset['idx'], with_indices=True,
                                num_proc=num_proc)
 
+            abstracts_num = [i for i in range(len(tmp_dset))]
+            random.shuffle(abstracts_num)
+
             for i in range(n):
-                selected_row = random.randint(0, len(tmp_dset)-1)
-                print(f"Selected row: {selected_row}")
-                print(f"Size of dataset: {len(tmp_dset['abstractText'])}")
+                selected_row = abstracts_num[i % len(tmp_dset)]
                 abstract = tmp_dset['abstractText'][selected_row]
                 tags = tmp_dset['meshMajor'][selected_row]
                 data = {
@@ -109,20 +113,20 @@ class AugmentOpenAI:
                     'save_to_path': save_to_path
                 }
 
-                self.api.request(data=data, metadata=metadata, callback=process_response)
+                self.api.request(data=data, metadata=metadata, callback=self._process_response)
 
-    def generate(self, collect_concurrent_calls, dset, save_to_path, year, model_key, few_shot_examples=10,
+    def generate(self, collect_concurrent_calls, dset, save_to_path, train_years, model_key,
                  temperature=1.5, top_p=1, presence_penalty=0, num_proc=os.cpu_count()):
-
         self.api.run_request_function(self._make_requests,
                                       collect_concurrent_calls=collect_concurrent_calls,
                                       dset=dset,
-                                      few_shot_examples=few_shot_examples,
                                       temperature=temperature,
                                       top_p=top_p,
                                       presence_penalty=presence_penalty,
                                       num_proc=num_proc,
-                                      year=year,
+                                      year=train_years,
                                       model_key=model_key,
                                       save_to_path=save_to_path)
+
+        self.api.pull_all()
 
