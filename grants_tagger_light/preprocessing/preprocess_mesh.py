@@ -68,7 +68,6 @@ def preprocess_mesh(
 
     if not model_key:
         label2id = None
-        # Use the same pretrained tokenizer as in Wellcome/WellcomeBertMesh
         tokenizer = AutoTokenizer.from_pretrained(
             "microsoft/BiomedNLP-PubMedBERT-base-uncased-abstract"
         )
