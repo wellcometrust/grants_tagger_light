@@ -164,9 +164,6 @@ def train_bertmesh(
     if training_args.warmup_steps is None:
         training_args.warmup_steps = 0
 
-    if scheduler_type is None or scheduler_type.lower().strip() == '':
-        scheduler_type = 'linear'
-
     if scheduler_type.lower().strip() == 'cosine':
         scheduler = get_cosine_schedule_with_warmup(optimizer,
                                                     num_warmup_steps=training_args.warmup_steps,
@@ -184,13 +181,14 @@ def train_bertmesh(
                                                     num_warmup_steps=training_args.warmup_steps,
                                                     num_training_steps=training_args.max_steps)
     else:
-        logger.warning(f"{scheduler_type} not recognized. Falling back to `linear`")
+        logger.warning(f"{scheduler_type}: not found or not valid. Falling back to `linear`")
+        scheduler_type = 'linear'
         scheduler = get_linear_schedule_with_warmup(optimizer,
                                                     num_warmup_steps=training_args.warmup_steps,
                                                     num_training_steps=training_args.max_steps)
 
     logger.info(f"Optimizer: {optimizer}")
-    logger.info(f"Scheduler: {scheduler}")
+    logger.info(f"Scheduler: {scheduler_type}")
 
     training_args.optim = optimizer
     training_args.lr_scheduler_type = scheduler
