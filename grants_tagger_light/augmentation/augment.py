@@ -35,12 +35,6 @@ def _merge_dicts(dict_list):
     return merged_dict
 
 
-def _generate(collect_concurrent_calls, dset, save_to_path,
-              augmentation_engine, train_years, num_proc, model_key):
-    augmentation_engine.generate(collect_concurrent_calls, dset, save_to_path, train_years, model_key,
-                                 num_proc=num_proc)
-
-
 def augment(
     data_path: str,
     save_to_path: str,
@@ -53,11 +47,7 @@ def augment(
     prompt_template: str = 'grants_tagger_light/augmentation/prompt.template',
     concurrent_calls: int = 5
 ):
-    if model_key.strip().lower().startswith('gpt-3.5-turbo') or \
-            model_key.strip().lower().startswith('text-davinci') or \
-            model_key.strip().lower().startswith('gpt-4'):
-        augmentation_engine = AugmentOpenAI(prompt_template_path=prompt_template, model_key=model_key)
-    else:
+    if model_key.strip().lower() not in ['gpt-3.5-turbo', 'text-davinci', 'gpt-4']:
         raise NotImplementedError(f"{model_key} not implemented as an augmentation framework")
 
     # We only have 1 file, so no sharding is available https://huggingface.co/docs/datasets/loading#multiprocessing
@@ -105,8 +95,15 @@ def augment(
     collect_concurrent_calls = []
     for t in tags_to_augment:
         if len(collect_concurrent_calls) >= concurrent_calls:
-            _generate(collect_concurrent_calls, dset, save_to_path, augmentation_engine,
-                      train_years, num_proc, model_key)
+            AugmentOpenAI(prompt_template_path=prompt_template, model_key=model_key).generate(
+                collect_concurrent_calls,
+                dset,
+                save_to_path,
+                train_years,
+                model_key,
+                temperature=1.5,
+                num_proc=num_proc,
+            )
             collect_concurrent_calls = []
         else:
             if tags_to_augment_counts[t] < min_examples:
