@@ -173,12 +173,12 @@ def train_bertmesh(
                                                     num_training_steps=training_args.max_steps)
     elif scheduler_type.lower().strip() == 'constant':
         scheduler = get_constant_schedule_with_warmup(optimizer,
-                                                       num_warmup_steps=training_args.warmup_steps)
+                                                      num_warmup_steps=training_args.warmup_steps)
     elif scheduler_type.lower().strip() == 'cosine_hard_restart':
         scheduler = get_cosine_with_hard_restarts_schedule_with_warmup(optimizer,
                                                                        num_warmup_steps=training_args.warmup_steps,
                                                                        num_training_steps=training_args.max_steps,
-                                                                       num_cycles=training_args.epochs)
+                                                                       num_cycles=training_args.num_train_epochs)
     elif scheduler_type.lower().strip() == 'linear':
         scheduler = get_linear_schedule_with_warmup(optimizer,
                                                     num_warmup_steps=training_args.warmup_steps,
