@@ -40,7 +40,11 @@ def _merge_dicts(dict_list):
 
 def _generate(collect_concurrent_calls, dset, few_shot_examples, save_to_path,
               augmentation_engine, train_years, num_proc, model_key):
-    counter = 0
+    year = [random.choice(train_years) if train_years is not None and isinstance(train_years, list)
+            else datetime.date.year]
+    augmentation_engine.generate(collect_concurrent_calls, dset, save_to_path, year, model_key,
+                                 few_shot_examples=few_shot_examples, num_proc=num_proc)
+    """counter = 0
     with open(save_to_path, 'a') as f:
         for a in augmentation_engine.generate(collect_concurrent_calls, dset, few_shot_examples=few_shot_examples,
                                               num_proc=num_proc, save_to_path=save_to_path):
@@ -60,7 +64,7 @@ def _generate(collect_concurrent_calls, dset, few_shot_examples, save_to_path,
             }))
             f.write('\n')
             f.flush()
-            counter += 1
+            counter += 1"""
 
 
 def augment(
