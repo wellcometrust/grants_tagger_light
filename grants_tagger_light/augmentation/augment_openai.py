@@ -49,9 +49,7 @@ class AugmentOpenAI:
                         f.write(json.dumps({
                             "journal": result.metadata['model_key'],
                             "meshMajor": result.metadata['tags'],
-                            "year": [
-                                result.metadata['year']
-                            ],
+                            "year": result.metadata['year'],
                             "abstractText": a,
                             "pmid": uuid.uuid4().hex,
                             "title": tl,

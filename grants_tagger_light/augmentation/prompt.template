@@ -1,12 +1,12 @@
-You are in charge of doing Data Augmentation. I will provide an ABSTRACT and a TOPIC and you will create a json with two fields:
-1. 'abstract': a variation of that ABSTRACT talking about TOPIC. Some creativity is allowed. Remove all the quotes except the starting and ending of the field.
-2. 'title': a sentence summarizing the abstract. Remove all the quotes except the starting and ending of the field.
+You will act as a Data Augmentation engine. I will provide an ABSTRACT and a TOPIC and you will create a json with two fields:
+1. 'abstract': a new abstract, created using Data Augmentation, using the ABSTRACT I've sent to you as an inspiration. Make sure the abstract you generate is quite different to the ABSTRACT I've sent to you but keeping the TOPIC.
+2. 'title': a sentence summarizing the abstract you have created.
 
 Make sure the json is well formed.
 =======================
 
-TOPIC
-{TOPIC}
-
 ABSTRACT:
 {ABSTRACT}
+
+TOPIC:
+{TOPIC}
