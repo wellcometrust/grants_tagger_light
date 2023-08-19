@@ -52,7 +52,7 @@ class AugmentOpenAI:
                                 "abstractText": a,
                                 "pmid": uuid.uuid4().hex,
                                 "title": tl,
-                                "existing_example": result.metadata['example'],
+                                "existing_example": result.metadata['existing_example'],
                                 "required_examples": result.metadata['required_examples'],
                                 "featured_tag": result.metadata['featured_tag']
                             }))
