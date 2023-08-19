@@ -124,7 +124,7 @@ class AugmentOpenAI:
                                       top_p=top_p,
                                       presence_penalty=presence_penalty,
                                       num_proc=num_proc,
-                                      year=train_years,
+                                      train_years=train_years,
                                       model_key=model_key,
                                       save_to_path=save_to_path)
 
