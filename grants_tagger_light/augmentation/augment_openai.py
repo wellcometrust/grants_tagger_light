@@ -9,6 +9,8 @@ import openai
 from openai_multi_client import OpenAIMultiClient
 import numpy as np
 
+from grants_tagger_light.augmentation.JsonParser import JsonParser
+
 
 class AugmentOpenAI:
     def __init__(self, prompt_template_path, model_key='gpt-3.5-turbo'):
@@ -39,9 +41,9 @@ class AugmentOpenAI:
                 if 'message' in r:
                     if 'content' in r['message']:
                         try:
-                            pieces = json.loads(r['message']['content'])
-                            a = pieces['abstract']
-                            tl = pieces['title']
+                            json_response = JsonParser.parse_json(r['message']['content'])
+                            a = json_response['abstract']
+                            tl = json_response['title']
 
                             f.write(json.dumps({
                                 "journal": result.metadata['model_key'],
