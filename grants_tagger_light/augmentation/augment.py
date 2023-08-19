@@ -46,6 +46,7 @@ def _generate(collect_concurrent_calls, dset, few_shot_examples, save_to_path,
                                               num_proc=num_proc, save_to_path=save_to_path):
             if a is None:
                 break
+
             f.write(json.dumps({
                 "journal": model_key,
                 "meshMajor": a['tags'],
@@ -53,8 +54,9 @@ def _generate(collect_concurrent_calls, dset, few_shot_examples, save_to_path,
                 "abstractText": a['abstract'],
                 "pmid": uuid.uuid4().hex,
                 "title": a['title'],
-                "inspiration_example": a['inspiration_example'],
-                "all_inspiration_tags": a['all_inspiration_tags']
+                "inspiration_examples": a['inspiration_examples'],
+                "all_inspiration_tags": a['all_inspiration_tags'],
+                "required_examples": a['required_examples']
             }))
             f.write('\n')
             f.flush()

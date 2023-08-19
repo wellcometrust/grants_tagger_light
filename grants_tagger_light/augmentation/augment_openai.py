@@ -56,7 +56,11 @@ class AugmentOpenAI:
                 "top_p": top_p,
                 "presence_penalty": presence_penalty,
                 "messages": self._create_message(t, tmp_dset)
-            }, metadata={'num': num})
+            }, metadata={
+                'all_inspiration_tags': t,
+                'required_examples': n,
+                'existing_examples_used': size
+            })
 
     def generate(self, collect_concurrent_calls, dset, few_shot_examples=10, temperature=1.5, top_p=1,
                  presence_penalty=0, num_proc=os.cpu_count(), save_to_path='err'):
@@ -71,7 +75,10 @@ class AugmentOpenAI:
                                       num_proc=num_proc)
 
         for result in self.api:
-            num = result.metadata['num']
+            print(result)
+            ait = result.metadata['all_inspiration_tags']
+            ex = result.metadata['existing_examples_used']
+            req = result.metadata['required_examples']
             for r in result.response['choices']:
                 if 'message' in r:
                     if 'content' in r['message']:
@@ -80,13 +87,12 @@ class AugmentOpenAI:
                             a = pieces['abstract']
                             t = pieces['tags']
                             tl = pieces['title']
-                            i = pieces['inspiration_example']
-                            ait = pieces['all_inspiration_tags']
                             yield {'abstract': a,
                                    'tags': t,
                                    'title': tl,
-                                   'inspiration_example': i,
-                                   'all_inspiration_tags': ait
+                                   'inspiration_examples': ex,
+                                   'all_inspiration_tags': ait,
+                                   'required_examples': req
                                    }
                         except Exception as e:
                             logger.info("OpenAI did not return a proper json format...")
