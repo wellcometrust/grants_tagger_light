@@ -6,7 +6,7 @@ from transformers import (
     AutoConfig,
     AdamW,
     get_cosine_schedule_with_warmup,
-    get_constant_scheduler_with_warmup,
+    get_constant_schedule_with_warmup,
     get_cosine_with_hard_restarts_schedule_with_warmup,
     get_linear_schedule_with_warmup
 )
@@ -172,7 +172,7 @@ def train_bertmesh(
                                                     num_warmup_steps=training_args.warmup_steps,
                                                     num_training_steps=training_args.max_steps)
     elif scheduler_type.lower().strip() == 'constant':
-        scheduler = get_constant_scheduler_with_warmup(optimizer,
+        scheduler = get_constant_schedule_with_warmup(optimizer,
                                                        num_warmup_steps=training_args.warmup_steps)
     elif scheduler_type.lower().strip() == 'cosine_hard_restart':
         scheduler = get_cosine_with_hard_restarts_schedule_with_warmup(optimizer,
