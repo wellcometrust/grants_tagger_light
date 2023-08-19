@@ -59,7 +59,8 @@ class AugmentOpenAI:
             }, metadata={
                 'all_inspiration_tags': t,
                 'required_examples': n,
-                'existing_examples_used': size
+                'existing_examples_used': size,
+                'first_existing_example': tmp_dset['abstractText'][0]
             })
 
     def generate(self, collect_concurrent_calls, dset, few_shot_examples=10, temperature=1.5, top_p=1,
@@ -75,7 +76,8 @@ class AugmentOpenAI:
                                       num_proc=num_proc)
 
         for result in self.api:
-            print(result)
+            with open('kk.kk', 'w') as f:
+                f.write(str(result))
             ait = result.metadata['all_inspiration_tags']
             ex = result.metadata['existing_examples_used']
             req = result.metadata['required_examples']
