@@ -1,7 +1,6 @@
 import json
 import multiprocessing
 import os
-import time
 
 import typer
 from loguru import logger
@@ -52,8 +51,7 @@ def augment(
     test_years: list = None,
     min_examples: int = 15,
     prompt_template: str = 'grants_tagger_light/augmentation/prompt.template',
-    concurrent_calls: int = 5,
-    sleep: int = 5
+    concurrent_calls: int = 5
 ):
     if model_key.strip().lower().startswith('gpt-3.5-turbo') or \
             model_key.strip().lower().startswith('text-davinci') or \
@@ -110,7 +108,6 @@ def augment(
             _generate(collect_concurrent_calls, dset, save_to_path, augmentation_engine,
                       train_years, num_proc, model_key)
             collect_concurrent_calls = []
-            time.sleep(sleep)
         else:
             if tags_to_augment_counts[t] < min_examples:
                 missing = min_examples - tags_to_augment_counts[t]
@@ -157,10 +154,6 @@ def augment_cli(
         5,
         help="Concurrent calls with 1 tag each to the different model"
     ),
-    sleep: int = typer.Option(
-        10,
-        help="Time to wait before each concurrent call"
-    ),
 ):
     if not data_path.endswith("jsonl"):
         logger.error(
@@ -178,6 +171,5 @@ def augment_cli(
             test_years=parse_years(test_years),
             min_examples=min_examples,
             prompt_template=prompt_template,
-            concurrent_calls=concurrent_calls,
-            sleep=sleep
+            concurrent_calls=concurrent_calls
             )

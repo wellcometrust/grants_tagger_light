@@ -42,26 +42,30 @@ class AugmentOpenAI:
                     if 'content' in r['message']:
                         try:
                             json_response = JsonParser.parse_json(r['message']['content'])
-                            a = json_response['abstract']
-                            tl = json_response['title']
-
-                            f.write(json.dumps({
-                                "journal": result.metadata['model_key'],
-                                "meshMajor": result.metadata['tags'],
-                                "year": [
-                                    result.metadata['year']
-                                ],
-                                "abstractText": a,
-                                "pmid": uuid.uuid4().hex,
-                                "title": tl,
-                                "existing_example": result.metadata['existing_example'],
-                                "required_examples": result.metadata['required_examples'],
-                                "featured_tag": result.metadata['featured_tag']
-                            }))
-                            f.write('\n')
-                            f.flush()
                         except Exception as e:
-                            logger.info(f"Error processing output: {e}")
+                            logger.info(f"Error processing output: {e}. Skipping...")
+                            continue
+
+                        a = json_response['abstract']
+                        tl = json_response['title']
+
+                        f.write(json.dumps({
+                            "journal": result.metadata['model_key'],
+                            "meshMajor": result.metadata['tags'],
+                            "year": [
+                                result.metadata['year']
+                            ],
+                            "abstractText": a,
+                            "pmid": uuid.uuid4().hex,
+                            "title": tl,
+                            "existing_example": result.metadata['existing_example'],
+                            "required_examples": result.metadata['required_examples'],
+                            "featured_tag": result.metadata['featured_tag']
+                        }))
+                        f.write('\n')
+                        f.flush()
+
+                        logger.info(f"Data received successfully for {result.metadata['featured_tag']}")
 
     def _make_requests(self,
                        collect_concurrent_calls,
