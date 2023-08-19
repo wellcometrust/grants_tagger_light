@@ -41,7 +41,7 @@ class AugmentOpenAI:
     def _process_response(result):
         with open('kk.kk', 'w') as f:
             f.write(str(result))
-
+        print(result)
         if result.failed:
             logger.warning(f"Failed to get augmentation for {result.metadata['featured_tag']}")
             return
