@@ -78,7 +78,6 @@ class AugmentOpenAI:
 
         for num in range(len(collect_concurrent_calls)):
             t = collect_concurrent_calls[num][0]
-            logger.info(f"Sending request for {t}")
             n = collect_concurrent_calls[num][1]
             logger.info(f"Augmenting {t} with {n} examples")
             # RAG: I select similar articles to provide them to the LLM
@@ -96,7 +95,7 @@ class AugmentOpenAI:
                 tags = tmp_dset['meshMajor'][selected_row]
                 data = {
                     "model": self.model_key,
-                    "n": n,
+                    "n": 1,
                     "temperature": temperature,
                     "top_p": top_p,
                     "presence_penalty": presence_penalty,
@@ -114,7 +113,6 @@ class AugmentOpenAI:
                 }
 
                 self.api.request(data=data, metadata=metadata, callback=self._process_response)
-                logger.info(f"Waiting response for {t}")
 
     def generate(self, collect_concurrent_calls, dset, save_to_path, train_years, model_key,
                  temperature=1.5, top_p=1, presence_penalty=0, num_proc=os.cpu_count()):
