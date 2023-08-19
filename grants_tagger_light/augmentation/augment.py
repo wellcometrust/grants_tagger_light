@@ -45,7 +45,7 @@ def augment(
     test_years: list = None,
     min_examples: int = 15,
     prompt_template: str = 'grants_tagger_light/augmentation/prompt.template',
-    concurrent_calls: int = 5,
+    concurrent_calls: int = 25,
     temperature: float = 1.5
 ):
     if model_key.strip().lower() not in ['gpt-3.5-turbo', 'text-davinci', 'gpt-4']:
