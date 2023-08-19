@@ -27,10 +27,8 @@ class AugmentOpenAI:
 
     @staticmethod
     def _process_response(result):
-        print("Response!!!")
         with open('kk.kk', 'w') as f:
             f.write(str(result))
-        print(result)
         if result.failed:
             logger.warning(f"Failed to get augmentation for {result.metadata['featured_tag']}")
             return
@@ -61,7 +59,7 @@ class AugmentOpenAI:
                             f.write('\n')
                             f.flush()
                         except Exception as e:
-                            logger.info("OpenAI did not return a proper json format...")
+                            logger.info(f"Error processing output: {e}")
 
     def _make_requests(self,
                        collect_concurrent_calls,
