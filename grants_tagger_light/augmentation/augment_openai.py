@@ -28,12 +28,13 @@ class AugmentOpenAI:
 
     def _create_message(self, abstract, tag):
         prompt = self.prompt_template.replace('{TOPIC}', tag)
-        prompt = prompt.replace('{ABSTRACTS}', abstract)
+        prompt = prompt.replace('{ABSTRACT}', abstract)
 
         return [{"role": "user", "content": prompt}]
 
     @staticmethod
     def _process_response(result):
+        print("Response!!!")
         with open('kk.kk', 'w') as f:
             f.write(str(result))
         print(result)
@@ -94,7 +95,11 @@ class AugmentOpenAI:
 
             for i in range(n):
                 selected_row = random.randint(0, len(tmp_dset)-1)
+                print(f"Selected row: {selected_row}")
+                print(tmp_dset['abstractText'])
+                print(len(tmp_dset['abstractText']))
                 abstract = tmp_dset['abstractText'][selected_row]
+                print(tmp_dset['abstractText'])
                 tags = tmp_dset['meshMajor'][selected_row]
                 data = {
                     "model": self.model_key,
