@@ -110,7 +110,6 @@ class AugmentOpenAI:
                     'featured_tag': t,
                     'tags': tags,
                     'required_examples': n,
-                    'existing_examples_used': size,
                     'existing_example': abstract,
                     'year': year,
                     'model_key': model_key,
