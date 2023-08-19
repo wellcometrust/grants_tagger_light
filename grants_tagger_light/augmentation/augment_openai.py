@@ -99,14 +99,17 @@ class AugmentOpenAI:
             size = min(len(tmp_dset), few_shot_examples)
             tmp_dset = tmp_dset[:size]
             ait = self._get_secondary_tags(dset)
-            self.api.request(data={
+
+            data = {
                 "model": self.model_key,
                 "n": n,
                 "temperature": temperature,
                 "top_p": top_p,
                 "presence_penalty": presence_penalty,
                 "messages": self._create_message(t, tmp_dset)
-            }, metadata={
+            }
+
+            metadata = {
                 'featured_tag': t,
                 'all_inspiration_tags': ait,
                 'required_examples': n,
@@ -115,11 +118,15 @@ class AugmentOpenAI:
                 'year': year,
                 'model_key': model_key,
                 'save_to_path': save_to_path
-            }, callback=self._process_response
+            }
+
+            print(data)
+            print(metadata)
+            self.api.request(data=data, metadata=metadata, callback=self._process_response
             )
 
     def generate(self, collect_concurrent_calls, dset, save_to_path, year, model_key, few_shot_examples=10,
-                 temperature=1.5, top_p=1, presence_penalty=0, num_proc=os.cpu_count() ):
+                 temperature=1.5, top_p=1, presence_penalty=0, num_proc=os.cpu_count()):
 
         self.api.run_request_function(self._make_requests,
                                       collect_concurrent_calls=collect_concurrent_calls,
