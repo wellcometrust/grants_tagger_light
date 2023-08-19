@@ -96,7 +96,6 @@ def augment(
     collect_concurrent_calls = []
     for t in tags_to_augment:
         if len(collect_concurrent_calls) >= concurrent_calls:
-            logger.info(f"Sending {len(collect_concurrent_calls)} to LLM")
             AugmentOpenAI(prompt_template_path=prompt_template, model_key=model_key).generate(
                 collect_concurrent_calls,
                 dset,
@@ -108,8 +107,6 @@ def augment(
             )
             collect_concurrent_calls = []
         else:
-            logger.info(f"Accumulating {t}")
-
             if tags_to_augment_counts[t] < min_examples:
                 missing = min_examples - tags_to_augment_counts[t]
                 collect_concurrent_calls.append((t, missing))
