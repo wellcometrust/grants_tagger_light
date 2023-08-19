@@ -2,6 +2,7 @@ import json
 import multiprocessing
 import os
 import random
+import time
 
 import typer
 from loguru import logger
@@ -44,27 +45,6 @@ def _generate(collect_concurrent_calls, dset, few_shot_examples, save_to_path,
             else datetime.date.year]
     augmentation_engine.generate(collect_concurrent_calls, dset, save_to_path, year, model_key,
                                  few_shot_examples=few_shot_examples, num_proc=num_proc)
-    """counter = 0
-    with open(save_to_path, 'a') as f:
-        for a in augmentation_engine.generate(collect_concurrent_calls, dset, few_shot_examples=few_shot_examples,
-                                              num_proc=num_proc, save_to_path=save_to_path):
-            if a is None:
-                break
-
-            f.write(json.dumps({
-                "journal": model_key,
-                "meshMajor": a['tags'],
-                "year": [random.choice(train_years) if len(train_years) > 0 else datetime.date.today().year],
-                "abstractText": a['abstract'],
-                "pmid": uuid.uuid4().hex,
-                "title": a['title'],
-                "inspiration_examples": a['inspiration_examples'],
-                "all_inspiration_tags": a['all_inspiration_tags'],
-                "required_examples": a['required_examples']
-            }))
-            f.write('\n')
-            f.flush()
-            counter += 1"""
 
 
 def augment(
@@ -78,7 +58,8 @@ def augment(
     min_examples: int = 15,
     prompt_template: str = 'grants_tagger_light/augmentation/prompt.template',
     few_shot_examples: int = 5,
-    concurrent_calls: int = 5
+    concurrent_calls: int = 5,
+    sleep: int = 5
 ):
     if model_key.strip().lower().startswith('gpt-3.5-turbo') or \
             model_key.strip().lower().startswith('text-davinci') or \
@@ -135,6 +116,7 @@ def augment(
             _generate(collect_concurrent_calls, dset, few_shot_examples, save_to_path, augmentation_engine,
                       train_years, num_proc, model_key)
             collect_concurrent_calls = []
+            time.sleep(sleep)
         else:
             if tags_to_augment_counts[t] < min_examples:
                 missing = min_examples - tags_to_augment_counts[t]
@@ -185,6 +167,10 @@ def augment_cli(
         5,
         help="Concurrent calls with 1 tag each to the different model"
     ),
+    sleep: int = typer.Option(
+        10,
+        help="Time to wait before each concurrent call"
+    ),
 ):
     if not data_path.endswith("jsonl"):
         logger.error(
@@ -203,5 +189,6 @@ def augment_cli(
             min_examples=min_examples,
             prompt_template=prompt_template,
             few_shot_examples=few_shot_examples,
-            concurrent_calls=concurrent_calls
+            concurrent_calls=concurrent_calls,
+            sleep=sleep
             )

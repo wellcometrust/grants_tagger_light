@@ -76,7 +76,6 @@ class AugmentOpenAI:
                         except Exception as e:
                             logger.info("OpenAI did not return a proper json format...")
 
-
     def _make_requests(self,
                        collect_concurrent_calls,
                        dset,
