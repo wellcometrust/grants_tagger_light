@@ -3,10 +3,6 @@
 # Without preprocessing (on-the-fly)
 SOURCE="data/raw/allMeSH_2021.jsonl"
 
-# If you have already preprocessed the data, you will have a folder. Use the folder instead.
-# SOURCE="output_folder_from_preprocessing"
-# In that case, `test-size`, `train-years` and `test-years` will be taken from the preprocessed folder
-
 grants-tagger train bertmesh \
     "" \
     $SOURCE \
@@ -27,11 +23,9 @@ grants-tagger train bertmesh \
     --scheduler-type cosine \
     --fp16 \
     --torch_compile \
-    --evaluation_strategy steps \
-    --eval_steps 50000 \
+    --evaluation_strategy epoch \
     --eval_accumulation_steps 20 \
-    --save_strategy steps \
-    --save_steps 50000 \
+    --save_strategy epoch \
     --wandb_project wellcome-mesh \
     --wandb_name test-train-all \
     --wandb_api_key ${WANDB_API_KEY}
