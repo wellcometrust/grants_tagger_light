@@ -13,7 +13,7 @@ grants-tagger train bertmesh \
     bertmesh_outs/pipeline_test/$CHECKPOINT \
     $SOURCE \
     --output_dir bertmesh_outs/pipeline_test_from_$CHECKPOINT/ \
-    --ignore_data_skip=True \
+    --ignore_data_skip True \
     --per_device_train_batch_size 32 \
     --per_device_eval_batch_size 1 \
     --multilabel_attention True \
@@ -24,6 +24,7 @@ grants-tagger train bertmesh \
     --hidden_size 1024 \
     --warmup_steps 1000 \
     --max_grad_norm 5.0 \
+    --scheduler-type cosine \
     --fp16 \
     --torch_compile \
     --evaluation_strategy epoch \
