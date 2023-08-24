@@ -9,4 +9,4 @@ class BertMeshModelArguments:
     hidden_size: int = field(default=512)
     dropout: float = field(default=0)
     multilabel_attention: bool = field(default=False)
-    freeze_backbone: bool = field(default=False)
+    freeze_backbone: str = field(default=None) # unfreeze, unfreeze_bias, freeze

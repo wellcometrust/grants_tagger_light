@@ -49,7 +49,8 @@ def train_bertmesh(
     tags: list = None,
     train_years: list = None,
     test_years: list = None,
-    scheduler_type: str = 'cosine_hard_restart'
+    scheduler_type: str = 'cosine_hard_restart',
+    threshold: int = 0.25
 ):
     if not model_key:
         assert isinstance(model_args, BertMeshModelArguments), (
@@ -81,6 +82,13 @@ def train_bertmesh(
         )
 
     train_dset, val_dset = dset["train"], dset["test"]
+
+    metric_labels = []
+    for x in train_dset['meshMajor']:
+        metric_labels.extend(x)
+
+    logger.info(f"For metric purposes, only considering labels present in `training`: {metric_labels[:15]}")
+
     train_dset_size = len(train_dset)
     logger.info(f"Training dataset size: {train_dset_size}")
     if max_samples > 0:
@@ -123,22 +131,26 @@ def train_bertmesh(
         logger.info(f"Training from pretrained key {model_key}")
         model = BertMesh.from_pretrained(model_key, trust_remote_code=True)
 
-    if model_args.freeze_backbone:
-        logger.info("Freezing backbone")
-        model.freeze_backbone()
-    else:
-        logger.info("Unfreezing backbone")
-        model.unfreeze_backbone()
+    if model_args.freeze_backbone is not None:
+        if model_args.freeze_backbone.lower().strip() == 'unfreeze':
+            logger.info("Unfreezing weights&biases in the backbone")
+            model.unfreeze_backbone()
+        elif model_args.freeze_backbone.lower().strip() == 'unfreeze_bias':
+            logger.info("Unfreezing only biases in the backbone")
+            model.unfreeze_backbone(only_bias=True)
+        elif model_args.freeze_backbone.lower().strip() == 'freeze':
+            logger.info("Freezing backbone")
+            model.freeze_backbone()
 
     def sklearn_metrics(prediction: EvalPrediction):
         y_pred = prediction.predictions
-        y_true = prediction.label_ids
+        y_true = [x for x in prediction.label_ids if x in metric_labels]
 
         # TODO make thresh configurable or return metrics
         #  for multiple thresholds
         # e.g. 0.5:0.95:0.05
 
-        y_pred = np.int64(y_pred > 0.5)
+        y_pred = np.int64(y_pred > threshold)
 
         report = classification_report(y_true, y_pred, output_dict=True)
 
@@ -271,7 +283,11 @@ def train_bertmesh_cli(
     scheduler_type: str = typer.Option(
         'cosine_hard_restart',
         help="One of the following lr schedulers: `cosine`, `linear`, `constant`, `cosine_hard_restart`"
-    )
+    ),
+    threshold: int = typer.Option(
+        0.25,
+        help="Threshold to considered a class as a positive"
+    ),
 ):
     parser = HfArgumentParser(
         (
@@ -303,5 +319,6 @@ def train_bertmesh_cli(
         tags=parse_tags(tags),
         train_years=parse_years(train_years),
         test_years=parse_years(test_years),
-        scheduler_type=scheduler_type
+        scheduler_type=scheduler_type,
+        threshold=threshold
     )
