@@ -84,7 +84,7 @@ def train_bertmesh(
     train_dset, val_dset = dset["train"], dset["test"]
 
     metric_labels = []
-    for x in train_dset['meshMajor']:
+    for x in train_dset['label_ids']:
         metric_labels.extend(x)
 
     logger.info(f"For metric purposes, only considering labels present in `training`: {metric_labels[:15]}")
