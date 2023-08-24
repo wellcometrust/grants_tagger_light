@@ -154,7 +154,7 @@ def train_bertmesh(
 
         # I will remove those tags which where not in training dataset, and only in test
         for label_id in metric_labels:
-            for i in range(y_pred):
+            for i in range(len(y_pred)):
                 y_pred[i].pop(label_id) # removing prediction for row `i` for label `label_id`
                 y_true[i].pop(label_id) # removing expected for row `i` for label `label_id`
 
