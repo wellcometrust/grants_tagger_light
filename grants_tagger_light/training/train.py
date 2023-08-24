@@ -155,8 +155,8 @@ def train_bertmesh(
         # I will remove those tags which where not in training dataset, and only in test
         for label_id in metric_labels:
             for i in range(len(y_pred)):
-                y_pred[i].pop(label_id) # removing prediction for row `i` for label `label_id`
-                y_true[i].pop(label_id) # removing expected for row `i` for label `label_id`
+                y_pred[i] = np.delete(y_pred[i], label_id, 0) # removing prediction for row `i` for label `label_id`
+                y_true[i] = np.delete(y_true[i], label_id, 0) # removing expected for row `i` for label `label_id`
 
         report = classification_report(y_true, y_pred, output_dict=True)
 
