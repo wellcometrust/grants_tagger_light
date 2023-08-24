@@ -155,10 +155,26 @@ def train_bertmesh(
         filtered_y_pred = []
         filtered_y_true = []
         # I will remove those tags which where not in training dataset, and only in test
-        for label_id in metric_labels:
-            for i in range(len(y_pred)):
-                filtered_y_pred.append(np.delete(y_pred[i], label_id, 0)) # removing prediction for row `i` for label `label_id`
-                filtered_y_true.append(np.delete(y_true[i], label_id, 0)) # removing expected for row `i` for label `label_id`
+
+        predictions_batch_size = len(y_pred)
+        true_batch_size = len(y_true)
+        assert predictions_batch_size == true_batch_size
+        batch_size = predictions_batch_size
+
+        num_predictions_per_row = len(y_pred[0])
+        num_true_per_row = len(y_true[0])
+        assert num_predictions_per_row == num_true_per_row
+        total_labels = num_predictions_per_row
+
+        for row_num in range(batch_size):
+            yp = []
+            yt = []
+            for label_num in range(total_labels):
+                if label_num in metric_labels:
+                    yp.append(y_pred[row_num][label_num])
+                    yt.append(y_true[row_num][label_num])
+            filtered_y_pred.append(yp)
+            filtered_y_true.append(yt)
 
         report = classification_report(filtered_y_pred, filtered_y_true, output_dict=True)
 
