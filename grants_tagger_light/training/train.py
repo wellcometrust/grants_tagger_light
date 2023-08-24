@@ -152,8 +152,8 @@ def train_bertmesh(
         # Array of arrays with 0/1 [[0 0 1 ...] [0 1 0 ...] ... ]
         y_true = prediction.label_ids
 
-        mask = np.ones(y_pred.shape, dtype=bool)
-        mask[np.arange(y_pred.shape[0])[:, np.newaxis], metric_labels] = False
+        mask = np.zeros(y_pred.shape, dtype=bool)
+        mask[np.arange(y_pred.shape[0])[:, np.newaxis], metric_labels] = True
         filtered_y_pred = y_pred[mask].reshape(y_pred.shape[0], -1)
         filtered_y_true = y_true[mask].reshape(y_true.shape[0], -1)
 
