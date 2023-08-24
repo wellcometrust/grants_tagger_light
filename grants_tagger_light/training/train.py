@@ -143,14 +143,20 @@ def train_bertmesh(
             model.freeze_backbone()
 
     def sklearn_metrics(prediction: EvalPrediction):
+        # This is a batch, so it's an array (rows) of array (labels)
+        # Array of arrays with probas [[5.4e-5 1.3e-3...] [5.4e-5 1.3e-3...] ... ]
         y_pred = prediction.predictions
-        y_true = [x for x in prediction.label_ids if x in metric_labels]
-
-        # TODO make thresh configurable or return metrics
-        #  for multiple thresholds
-        # e.g. 0.5:0.95:0.05
-
+        # Transformed to 0-1 if bigger than threshold [[0 1 0...] [0 0 1...] ... ]
         y_pred = np.int64(y_pred > threshold)
+
+        # Array of arrays with 0/1 [[0 0 1 ...] [0 1 0 ...] ... ]
+        y_true = prediction.label_ids
+
+        # I will remove those tags which where not in training dataset, and only in test
+        for label_id in metric_labels:
+            for i in range(y_pred):
+                y_pred[i].pop(label_id) # removing prediction for row `i` for label `label_id`
+                y_true[i].pop(label_id) # removing expected for row `i` for label `label_id`
 
         report = classification_report(y_true, y_pred, output_dict=True)
 
