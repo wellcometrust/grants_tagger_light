@@ -118,6 +118,17 @@ def augment(
                 missing = min_examples - tags_to_augment_counts[t]
                 collect_concurrent_calls.append((t, missing))
 
+    if len(collect_concurrent_calls) > 0:
+        AugmentOpenAI(prompt_template_path=prompt_template, model_key=model_key).generate(
+            collect_concurrent_calls,
+            dset,
+            save_to_path,
+            train_years,
+            model_key,
+            temperature=temperature,
+            num_proc=num_proc,
+        )
+
 
 @augment_app.command()
 def augment_cli(
