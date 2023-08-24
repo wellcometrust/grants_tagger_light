@@ -45,8 +45,9 @@ def augment(
     test_years: list = None,
     min_examples: int = 15,
     prompt_template: str = 'grants_tagger_light/augmentation/prompt.template',
-    concurrent_calls: int = 25,
-    temperature: float = 1.5
+    concurrent_calls: int = os.cpu_count()*2,
+    temperature: float = 1.5,
+    tags_file_path: str = None,
 ):
     if model_key.strip().lower() not in ['gpt-3.5-turbo', 'text-davinci', 'gpt-4']:
         raise NotImplementedError(f"{model_key} not implemented as an augmentation framework")
@@ -71,6 +72,12 @@ def augment(
     merged_element_counts = _merge_dicts(element_counts_list)
     sorted_merged_element_counts = sorted(merged_element_counts.items(), key=lambda x: x[1], reverse=True)
     sorted_merged_element_counts_dict = dict(sorted_merged_element_counts)
+    if tags_file_path is not None:
+        with open(tags_file_path, 'r') as f:
+            tags = f.read().split('\n')
+            logger.info(f"Tags file path found. Filtering tags (examples found: {tags[:15]}...)")
+            sorted_merged_element_counts_dict = {k: v for k, v in sorted_merged_element_counts_dict.items()
+                                                 if k in tags}
 
     with open(f"{save_to_path}.count", 'w') as f:
         f.write(json.dumps(sorted_merged_element_counts_dict, indent=2))
@@ -142,20 +149,24 @@ def augment_cli(
     ),
     min_examples: int = typer.Option(
         15,
-        help="If set, Comma-separated years you want to exclude in the data augmentation process"
+        help="Minimum number of examples to require. Less than that will trigger data augmentation."
     ),
     prompt_template: str = typer.Option(
         'grants_tagger_light/augmentation/prompt.template',
         help="File to use as a prompt. Make sure to ask the LLM to return a dict with two fields: `abstract` and `tags`"
     ),
     concurrent_calls: int = typer.Option(
-        25,
+        os.cpu_count()*2,
         help="Concurrent calls with 1 tag each to the different model"
     ),
     temperature: float = typer.Option(
         1.5,
         help="A value between -2 and 2. The bigger - the more creative."
     ),
+    tags_file_path: str = typer.Option(
+        None,
+        help="Text file containing one line per tag to be considered. The rest will be discarded."
+    )
 ):
     if not data_path.endswith("jsonl"):
         logger.error(
@@ -180,5 +191,6 @@ def augment_cli(
             min_examples=min_examples,
             prompt_template=prompt_template,
             concurrent_calls=concurrent_calls,
-            temperature=temperature
+            temperature=temperature,
+            tags_file_path=tags_file_path
             )
