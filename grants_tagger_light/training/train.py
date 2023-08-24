@@ -50,7 +50,7 @@ def train_bertmesh(
     train_years: list = None,
     test_years: list = None,
     scheduler_type: str = 'cosine_hard_restart',
-    threshold: int = 0.25
+    threshold: float = 0.25
 ):
     if not model_key:
         assert isinstance(model_args, BertMeshModelArguments), (
@@ -284,9 +284,9 @@ def train_bertmesh_cli(
         'cosine_hard_restart',
         help="One of the following lr schedulers: `cosine`, `linear`, `constant`, `cosine_hard_restart`"
     ),
-    threshold: int = typer.Option(
+    threshold: float = typer.Option(
         0.25,
-        help="Threshold to considered a class as a positive"
+        help="Threshold (0, 1) to considered a class as a positive"
     ),
 ):
     parser = HfArgumentParser(
