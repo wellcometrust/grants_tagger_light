@@ -14,10 +14,10 @@ grants-tagger train bertmesh \
     $SOURCE \
     --output_dir bertmesh_outs/pipeline_test_from_$CHECKPOINT/ \
     --ignore_data_skip True \
-    --per_device_train_batch_size 32 \
+    --per_device_train_batch_size 16 \
     --per_device_eval_batch_size 1 \
     --multilabel_attention True \
-    --freeze_backbone False \
+    --freeze_backbone unfreeze_bias \
     --num_train_epochs 5 \
     --learning_rate 5e-5 \
     --dropout 0.1 \
@@ -25,6 +25,7 @@ grants-tagger train bertmesh \
     --warmup_steps 1000 \
     --max_grad_norm 5.0 \
     --scheduler-type cosine \
+    --threshold 0.25 \
     --fp16 \
     --torch_compile \
     --evaluation_strategy steps \
