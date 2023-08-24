@@ -152,13 +152,15 @@ def train_bertmesh(
         # Array of arrays with 0/1 [[0 0 1 ...] [0 1 0 ...] ... ]
         y_true = prediction.label_ids
 
+        filtered_y_pred = []
+        filtered_y_true = []
         # I will remove those tags which where not in training dataset, and only in test
         for label_id in metric_labels:
             for i in range(len(y_pred)):
-                y_pred[i] = np.delete(y_pred[i], label_id, 0) # removing prediction for row `i` for label `label_id`
-                y_true[i] = np.delete(y_true[i], label_id, 0) # removing expected for row `i` for label `label_id`
+                filtered_y_pred.append(np.delete(y_pred[i], label_id, 0)) # removing prediction for row `i` for label `label_id`
+                filtered_y_true.append(np.delete(y_true[i], label_id, 0)) # removing expected for row `i` for label `label_id`
 
-        report = classification_report(y_true, y_pred, output_dict=True)
+        report = classification_report(filtered_y_pred, filtered_y_true, output_dict=True)
 
         metric_dict = {
             "micro_avg": report["micro avg"],
