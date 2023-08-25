@@ -48,12 +48,7 @@ def train_bertmesh(
     from_checkpoint: str = None,
     tags: list = None,
     train_years: list = None,
-    test_years: list = None,
-    scheduler_type: str = 'cosine_hard_restart',
-    threshold: float = 0.25,
-    weight_decay: float =0.1,
-    correct_bias: bool= True,
-    prune_labels_in_evaluation: bool =True
+    test_years: list = None
 ):
     if not model_key:
         assert isinstance(model_args, BertMeshModelArguments), (
@@ -150,19 +145,19 @@ def train_bertmesh(
         model.freeze_backbone()
 
     def sklearn_metrics(prediction: EvalPrediction):
-        logger.info(f"Threshold: {threshold}")
+        logger.info(f"Threshold: {training_args.threshold}")
         # This is a batch, so it's an array (rows) of array (labels)
         # Array of arrays with probas [[5.4e-5 1.3e-3...] [5.4e-5 1.3e-3...] ... ]
         y_pred = prediction.predictions
         # Transformed to 0-1 if bigger than threshold [[0 1 0...] [0 0 1...] ... ]
-        y_pred = np.int64(y_pred > threshold)
+        y_pred = np.int64(y_pred > training_args.threshold)
 
         # Array of arrays with 0/1 [[0 0 1 ...] [0 1 0 ...] ... ]
         y_true = prediction.label_ids
 
         # report = classification_report(y_pred, y_true, output_dict=True)
 
-        if prune_labels_in_evaluation:
+        if training_args.prune_labels_in_evaluation:
             logger.info(f"For metric purposes, only considering labels present in `training`: {metric_labels[:15]}")
             mask = np.zeros(y_pred.shape, dtype=bool)
             mask[np.arange(y_pred.shape[0])[:, np.newaxis], metric_labels] = True
@@ -195,37 +190,36 @@ def train_bertmesh(
     optimizer = AdamW(
         model.parameters(),
         lr=training_args.learning_rate,
-        weight_decay=weight_decay,
-        correct_bias=correct_bias)
+        weight_decay=training_args.weight_decay,
+        correct_bias=training_args.correct_bias)
 
     if training_args.warmup_steps is None:
         training_args.warmup_steps = 0
 
-    if scheduler_type.lower().strip() == 'cosine':
+    if training_args.scheduler_type.lower().strip() == 'cosine':
         scheduler = get_cosine_schedule_with_warmup(optimizer,
                                                     num_warmup_steps=training_args.warmup_steps,
                                                     num_training_steps=training_args.max_steps)
-    elif scheduler_type.lower().strip() == 'constant':
+    elif training_args.scheduler_type.lower().strip() == 'constant':
         scheduler = get_constant_schedule_with_warmup(optimizer,
                                                       num_warmup_steps=training_args.warmup_steps)
-    elif scheduler_type.lower().strip() == 'cosine_hard_restart':
+    elif training_args.scheduler_type.lower().strip() == 'cosine_hard_restart':
         scheduler = get_cosine_with_hard_restarts_schedule_with_warmup(optimizer,
                                                                        num_warmup_steps=training_args.warmup_steps,
                                                                        num_training_steps=training_args.max_steps,
                                                                        num_cycles=training_args.num_train_epochs)
-    elif scheduler_type.lower().strip() == 'linear':
+    elif training_args.scheduler_type.lower().strip() == 'linear':
         scheduler = get_linear_schedule_with_warmup(optimizer,
                                                     num_warmup_steps=training_args.warmup_steps,
                                                     num_training_steps=training_args.max_steps)
     else:
-        logger.warning(f"{scheduler_type}: not found or not valid. Falling back to `linear`")
-        scheduler_type = 'linear'
+        logger.warning(f"{training_args.scheduler_type}: not found or not valid. Falling back to `linear`")
         scheduler = get_linear_schedule_with_warmup(optimizer,
                                                     num_warmup_steps=training_args.warmup_steps,
                                                     num_training_steps=training_args.max_steps)
 
     logger.info(f"Optimizer: {optimizer}")
-    logger.info(f"Scheduler: {scheduler_type}")
+    logger.info(f"Scheduler: {training_args.scheduler_type}")
 
     training_args.optim = optimizer
     training_args.lr_scheduler_type = scheduler
@@ -304,27 +298,7 @@ def train_bertmesh_cli(
     test_years: str = typer.Option(
         None,
         help="Comma-separated years you want to include in the test dataset"
-    ),
-    scheduler_type: str = typer.Option(
-        'cosine_hard_restart',
-        help="One of the following lr schedulers: `cosine`, `linear`, `constant`, `cosine_hard_restart`"
-    ),
-    threshold: float = typer.Option(
-        0.25,
-        help="Threshold (0, 1) to considered a class as a positive"
-    ),
-    weight_decay: float = typer.Option(
-        0.1,
-        help="Optimizer weight decay. Default: 0.1"
-    ),
-    correct_bias: bool = typer.Option(
-        True,
-        help="Optimizer bias correction. Default: True"
-    ),
-    prune_labels_in_evaluation: bool = typer.Option(
-        True,
-        help="Remove before evaluation all the labels not present in training data. Default: True"
-    ),
+    )
 ):
     parser = HfArgumentParser(
         (
@@ -355,10 +329,5 @@ def train_bertmesh_cli(
         from_checkpoint=from_checkpoint,
         tags=parse_tags(tags),
         train_years=parse_years(train_years),
-        test_years=parse_years(test_years),
-        scheduler_type=scheduler_type,
-        threshold=threshold,
-        weight_decay=weight_decay,
-        correct_bias=correct_bias,
-        prune_labels_in_evaluation=prune_labels_in_evaluation
+        test_years=parse_years(test_years)
     )

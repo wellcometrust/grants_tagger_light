@@ -62,6 +62,12 @@ class BertMeshTrainingArguments(TrainingArguments):
     #     default="default"
     # )  # default | reduce-overhead | max-autotune
 
+    correct_bias: bool = field(default=True)
+    weight_decay: float = field(default=0.1)
+    prune_labels_in_evaluation: bool = field(default=False)
+    threshold: float = field(default=0.5)
+    scheduler_type: str = field(default="cosine")
+
     def __post_init__(self):
         super().__post_init__()
         if "fused" in self.optim and not torch.cuda.is_available():
