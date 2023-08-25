@@ -87,8 +87,6 @@ def train_bertmesh(
     for x in train_dset['label_ids']:
         metric_labels.extend(x)
 
-    logger.info(f"For metric purposes, only considering labels present in `training`: {metric_labels[:15]}")
-
     train_dset_size = len(train_dset)
     logger.info(f"Training dataset size: {train_dset_size}")
     if max_samples > 0:
@@ -131,18 +129,22 @@ def train_bertmesh(
         logger.info(f"Training from pretrained key {model_key}")
         model = BertMesh.from_pretrained(model_key, trust_remote_code=True)
 
-    if model_args.freeze_backbone is not None:
-        if model_args.freeze_backbone.lower().strip() == 'unfreeze':
-            logger.info("Unfreezing weights&biases in the backbone")
-            model.unfreeze_backbone()
-        elif model_args.freeze_backbone.lower().strip() == 'unfreeze_bias':
-            logger.info("Unfreezing only biases in the backbone")
-            model.unfreeze_backbone(only_bias=True)
-        elif model_args.freeze_backbone.lower().strip() == 'freeze':
-            logger.info("Freezing backbone")
-            model.freeze_backbone()
+    if model_args.freeze_backbone is None:
+        model_args.freeze_backbone = 'freeze'
+
+    if model_args.freeze_backbone.lower().strip() == 'unfreeze':
+        logger.info("Unfreezing weights&biases in the backbone")
+        model.unfreeze_backbone()
+    elif model_args.freeze_backbone.lower().strip() == 'unfreeze_bias':
+        logger.info("Unfreezing only biases in the backbone")
+        model.unfreeze_backbone(only_bias=True)
+    elif model_args.freeze_backbone.lower().strip() == 'freeze':
+        logger.info("Freezing backbone")
+        model.freeze_backbone()
 
     def sklearn_metrics(prediction: EvalPrediction):
+        logger.info(f"Threshold: {threshold}")
+        logger.info(f"For metric purposes, only considering labels present in `training`: {metric_labels[:15]}")
         # This is a batch, so it's an array (rows) of array (labels)
         # Array of arrays with probas [[5.4e-5 1.3e-3...] [5.4e-5 1.3e-3...] ... ]
         y_pred = prediction.predictions
@@ -152,13 +154,13 @@ def train_bertmesh(
         # Array of arrays with 0/1 [[0 0 1 ...] [0 1 0 ...] ... ]
         y_true = prediction.label_ids
 
-        # mask = np.zeros(y_pred.shape, dtype=bool)
-        # mask[np.arange(y_pred.shape[0])[:, np.newaxis], metric_labels] = True
-        # filtered_y_pred = y_pred[mask].reshape(y_pred.shape[0], -1)
-        # filtered_y_true = y_true[mask].reshape(y_true.shape[0], -1)
-        # report = classification_report(filtered_y_pred, filtered_y_true, output_dict=True)
+        # report = classification_report(y_pred, y_true, output_dict=True)
 
-        report = classification_report(y_pred, y_true, output_dict=True)
+        mask = np.zeros(y_pred.shape, dtype=bool)
+        mask[np.arange(y_pred.shape[0])[:, np.newaxis], metric_labels] = True
+        filtered_y_pred = y_pred[mask].reshape(y_pred.shape[0], -1)
+        filtered_y_true = y_true[mask].reshape(y_true.shape[0], -1)
+        report = classification_report(filtered_y_pred, filtered_y_true, output_dict=True)
 
         metric_dict = {
             "micro_avg": report["micro avg"],
