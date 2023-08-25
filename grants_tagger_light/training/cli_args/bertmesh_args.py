@@ -10,3 +10,5 @@ class BertMeshModelArguments:
     dropout: float = field(default=0)
     multilabel_attention: bool = field(default=False)
     freeze_backbone: str = field(default=None) # unfreeze, unfreeze_bias, freeze
+    hidden_dropout_prob: float = field(default=0.1)
+    attention_probs_dropout_prob: float = field(default=0.1)

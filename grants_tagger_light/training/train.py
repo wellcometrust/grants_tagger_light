@@ -50,7 +50,10 @@ def train_bertmesh(
     train_years: list = None,
     test_years: list = None,
     scheduler_type: str = 'cosine_hard_restart',
-    threshold: float = 0.25
+    threshold: float = 0.25,
+    weight_decay: float =0.1,
+    correct_bias: bool= True,
+    prune_labels_in_evaluation: bool =True
 ):
     if not model_key:
         assert isinstance(model_args, BertMeshModelArguments), (
@@ -116,12 +119,16 @@ def train_bertmesh(
                 "label2id": label2id,
                 "id2label": {v: k for k, v in label2id.items()},
                 "freeze_backbone": model_args.freeze_backbone,
+                "hidden_dropout_prob": model_args.hidden_dropout_prob,
+                "attention_probs_dropout_prob": model_args.attention_probs_dropout_prob,
             })
         logger.info(f"Hidden size: {config.hidden_size}")
         logger.info(f"Dropout: {config.dropout}")
         logger.info(f"Multilabel Attention: {config.multilabel_attention}")
         logger.info(f"Freeze Backbone: {config.freeze_backbone}")
         logger.info(f"Num labels: {config.num_labels}")
+        logger.info(f"hidden_dropout_prob: {config.hidden_dropout_prob}")
+        logger.info(f"attention_probs_dropout_prob: {config.attention_probs_dropout_prob}")
 
         model = BertMesh(config)
 
@@ -144,7 +151,6 @@ def train_bertmesh(
 
     def sklearn_metrics(prediction: EvalPrediction):
         logger.info(f"Threshold: {threshold}")
-        logger.info(f"For metric purposes, only considering labels present in `training`: {metric_labels[:15]}")
         # This is a batch, so it's an array (rows) of array (labels)
         # Array of arrays with probas [[5.4e-5 1.3e-3...] [5.4e-5 1.3e-3...] ... ]
         y_pred = prediction.predictions
@@ -156,10 +162,17 @@ def train_bertmesh(
 
         # report = classification_report(y_pred, y_true, output_dict=True)
 
-        mask = np.zeros(y_pred.shape, dtype=bool)
-        mask[np.arange(y_pred.shape[0])[:, np.newaxis], metric_labels] = True
-        filtered_y_pred = y_pred[mask].reshape(y_pred.shape[0], -1)
-        filtered_y_true = y_true[mask].reshape(y_true.shape[0], -1)
+        if prune_labels_in_evaluation:
+            logger.info(f"For metric purposes, only considering labels present in `training`: {metric_labels[:15]}")
+            mask = np.zeros(y_pred.shape, dtype=bool)
+            mask[np.arange(y_pred.shape[0])[:, np.newaxis], metric_labels] = True
+
+            filtered_y_pred = y_pred[mask].reshape(y_pred.shape[0], -1)
+            filtered_y_true = y_true[mask].reshape(y_true.shape[0], -1)
+        else:
+            filtered_y_pred = y_pred
+            filtered_y_true = y_true
+
         report = classification_report(filtered_y_pred, filtered_y_true, output_dict=True)
 
         metric_dict = {
@@ -179,7 +192,11 @@ def train_bertmesh(
         max_steps = Sharding.calculate_max_steps(training_args, train_dset_size)
         training_args.max_steps = max_steps
 
-    optimizer = AdamW(model.parameters(), lr=training_args.learning_rate)
+    optimizer = AdamW(
+        model.parameters(),
+        lr=training_args.learning_rate,
+        weight_decay=weight_decay,
+        correct_bias=correct_bias)
 
     if training_args.warmup_steps is None:
         training_args.warmup_steps = 0
@@ -296,6 +313,18 @@ def train_bertmesh_cli(
         0.25,
         help="Threshold (0, 1) to considered a class as a positive"
     ),
+    weight_decay: float = typer.Option(
+        0.1,
+        help="Optimizer weight decay. Default: 0.1"
+    ),
+    correct_bias: bool = typer.Option(
+        True,
+        help="Optimizer bias correction. Default: True"
+    ),
+    prune_labels_in_evaluation: bool = typer.Option(
+        True,
+        help="Remove before evaluation all the labels not present in training data. Default: True"
+    ),
 ):
     parser = HfArgumentParser(
         (
@@ -328,5 +357,8 @@ def train_bertmesh_cli(
         train_years=parse_years(train_years),
         test_years=parse_years(test_years),
         scheduler_type=scheduler_type,
-        threshold=threshold
+        threshold=threshold,
+        weight_decay=weight_decay,
+        correct_bias=correct_bias,
+        prune_labels_in_evaluation=prune_labels_in_evaluation
     )
