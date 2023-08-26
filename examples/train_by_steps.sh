@@ -18,7 +18,7 @@ grants-tagger train bertmesh \
     --hidden_size 1024 \
     --warmup_steps 5000 \
     --max_grad_norm 1.0 \
-    --scheduler_type cosine \
+    --scheduler_type cosine_hard_restart \
     --weight_decay 0.2 \
     --correct_bias False \
     --threshold 0.25 \
