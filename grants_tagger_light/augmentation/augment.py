@@ -4,7 +4,6 @@ import os
 
 import typer
 from loguru import logger
-from datasets import load_dataset
 import numpy as np
 
 
@@ -52,10 +51,20 @@ def augment(
     if model_key.strip().lower() not in ['gpt-3.5-turbo', 'text-davinci', 'gpt-4']:
         raise NotImplementedError(f"{model_key} not implemented as an augmentation framework")
 
-    try:
-        dset = load_from_disk(data_path)
-    except Exception:
-        dset = load_from_disk(os.path.join(data_path, "dataset"))
+    dset = load_from_disk(data_path)
+
+    with open(os.path.join(data_path, "label2id"), "r") as f:
+        label2id = json.load(f)
+        id2label = {v: k for k, v in label2id.items()}
+
+    dset = dset.map(
+        lambda x: {'meshMajor': [id2label[y] for y in x['label_ids']]},
+        with_indices=False,
+        batched=True,
+        batch_size=batch_size,
+        desc="Adding label names",
+        num_proc=num_proc,
+    )
 
     logger.info("Obtaining count values from the labels...")
     pool = multiprocessing.Pool(processes=num_proc)
