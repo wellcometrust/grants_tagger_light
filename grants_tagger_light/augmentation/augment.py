@@ -60,6 +60,8 @@ def augment(
         raise NotImplementedError(f"{model_key} not implemented as an augmentation framework")
 
     dset = load_from_disk(os.path.join(data_path, "dataset"))
+    if "train" in dset:
+        dset = dset["train"]
 
     with open(os.path.join(data_path, "label2id"), "r") as f:
         label2id = json.load(f)
