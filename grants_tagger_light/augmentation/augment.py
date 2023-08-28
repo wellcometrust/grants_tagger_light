@@ -51,7 +51,7 @@ def augment(
     if model_key.strip().lower() not in ['gpt-3.5-turbo', 'text-davinci', 'gpt-4']:
         raise NotImplementedError(f"{model_key} not implemented as an augmentation framework")
 
-    dset = load_from_disk(data_path)
+    dset = load_from_disk(os.path.join(data_path, "dataset"))
 
     with open(os.path.join(data_path, "label2id"), "r") as f:
         label2id = json.load(f)
