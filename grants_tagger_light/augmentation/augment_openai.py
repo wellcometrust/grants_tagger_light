@@ -78,11 +78,11 @@ class AugmentOpenAI:
         for num in range(len(collect_concurrent_calls)):
             t = collect_concurrent_calls[num][0]
             n = collect_concurrent_calls[num][1]
-            # RAG: I select similar articles to provide them to the LLM
+            # RAG: I select similar articles to provide them to the LLM, maximum ´n´ (I don't need more)
             tmp_dset = dset.filter(lambda x: any(np.isin([t], x["meshMajor"])), num_proc=num_proc)
             # I remove them from the dataset to process to make it smaller and quicker over time
-            dset = dset.filter(lambda example, idx: idx not in tmp_dset['idx'], with_indices=True,
-                               num_proc=num_proc)
+            # dset = dset.filter(lambda example, idx: idx not in tmp_dset['idx'], with_indices=True,
+            #                   num_proc=num_proc)
 
             abstracts_num = [i for i in range(len(tmp_dset))]
             random.shuffle(abstracts_num)
