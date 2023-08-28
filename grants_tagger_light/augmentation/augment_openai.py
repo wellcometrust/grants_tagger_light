@@ -38,30 +38,33 @@ class AugmentOpenAI:
             for r in result.response['choices']:
                 if 'message' in r:
                     if 'content' in r['message']:
-                        print(r['message']['content'])
                         try:
-                            json_response = JsonParser.parse_json(r['message']['content'])
-                        except Exception as e:
-                            logger.info(f"Error processing output: {e}. Skipping...")
-                            continue
+                            logger.info(r['message']['content'])
+                            try:
+                                json_response = JsonParser.parse_json(r['message']['content'])
+                            except Exception as e:
+                                logger.info(f"Error processing output: {e}. Skipping...")
+                                continue
 
-                        res = {
-                            "journal": result.metadata['model_key'],
-                            "meshMajor": result.metadata['tags'],
-                            "year": result.metadata['year'],
-                            "abstractText": json_response['abstract'].replace("'", "").replace('"', ''),
-                            "pmid": uuid.uuid4().hex,
-                            "title": json_response['title'].replace("'", "").replace('"', ''),
-                            "existing_example": result.metadata['existing_example'].replace("'", "").replace('"', ''),
-                            "required_examples": result.metadata['required_examples'],
-                            "featured_tag": result.metadata['featured_tag']
-                        }
+                            res = {
+                                "journal": result.metadata['model_key'],
+                                "meshMajor": result.metadata['tags'],
+                                "year": result.metadata['year'],
+                                "abstractText": json_response['abstract'].replace("'", "").replace('"', ''),
+                                "pmid": uuid.uuid4().hex,
+                                "title": json_response['title'].replace("'", "").replace('"', ''),
+                                "existing_example": result.metadata['existing_example'].replace("'", "").replace('"', ''),
+                                "required_examples": result.metadata['required_examples'],
+                                "featured_tag": result.metadata['featured_tag']
+                            }
 
-                        f.write(json.dumps(res))
-                        f.write('\n')
-                        f.flush()
+                            f.write(json.dumps(res))
+                            f.write('\n')
+                            f.flush()
 
-                        logger.info(f"Data received successfully for {result.metadata['featured_tag']}")
+                            logger.info(f"Data received successfully for {result.metadata['featured_tag']}")
+                        except:
+                            logger.info(f"Missing or malformed data. Skipping")
 
     def _make_requests(self,
                        collect_concurrent_calls,
@@ -88,9 +91,9 @@ class AugmentOpenAI:
             existing_examples = min(required_examples, len(tmp_dset))
 
             n_per_example = math.ceil(required_examples / existing_examples)
-
+            logger.info(f"Augmenting {t} with {required_examples} examples, using {existing_examples} in RAG mode")
             for i in range(existing_examples):
-                logger.info(f"Augmenting {t} with {n_per_example} examples using 1 already existing example")
+
                 abstract = tmp_dset['abstractText'][i]
                 tags = tmp_dset['meshMajor'][i]
                 data = {
