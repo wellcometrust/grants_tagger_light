@@ -1,5 +1,6 @@
 import datetime
 import json
+import math
 import os
 import random
 import uuid
@@ -77,7 +78,6 @@ class AugmentOpenAI:
         for num in range(len(collect_concurrent_calls)):
             t = collect_concurrent_calls[num][0]
             n = collect_concurrent_calls[num][1]
-            logger.info(f"Augmenting {t} with {n} examples")
             # RAG: I select similar articles to provide them to the LLM
             tmp_dset = dset.filter(lambda x: any(np.isin([t], x["meshMajor"])), num_proc=num_proc)
             # I remove them from the dataset to process to make it smaller and quicker over time
@@ -87,13 +87,19 @@ class AugmentOpenAI:
             abstracts_num = [i for i in range(len(tmp_dset))]
             random.shuffle(abstracts_num)
 
-            for i in range(n):
-                selected_row = abstracts_num[i % len(tmp_dset)]
+            required_examples = n
+            existing_examples = min(required_examples, len(tmp_dset))
+
+            n_per_example = math.ceil(required_examples / existing_examples)
+
+            for i in range(existing_examples):
+                logger.info(f"Augmenting {t} with {n_per_example} examples using 1 already existing example")
+                selected_row = abstracts_num[i]
                 abstract = tmp_dset['abstractText'][selected_row]
                 tags = tmp_dset['meshMajor'][selected_row]
                 data = {
                     "model": self.model_key,
-                    "n": 1,
+                    "n": n_per_example,
                     "temperature": temperature,
                     "top_p": top_p,
                     "presence_penalty": presence_penalty,
