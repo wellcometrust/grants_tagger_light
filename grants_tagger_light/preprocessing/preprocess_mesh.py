@@ -137,6 +137,7 @@ def preprocess_mesh(
         # Most efficient way to do dictionary creation
         logger.info("Creating label2id dictionary...")
         label2id = dict()
+        id2label = dict()
         for idx, label in enumerate(tqdm(unique_labels_set)):
             label2id.update({label: idx})
             id2label.update({idx: label})
