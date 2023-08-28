@@ -15,6 +15,14 @@ from datasets import load_from_disk
 augment_app = typer.Typer()
 
 
+def _map_id_to_labels(ids, id2label):
+    return [id2label[i] for i in ids]
+
+
+def _restore_meshmajor(sample, id2label):
+    return {"meshMajor": [_map_id_to_labels(x, id2label) for x in sample["label_ids"]]}
+
+
 def _count_elements_in_sublist(sublist):
     element_count = {}
     for element in sublist:
@@ -58,12 +66,12 @@ def augment(
         id2label = {v: k for k, v in label2id.items()}
 
     dset = dset.map(
-        lambda x: {'meshMajor': [id2label[y] for y in x['label_ids']]},
-        with_indices=False,
+        _restore_meshmajor,
         batched=True,
         batch_size=batch_size,
-        desc="Adding label names",
+        desc="Decoding labels",
         num_proc=num_proc,
+        fn_kwargs={"id2label": id2label}
     )
 
     logger.info("Obtaining count values from the labels...")
