@@ -69,12 +69,10 @@ class AugmentOpenAI:
                        top_p,
                        presence_penalty,
                        num_proc,
-                       train_years,
                        model_key,
                        save_to_path):
 
-        year = [random.choice(train_years) if train_years is not None and isinstance(train_years, list)
-                else datetime.date.year]
+        year = datetime.date.year
 
         for num in range(len(collect_concurrent_calls)):
             t = collect_concurrent_calls[num][0]
@@ -114,7 +112,7 @@ class AugmentOpenAI:
 
                 self.api.request(data=data, metadata=metadata, callback=self._process_response)
 
-    def generate(self, collect_concurrent_calls, dset, save_to_path, train_years, model_key,
+    def generate(self, collect_concurrent_calls, dset, save_to_path, model_key,
                  temperature=1.5, top_p=1, presence_penalty=0, num_proc=os.cpu_count()):
         self.api.run_request_function(self._make_requests,
                                       collect_concurrent_calls=collect_concurrent_calls,
@@ -123,9 +121,7 @@ class AugmentOpenAI:
                                       top_p=top_p,
                                       presence_penalty=presence_penalty,
                                       num_proc=num_proc,
-                                      train_years=train_years,
                                       model_key=model_key,
                                       save_to_path=save_to_path)
 
         self.api.pull_all()
-

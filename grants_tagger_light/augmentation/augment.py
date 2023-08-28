@@ -11,6 +11,8 @@ import numpy as np
 from grants_tagger_light.augmentation.augment_openai import AugmentOpenAI
 from grants_tagger_light.utils.years_tags_parser import parse_years
 
+from datasets import load_from_disk
+
 augment_app = typer.Typer()
 
 
@@ -41,8 +43,6 @@ def augment(
     model_key: str = 'gpt-3.5-turbo',
     num_proc: int = os.cpu_count(),
     batch_size: int = 64,
-    train_years: list = None,
-    test_years: list = None,
     min_examples: int = 15,
     prompt_template: str = 'grants_tagger_light/augmentation/prompt.template',
     concurrent_calls: int = os.cpu_count()*2,
@@ -52,16 +52,10 @@ def augment(
     if model_key.strip().lower() not in ['gpt-3.5-turbo', 'text-davinci', 'gpt-4']:
         raise NotImplementedError(f"{model_key} not implemented as an augmentation framework")
 
-    # We only have 1 file, so no sharding is available https://huggingface.co/docs/datasets/loading#multiprocessing
-    dset = load_dataset("json", data_files=data_path, num_proc=1)
-    # By default, any dataset loaded is set to 'train' using the previous command
-    if "train" in dset:
-        dset = dset["train"]
-
-    if train_years is not None and len(train_years) > 0:
-        dset = dset.filter(lambda x: any(np.isin(train_years, [str(x["year"])])), num_proc=num_proc)
-    if test_years is not None and len(test_years) > 0:
-        dset = dset.filter(lambda x: not any(np.isin(test_years, [str(x["year"])])), num_proc=num_proc)
+    try:
+        dset = load_from_disk(data_path)
+    except Exception:
+        dset = load_from_disk(os.path.join(data_path, "dataset"))
 
     logger.info("Obtaining count values from the labels...")
     pool = multiprocessing.Pool(processes=num_proc)
@@ -107,7 +101,6 @@ def augment(
                 collect_concurrent_calls,
                 dset,
                 save_to_path,
-                train_years,
                 model_key,
                 temperature=temperature,
                 num_proc=num_proc,
@@ -123,7 +116,6 @@ def augment(
             collect_concurrent_calls,
             dset,
             save_to_path,
-            train_years,
             model_key,
             temperature=temperature,
             num_proc=num_proc,
@@ -150,14 +142,6 @@ def augment_cli(
         64,
         help="Preprocessing batch size (for dataset, filter, map, ...)"
     ),
-    train_years: str = typer.Option(
-        None,
-        help="If set, Comma-separated years you want to include in the data augmentation process"
-    ),
-    test_years: str = typer.Option(
-        None,
-        help="If set, Comma-separated years you want to exclude in the data augmentation process"
-    ),
     min_examples: int = typer.Option(
         15,
         help="Minimum number of examples to require. Less than that will trigger data augmentation."
@@ -179,10 +163,9 @@ def augment_cli(
         help="Text file containing one line per tag to be considered. The rest will be discarded."
     )
 ):
-    if not data_path.endswith("jsonl"):
+    if not os.path.isdir(data_path):
         logger.error(
-            "It seems your input MeSH data is not in `jsonl` format. "
-            "Please, run first `scripts/mesh_json_to_jsonlpy.`"
+            "The data path should be a folder with saved data from `preprocessing` step."
         )
         exit(-1)
 
@@ -197,8 +180,6 @@ def augment_cli(
             model_key=model_key,
             num_proc=num_proc,
             batch_size=batch_size,
-            train_years=parse_years(train_years),
-            test_years=parse_years(test_years),
             min_examples=min_examples,
             prompt_template=prompt_template,
             concurrent_calls=concurrent_calls,

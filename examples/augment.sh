@@ -1,2 +1,2 @@
-grants-tagger augment mesh data/raw/allMeSH_2021.jsonl more_data.jsonl \
+grants-tagger augment mesh [FOLDER_AFTER_PREPROCESSING] [OUTPUT_FOLDER] \
   --concurrent-calls 25
