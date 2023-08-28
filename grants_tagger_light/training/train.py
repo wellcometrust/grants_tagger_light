@@ -65,9 +65,11 @@ def train_bertmesh(
         dset = load_from_disk(os.path.join(data_path, "dataset"))
         with open(os.path.join(data_path, "label2id"), "r") as f:
             label2id = json.load(f)
+        with open(os.path.join(data_path, "id2label"), "r") as f:
+            id2label = json.load(f)
     else:
         logger.info("Preprocessing the data on the fly...")
-        dset, label2id = preprocess_mesh(
+        dset, label2id, id2label = preprocess_mesh(
             data_path=data_path,
             model_key=model_key,
             test_size=test_size,
@@ -112,7 +114,7 @@ def train_bertmesh(
                 "dropout": model_args.dropout,
                 "multilabel_attention": model_args.multilabel_attention,
                 "label2id": label2id,
-                "id2label": {v: k for k, v in label2id.items()},
+                "id2label": id2label,
                 "freeze_backbone": model_args.freeze_backbone,
                 "hidden_dropout_prob": model_args.hidden_dropout_prob,
                 "attention_probs_dropout_prob": model_args.attention_probs_dropout_prob,

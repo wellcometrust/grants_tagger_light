@@ -8,19 +8,10 @@ import numpy as np
 
 
 from grants_tagger_light.augmentation.augment_openai import AugmentOpenAI
-from grants_tagger_light.utils.years_tags_parser import parse_years
 
 from datasets import load_from_disk
 
 augment_app = typer.Typer()
-
-
-def _map_id_to_labels(ids, id2label):
-    return [id2label[i] for i in ids]
-
-
-def _restore_meshmajor(sample, id2label):
-    return {"meshMajor": [_map_id_to_labels(x, id2label) for x in sample["label_ids"]]}
 
 
 def _count_elements_in_sublist(sublist):
@@ -63,19 +54,6 @@ def augment(
     dset = load_from_disk(os.path.join(data_path, "dataset"))
     if "train" in dset:
         dset = dset["train"]
-
-    with open(os.path.join(data_path, "label2id"), "r") as f:
-        label2id = json.load(f)
-        id2label = {v: k for k, v in label2id.items()}
-
-    dset = dset.map(
-        _restore_meshmajor,
-        batched=True,
-        batch_size=batch_size,
-        desc="Decoding labels",
-        num_proc=num_proc,
-        fn_kwargs={"id2label": id2label}
-    )
 
     logger.info("Obtaining count values from the labels...")
     pool = multiprocessing.Pool(processes=num_proc)

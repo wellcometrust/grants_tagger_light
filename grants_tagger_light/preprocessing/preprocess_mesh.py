@@ -68,6 +68,7 @@ def preprocess_mesh(
 
     if not model_key:
         label2id = None
+        id2label = None
         tokenizer = AutoTokenizer.from_pretrained(
             "microsoft/BiomedNLP-PubMedBERT-base-uncased-abstract"
         )
@@ -76,7 +77,8 @@ def preprocess_mesh(
         tokenizer = AutoTokenizer.from_pretrained(model_key)
         model = BertMesh.from_pretrained(model_key, trust_remote_code=True)
 
-        label2id = {v: k for k, v in model.id2label.items()}
+        id2label = model.id2label
+        label2id = {v: k for k, v in id2label.items()}
 
     # We only have 1 file, so no sharding is available https://huggingface.co/docs/datasets/loading#multiprocessing
     dset = load_dataset("json", data_files=data_path, num_proc=1)
@@ -109,12 +111,10 @@ def preprocess_mesh(
         num_proc=num_proc,
         desc="Tokenizing",
         fn_kwargs={"tokenizer": tokenizer, "x_col": "abstractText"},
-        remove_columns=["abstractText"],
         load_from_cache_file=False,
     )
     logger.info("Time taken to tokenize: {}".format(time.time() - t1))
 
-    columns_to_remove = ["meshMajor"]
     # Generate label2id if None
     if label2id is None:
         logger.info("Getting the labels...")
@@ -139,8 +139,7 @@ def preprocess_mesh(
         label2id = dict()
         for idx, label in enumerate(tqdm(unique_labels_set)):
             label2id.update({label: idx})
-
-        columns_to_remove.append("labels")
+            id2label.update({idx: label})
 
     t1 = time.time()
     dset = dset.map(
@@ -150,7 +149,6 @@ def preprocess_mesh(
         desc="Encoding labels",
         num_proc=num_proc,
         fn_kwargs={"label2id": label2id},
-        remove_columns=columns_to_remove,
     )
     logger.info("Time taken to encode labels: {}".format(time.time() - t1))
 
@@ -199,8 +197,10 @@ def preprocess_mesh(
         dset.save_to_disk(os.path.join(save_to_path, "dataset"), num_proc=num_proc)
         with open(os.path.join(save_to_path, "label2id"), "w") as f:
             json.dump(label2id, f)
+        with open(os.path.join(save_to_path, "id2label"), "w") as f:
+            json.dump(id2label, f)
 
-    return dset, label2id
+    return dset, label2id, id2label
 
 
 @preprocess_app.command()

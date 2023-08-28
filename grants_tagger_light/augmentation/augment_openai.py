@@ -84,9 +84,6 @@ class AugmentOpenAI:
             # dset = dset.filter(lambda example, idx: idx not in tmp_dset['idx'], with_indices=True,
             #                   num_proc=num_proc)
 
-            abstracts_num = [i for i in range(len(tmp_dset))]
-            random.shuffle(abstracts_num)
-
             required_examples = n
             existing_examples = min(required_examples, len(tmp_dset))
 
@@ -94,9 +91,8 @@ class AugmentOpenAI:
 
             for i in range(existing_examples):
                 logger.info(f"Augmenting {t} with {n_per_example} examples using 1 already existing example")
-                selected_row = abstracts_num[i]
-                abstract = tmp_dset['abstractText'][selected_row]
-                tags = tmp_dset['meshMajor'][selected_row]
+                abstract = tmp_dset['abstractText'][i]
+                tags = tmp_dset['meshMajor'][i]
                 data = {
                     "model": self.model_key,
                     "n": n_per_example,
