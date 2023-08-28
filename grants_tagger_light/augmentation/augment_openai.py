@@ -47,7 +47,7 @@ class AugmentOpenAI:
                         a = json_response['abstract']
                         tl = json_response['title']
 
-                        f.write(json.dumps({
+                        res = {
                             "journal": result.metadata['model_key'],
                             "meshMajor": result.metadata['tags'],
                             "year": result.metadata['year'],
@@ -57,7 +57,11 @@ class AugmentOpenAI:
                             "existing_example": result.metadata['existing_example'],
                             "required_examples": result.metadata['required_examples'],
                             "featured_tag": result.metadata['featured_tag']
-                        }))
+                        }
+
+                        print(res)
+
+                        f.write(json.dumps(res))
                         f.write('\n')
                         f.flush()
 
