@@ -38,6 +38,7 @@ class AugmentOpenAI:
             for r in result.response['choices']:
                 if 'message' in r:
                     if 'content' in r['message']:
+                        print(r['message']['content'])
                         try:
                             json_response = JsonParser.parse_json(r['message']['content'])
                         except Exception as e:

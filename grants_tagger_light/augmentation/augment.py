@@ -67,7 +67,7 @@ def augment(
     if tags_file_path is not None:
         with open(tags_file_path, 'r') as f:
             tags = f.read().split('\n')
-            logger.info(f"Tags file path found. Filtering tags (examples found: {tags[:15]}...)")
+            logger.info(f"Tags file path found. Filtering {len(tags)} tags (examples found: {tags[:15]}...)")
             sorted_merged_element_counts_dict = {k: v for k, v in sorted_merged_element_counts_dict.items()
                                                  if k in tags}
 
@@ -88,7 +88,7 @@ def augment(
     logger.info(f"Augmenting a total of {len(tags_to_augment)} tags, "
                 f"from {biggest_tags_to_augment} to {smallest_tags_to_augment}")
 
-    logger.info(f"Collecting existing examples of those tags to send in the prompt")
+    logger.info(f"RAG: Collecting existing examples of those tags to send in the prompt")
     dset = dset.filter(lambda x: any(np.isin(tags_to_augment, x["meshMajor"])), num_proc=num_proc)
     dset = dset.map(
         lambda _, y: {'idx': y},
