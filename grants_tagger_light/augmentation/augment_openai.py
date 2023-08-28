@@ -44,22 +44,17 @@ class AugmentOpenAI:
                             logger.info(f"Error processing output: {e}. Skipping...")
                             continue
 
-                        a = json_response['abstract']
-                        tl = json_response['title']
-
                         res = {
                             "journal": result.metadata['model_key'],
                             "meshMajor": result.metadata['tags'],
                             "year": result.metadata['year'],
-                            "abstractText": a,
+                            "abstractText": json_response['abstract'].replace("'", "").replace('"', ''),
                             "pmid": uuid.uuid4().hex,
-                            "title": tl,
-                            "existing_example": result.metadata['existing_example'],
+                            "title": json_response['title'].replace("'", "").replace('"', ''),
+                            "existing_example": result.metadata['existing_example'].replace("'", "").replace('"', ''),
                             "required_examples": result.metadata['required_examples'],
                             "featured_tag": result.metadata['featured_tag']
                         }
-
-                        print(res)
 
                         f.write(json.dumps(res))
                         f.write('\n')
@@ -77,7 +72,7 @@ class AugmentOpenAI:
                        model_key,
                        save_to_path):
 
-        year = datetime.date.year
+        year = datetime.date.today().year
 
         for num in range(len(collect_concurrent_calls)):
             t = collect_concurrent_calls[num][0]
