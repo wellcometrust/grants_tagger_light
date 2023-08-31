@@ -193,7 +193,7 @@ def train_bertmesh(
         model.parameters(),
         lr=training_args.learning_rate,
         weight_decay=training_args.weight_decay,
-        correct_bias=training_args.correct_bias)
+        correct_bias=training_args.correct_bias if hasattr(training_args, 'correct_bias') else True)
 
     if training_args.warmup_steps is None:
         training_args.warmup_steps = 0
@@ -225,6 +225,8 @@ def train_bertmesh(
 
     training_args.optim = optimizer
     training_args.lr_scheduler_type = scheduler
+
+    logger.info(f"Test dataset size: {len(val_dset)}")
 
     trainer = Trainer(
         model=model,

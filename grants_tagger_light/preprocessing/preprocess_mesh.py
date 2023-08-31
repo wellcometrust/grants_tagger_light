@@ -96,6 +96,9 @@ def preprocess_mesh(
         logger.info(f"Removing all years which are not in {years}")
         dset = dset.filter(lambda x: any(np.isin(years, [str(x["year"])])), num_proc=num_proc)
 
+    if tags is None:
+        tags = []
+
     if len(tags) > 0:
         logger.info(f"Removing all tags which are not in {tags}")
         dset = dset.filter(lambda x: any(np.isin(tags, x["meshMajor"])), num_proc=num_proc)

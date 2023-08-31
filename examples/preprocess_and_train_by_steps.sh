@@ -1,7 +1,7 @@
 # Run on g5.12xlargeinstance
 
-# In that case, `test-size`, `train-years` and `test-years` will be taken from the preprocessed folder
-SOURCE="output_folder_from_preprocessing"
+# Without preprocessing (on-the-fly)
+SOURCE="data/raw/allMeSH_2021.jsonl"
 
 grants-tagger train bertmesh \
     "" \

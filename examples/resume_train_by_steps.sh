@@ -1,10 +1,7 @@
 # Run on g5.12xlarge instance
 
-# Without preprocessing (on-the-fly)
-SOURCE="data/raw/allMeSH_2021.jsonl"
-
-# After preprocessing first
-# SOURCE="output_folder_from_preprocessing"
+# After preprocessing
+SOURCE="output_folder_from_preprocessing"
 
 # Checkpoint
 CHECKPOINT="checkpoint-100000"
@@ -17,7 +14,7 @@ grants-tagger train bertmesh \
     --per_device_eval_batch_size 1 \
     --multilabel_attention True \
     --freeze_backbone unfreeze \
-    --num_train_epochs 5 \
+    --num_train_epochs 3 \
     --learning_rate 5e-5 \
     --dropout 0.1 \
     --hidden_size 1024 \

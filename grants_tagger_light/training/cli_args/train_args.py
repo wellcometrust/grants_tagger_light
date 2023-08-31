@@ -66,7 +66,12 @@ class BertMeshTrainingArguments(TrainingArguments):
     weight_decay: float = field(default=0.1)
     prune_labels_in_evaluation: bool = field(default=False)
     threshold: float = field(default=0.5)
-    scheduler_type: str = field(default="cosine")
+    scheduler_type: str = field(default="cosine_hard_restart")
+    save_steps: int = field(default=500)
+    eval_steps: int = field(default=None)
+    max_steps: int = field(default=-1)
+    no_cuda: bool = field(default=False)
+    warmup_steps: int = field(default=0)
 
     def __post_init__(self):
         super().__post_init__()

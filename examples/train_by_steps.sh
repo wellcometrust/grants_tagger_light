@@ -1,8 +1,8 @@
 # Run on g5.12xlargeinstance
 
-# If you have already preprocessed the data, you will have a folder. Use the folder instead.
+# After preprocessing
 SOURCE="output_folder_from_preprocessing"
-# In that case, `test-size`, `train-years` and `test-years` will be taken from the preprocessed folder
+
 
 grants-tagger train bertmesh \
     "" \
@@ -12,7 +12,7 @@ grants-tagger train bertmesh \
     --per_device_eval_batch_size 1 \
     --multilabel_attention True \
     --freeze_backbone unfreeze \
-    --num_train_epochs 5 \
+    --num_train_epochs 7 \
     --learning_rate 5e-5 \
     --dropout 0.1 \
     --hidden_size 1024 \

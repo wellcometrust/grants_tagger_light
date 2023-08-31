@@ -91,7 +91,7 @@ def test_json_to_jsonl(json_data_path):
 
 
 def test_preprocess_mesh(jsonl_data_path):
-    dset, label2id = preprocess_mesh(
+    dset, label2id, id2label = preprocess_mesh(
         data_path=jsonl_data_path, model_key="", num_proc=2, batch_size=1, test_size=0.5
     )
     assert "train" in dset

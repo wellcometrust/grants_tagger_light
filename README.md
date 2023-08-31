@@ -74,7 +74,7 @@ in square brackets the commands that are not implemented yet
 This process is optional to run, since it can be directly managed by the `Train` process.
 - If you run it manually, it will store the data in local first, which can help if you need finetune in the future, 
 rerun, etc.
-- If not, the project will preprocess and then run, without any extra I/O operations on disk, 
+- If not run it, the `train` step will preprocess and then run, without any extra I/O operations on disk, 
 which may add latency depending on the infrastructure.
 
 It requires data in `jsonl` format for parallelization purposes. In `data/raw` you can find `allMesH_2021.jsonl` 
@@ -96,65 +96,49 @@ your own data under development.
 ### Preprocessing bertmesh
 
 ```
- Usage: grants-tagger preprocess mesh [OPTIONS] DATA_PATH SAVE_TO_PATH
-                                      MODEL_KEY
-
-╭─ Arguments ──────────────────────────────────────────────────────────────────────────────────────────────────────╮
-│ *    data_path         TEXT  Path to mesh.jsonl [default: None] [required]                                       │
-│ *    save_to_path      TEXT  Path to save the serialized PyArrow dataset after preprocessing [default: None]     │
-│                              [required]                                                                          │
-│ *    model_key         TEXT  Key to use when loading tokenizer and label2id. Leave blank if training from        │
-│                              scratch                                                                             │
-│                              [default: None]                                                                     │
-│                              [required]                                                                          │
-╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
-╭─ Options ────────────────────────────────────────────────────────────────────────────────────────────────────────╮
-│ --test-size          FLOAT    Fraction of data to use for testing (if less than 1) or number of rows             │
-│                               [default: 0.05]                                                                    │
-│ --num-proc           INTEGER  Number of processes to use for preprocessing [default: 8]                          │
-│ --max-samples        INTEGER  Maximum number of samples to use for preprocessing [default: -1]                   │
-│ --batch-size         INTEGER  Size of the preprocessing batch [default: 256]                                     │
-│ --train-years        TEXT     Comma-separated years you want to include in training (e.g: 2020,2021)             │
-│                               [default: None, meaning all years]                                                 │
-│ --test-years         TEXT     Comma-separated years you want to include in test (e.g: 2020,2021)                 │
-│                               [default: None, meaning all years]                                                 │
-│ --tags               TEXT     Comma-separated tags you want to included (e.g: Pandemics,COVID19)                 │
-│ --help                        Show this message and exit.                                                        │
-╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯```
+ Usage: grants-tagger preprocess mesh [OPTIONS] DATA_PATH SAVE_TO_PATH                                                                                                                                             
+                                      MODEL_KEY                                                                                                                                                                    
+                                                                                                                                                                                                                   
+╭─ Arguments ─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
+│ *    data_path         TEXT  Path to mesh.jsonl [default: None] [required]                                                                                                                                      │
+│ *    save_to_path      TEXT  Path to save the serialized PyArrow dataset after preprocessing [default: None] [required]                                                                                         │
+│ *    model_key         TEXT  Key to use when loading tokenizer and label2id. Leave blank if training from scratch [default: None] [required]                                                                    │
+╰─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+╭─ Options ───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
+│ --test-size          FLOAT    Fraction of data to use for testing in (0,1] or number of rows [default: None]                                                                                                    │
+│ --num-proc           INTEGER  Number of processes to use for preprocessing [default: 8]                                                                                                                         │
+│ --max-samples        INTEGER  Maximum number of samples to use for preprocessing [default: -1]                                                                                                                  │
+│ --batch-size         INTEGER  Size of the preprocessing batch [default: 256]                                                                                                                                    │
+│ --tags               TEXT     Comma-separated tags you want to include in the dataset (the rest will be discarded) [default: None]                                                                              │
+│ --train-years        TEXT     Comma-separated years you want to include in the training dataset [default: None]                                                                                                 │
+│ --test-years         TEXT     Comma-separated years you want to include in the test dataset [default: None]                                                                                                     │
+│ --help                        Show this message and exit.                                                                                                                                                       │
+╰─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
 ```
 
 ## 🔥 Train
 
-Train acts as the entry point command for training all models. Currently, we only support
-the BertMesh model. The command will train a model and save it to the specified path.
+The command will train a model and save it to the specified path. Currently we support on BertMesh.
 
 ### bertmesh
 ```
- Usage: grants-tagger train bertmesh [OPTIONS] MODEL_KEY DATA_PATH
+ Usage: grants-tagger train bertmesh [OPTIONS] MODEL_KEY DATA_PATH                                                                                                                                                 
 
-╭─ Arguments ──────────────────────────────────────────────────────────────────────────────────────────────────────╮
-│ *    model_key      TEXT  Pretrained model key. Local path or HF location [default: None] [required]             │
-│ *    data_path      TEXT  Path to allMeSH_2021.jsonl (or similar) or to a folder after preprocessing and saving  │
-│                           to disk                                                                                │
-│                           [default: None]                                                                        │
-│                           [required]                                                                             │
-│ --shards             INTEGER  Number os shards to divide training IterativeDataset to (improves performance)     │
-│                               [default: -1, meaning no shards]. Recommended: os.cpu_count()                      │
-│ --num-proc           INTEGER  Number of processes to use for preprocessing [default: os.cpu_count()]             │
-│ --help                        Show this message and exit.                                                        │
-╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
-
-If you are running directly training without calling preprocess, you can specify the same parameters as preprocess:
-
-╭─ Options ────────────────────────────────────────────────────────────────────────────────────────────────────────╮
-│ --test-size          FLOAT    Fraction of data to use for testing [default: 0.05]                                │
-│ --max-samples        INTEGER  Maximum number of samples to use from the json [default: -1]                       │
-│ --train-years        TEXT     Comma-separated years you want to include in training (e.g: 2020,2021)             │
-│                               [default: None, meaning all years]                                                 │
-│ --test-years         TEXT     Comma-separated years you want to include in test (e.g: 2020,2021)                 │
-│                               [default: None, meaning all years]                                                 │
-│ --tags               TEXT     Comma-separated tags you want to included (e.g: Pandemics,COVID19)                 │
-╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+╭─ Arguments ─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
+│ *    model_key      TEXT  Pretrained model key. Local path or HF location [default: None] [required]                                                                                                            │
+│ *    data_path      TEXT  Path to allMeSH_2021.jsonl (or similar) or to a folder after preprocessing and saving to disk [default: None] [required]                                                              │
+╰─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+╭─ Options ───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
+│ --test-size              FLOAT    Fraction of data to use for testing (0,1] or number of rows [default: None]                                                                                                   │
+│ --num-proc               INTEGER  Number of processes to use for preprocessing [default: 8]                                                                                                                     │
+│ --max-samples            INTEGER  Maximum number of samples to use from the json [default: -1]                                                                                                                  │
+│ --shards                 INTEGER  Number os shards to divide training IterativeDataset to (improves performance) [default: 8]                                                                                   │
+│ --from-checkpoint        TEXT     Name of the checkpoint to resume training [default: None]                                                                                                                     │
+│ --tags                   TEXT     Comma-separated tags you want to include in the dataset (the rest will be discarded) [default: None]                                                                          │
+│ --train-years            TEXT     Comma-separated years you want to include in the training dataset [default: None]                                                                                             │
+│ --test-years             TEXT     Comma-separated years you want to include in the test dataset [default: None]                                                                                                 │
+│ --help                            Show this message and exit.                                                                                                                                                   │
+╰─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
 ```
 
 #### About `model_key`
@@ -168,29 +152,39 @@ to improve performance on big datasets. To enable it:
 - set shards to something bigger than 1 (Recommended: same number as cpu cores)
 
 #### Other arguments
-Besides those arguments, feel free to add any other TrainingArgument from Hugging Face or Wand DB. Examples:
+Besides those arguments, feel free to add any other TrainingArgument from Hugging Face or Wand DB. 
+This is the example used to train reaching a ~0.6 F1, also available at `examples/train_by_epochs.sh`
 ```commandline
 grants-tagger train bertmesh \
     "" \
-    data/raw/allMeSH_2021.jsonl \
-    --test-size 0.005 \
-    --shards 250 \
-    --output_dir bertmesh_outs/pipeline_test/ \
-    --per_device_train_batch_size 32 \
-    --num_train_epochs 1 \
-    --save_strategy steps \
-    --save_steps 50000 \
+    [YOUR_PREPROCESSED_FOLDER] \
+    --output_dir [YOUR_OUTPUT_FOLDER] \
+    --per_device_train_batch_size 16 \
+    --per_device_eval_batch_size 1 \
+    --multilabel_attention True \
+    --freeze_backbone unfreeze \
+    --num_train_epochs 7 \
+    --learning_rate 5e-5 \
+    --dropout 0.1 \
+    --hidden_size 1024 \
+    --warmup_steps 5000 \
+    --max_grad_norm 2.0 \
+    --scheduler_type cosine_hard_restart \
+    --weight_decay 0.2 \
+    --correct_bias True \
+    --threshold 0.25 \
+    --prune_labels_in_evaluation True \
+    --hidden_dropout_prob 0.2 \
+    --attention_probs_dropout_prob 0.2 \
     --fp16 \
     --torch_compile \
+    --evaluation_strategy epoch \
+    --eval_accumulation_steps 20 \
+    --save_strategy epoch \
     --wandb_project wellcome-mesh \
     --wandb_name test-train-all \
-    --wandb_api_key ${WANDB_API_KEY} \
-    --per_device_eval_batch_size 8 \
-    --eval_steps 50000 \
-    --evaluation_strategy steps
+    --wandb_api_key ${WANDB_API_KEY}
 ```
-
-
 
 ## 📈 Evaluate
 
