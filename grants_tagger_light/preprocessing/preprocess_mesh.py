@@ -201,7 +201,9 @@ def preprocess_mesh(
         if test_size is None:
             test_size = 0.05
             logger.info(
-                f"Test size not found. Setting it to a frac of the whole dataset equal to {test_size}"
+                f"Test size not found. "
+                f"Setting it to a frac of the whole dataset equal to "
+                f"{test_size}"
             )
         elif test_size > 1.0:
             test_size = int(test_size)

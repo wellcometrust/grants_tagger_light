@@ -106,7 +106,8 @@ def train_bertmesh(
 
     if not model_key:
         logger.info(
-            f"Model key not found. Training from scratch {model_args.pretrained_model_key}"
+            f"Model key not found. "
+            f"Training from scratch {model_args.pretrained_model_key}"
         )
 
         # Instantiate model from scratch
@@ -157,7 +158,6 @@ def train_bertmesh(
         model.freeze_backbone()
 
     def sklearn_metrics(prediction: EvalPrediction):
-        logger.info(f"Threshold: {training_args.threshold}")
         # This is a batch, so it's an array (rows) of array (labels)
         # Array of arrays with probas [[5.4e-5 1.3e-3...] [5.4e-5 1.3e-3...] ... ]
         y_pred = prediction.predictions
@@ -170,9 +170,6 @@ def train_bertmesh(
         # report = classification_report(y_pred, y_true, output_dict=True)
 
         if training_args.prune_labels_in_evaluation:
-            logger.info(
-                f"For metric purposes, only considering labels present in `training`: {metric_labels[:15]}"
-            )
             mask = np.zeros(y_pred.shape, dtype=bool)
             mask[np.arange(y_pred.shape[0])[:, np.newaxis], metric_labels] = True
 
@@ -240,7 +237,8 @@ def train_bertmesh(
         )
     else:
         logger.warning(
-            f"{training_args.scheduler_type}: not found or not valid. Falling back to `linear`"
+            f"{training_args.scheduler_type}: not found or not valid. "
+            f"Falling back to `linear`"
         )
         scheduler = get_linear_schedule_with_warmup(
             optimizer,
@@ -254,8 +252,6 @@ def train_bertmesh(
     training_args.optim = optimizer
     training_args.lr_scheduler_type = scheduler
 
-    logger.info(f"Test dataset size: {len(val_dset)}")
-
     trainer = Trainer(
         model=model,
         args=training_args,
@@ -265,7 +261,7 @@ def train_bertmesh(
         compute_metrics=sklearn_metrics,
         optimizers=(optimizer, scheduler),
     )
-    logger.info(training_args)
+    # logger.info(training_args)
 
     if from_checkpoint is None:
         logger.info("Training...")

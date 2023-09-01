@@ -2,7 +2,6 @@ import datetime
 import json
 import math
 import os
-import random
 import uuid
 
 import openai
@@ -17,7 +16,8 @@ class AugmentOpenAI:
     def __init__(self, prompt_template_path, model_key="gpt-3.5-turbo"):
         if "OPENAI_API_KEY" not in os.environ:
             logger.error(
-                "OPENAI_API_KEY not found in env vars. Please define it before running this program."
+                "OPENAI_API_KEY not found in env vars. "
+                "Please define it before running this program."
             )
         with open(prompt_template_path, "r") as f:
             self.prompt_template = f.read()
@@ -101,7 +101,8 @@ class AugmentOpenAI:
 
         n_per_example = math.ceil(required_examples / existing_examples)
         logger.info(
-            f"Augmenting {tag} with {required_examples} examples, using {existing_examples} in RAG mode"
+            f"Augmenting {tag} with {required_examples} examples, "
+            f"using {existing_examples} in RAG mode"
         )
 
         for i in range(existing_examples):

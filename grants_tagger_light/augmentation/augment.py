@@ -75,7 +75,8 @@ def augment(
         with open(tags_file_path, "r") as f:
             tags = f.read().split("\n")
             logger.info(
-                f"Tags file path found. Filtering {len(tags)} tags (examples found: {tags[:15]}...)"
+                f"Tags file path found. Filtering {len(tags)} tags "
+                f"(examples found: {tags[:15]}...)"
             )
             sorted_merged_element_counts_dict = {
                 k: v for k, v in sorted_merged_element_counts_dict.items() if k in tags
@@ -106,7 +107,7 @@ def augment(
     )
 
     logger.info(
-        f"RAG: Collecting existing examples of those tags to send in the prompt"
+        "RAG: Collecting existing examples of those tags to send in the prompt"
     )
     dset = dset.filter(
         lambda x: any(np.isin(tags_to_augment, x["meshMajor"])), num_proc=num_proc
@@ -171,12 +172,15 @@ def augment_cli(
     ),
     min_examples: int = typer.Option(
         None,
-        help="Minimum number of examples to require. Less than that will trigger data augmentation.",
+        help="Minimum number of examples to require. "
+             "Less than that will trigger data augmentation.",
     ),
     examples: int = typer.Option(25, help="Examples to generate per each tag."),
     prompt_template: str = typer.Option(
         "grants_tagger_light/augmentation/prompt.template",
-        help="File to use as a prompt. Make sure to ask the LLM to return a dict with two fields: `abstract` and `tags`",
+        help="File to use as a prompt. "
+             "Make sure to ask the LLM to return a dict with two fields: "
+             "`abstract` and `tags`",
     ),
     concurrent_calls: int = typer.Option(
         os.cpu_count() * 2,
@@ -191,18 +195,21 @@ def augment_cli(
     ),
     tags_file_path: str = typer.Option(
         None,
-        help="Text file containing one line per tag to be considered. The rest will be discarded.",
+        help="Text file containing one line per tag to be considered. "
+             "The rest will be discarded.",
     ),
 ):
     if not os.path.isdir(data_path):
         logger.error(
-            "The data path should be a folder with saved data from `preprocessing` step."
+            "The data path should be a folder with saved data from "
+            "`preprocessing` step."
         )
         exit(-1)
 
     if tags_file_path is None and min_examples is None:
         logger.error(
-            "To understand which tags need to be augmented, set either --min-examples or --tags-file-path"
+            "To understand which tags need to be augmented, "
+            "set either --min-examples or --tags-file-path"
         )
         exit(-1)
 

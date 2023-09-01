@@ -155,7 +155,7 @@ def convert_dvc_to_sklearn_params(parameters):
         return {}
 
     # indication of sklearn pipeline
-    has_nested_params = any([v for v in parameters.values() if type(v) is dict])
+    has_nested_params = any([v for v in parameters.values() if isinstance(v, dict)])
     if has_nested_params:
         return {
             f"{pipeline_name}__{param_name}": param_value

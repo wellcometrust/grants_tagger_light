@@ -28,19 +28,13 @@ class BertMesh(PreTrainedModel):
         super().__init__(config=config)
         self.config.auto_map = {"AutoModel": "model.BertMesh"}
         self.pretrained_model = self.config.pretrained_model
-        logger.info(f"Pretrained model: {self.pretrained_model}")
         self.num_labels = self.config.num_labels
-        logger.info(f"Num labels: {self.num_labels}")
 
         self.hidden_size = getattr(self.config, "hidden_size", 512)
-        logger.info(f"Hidden Size: {self.hidden_size}")
 
         self.dropout = getattr(self.config, "dropout", 0.1)
-        logger.info(f"Dropout: {self.dropout}")
 
         self.multilabel_attention = getattr(self.config, "multilabel_attention", False)
-
-        logger.info(f"Multilabel attention: {self.multilabel_attention}")
 
         self.id2label = self.config.id2label
 
@@ -48,15 +42,10 @@ class BertMesh(PreTrainedModel):
         self.multilabel_attention_layer = MultiLabelAttention(
             768, self.num_labels
         )  # num_labels, 768
-        logger.info(f"multilabel_attention_layer: {self.multilabel_attention_layer}")
         self.linear_1 = torch.nn.Linear(768, self.hidden_size)  # 768, 1024
-        logger.info(f"linear_1: {self.linear_1}")
         self.linear_2 = torch.nn.Linear(self.hidden_size, 1)  # 1024, 1
-        logger.info(f"linear_2: {self.linear_2}")
         self.linear_out = torch.nn.Linear(self.hidden_size, self.num_labels)
-        logger.info(f"linear_out: {self.linear_out}")
         self.dropout_layer = torch.nn.Dropout(self.dropout)
-        logger.info(f"dropout_layer: {self.dropout_layer}")
 
     def freeze_backbone(self):
         for param in self.bert.parameters():
@@ -66,16 +55,16 @@ class BertMesh(PreTrainedModel):
         for name, param in self.bert.named_parameters():
             if only_bias:
                 if "bias" in name.lower():
-                    logger.info(f"Unfreezing {name}")
+                    # logger.info(f"Unfreezing {name}")
                     param.requires_grad = True
                 else:
                     param.requires_grad = False
             else:
+                # logger.info(f"Unfreezing {name}")
                 param.requires_grad = True
-                logger.info(f"Unfreezing {name}")
 
     def forward(self, input_ids, labels=None, **kwargs):
-        if type(input_ids) is list:
+        if isinstance(input_ids, list):
             # coming from tokenizer
             input_ids = torch.tensor(input_ids)
 

@@ -8,8 +8,8 @@ import re
 
 class JsonParser:
     def __init(self):
-        """Class to parse json produced by LLMs. Inspiration taken from langchain. It fixes quotes,
-        it escapes separators, etc."""
+        """Class to parse json produced by LLMs. Inspiration taken from langchain.
+        It fixes quotes, it escapes separators, etc."""
         pass
 
     @staticmethod
