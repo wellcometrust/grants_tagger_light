@@ -80,10 +80,7 @@ def augment(
     with open(f"{save_to_path}.count", 'w') as f:
         f.write(json.dumps(sorted_merged_element_counts_dict, indent=2))
 
-    tags_to_augment_counts = {
-        k: v for k, v in sorted_merged_element_counts_dict.items() if v < min_examples
-    }
-    tags_to_augment = list(tags_to_augment_counts.keys())
+    tags_to_augment = list(sorted_merged_element_counts_dict.keys())
 
     biggest_tags_to_augment = [f"{k}({sorted_merged_element_counts_dict[k]})"
                                for k in tags_to_augment[:5]]
