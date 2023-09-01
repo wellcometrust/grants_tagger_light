@@ -106,12 +106,12 @@ def augment(
         f"from {biggest_tags_to_augment} to {smallest_tags_to_augment}"
     )
 
-    logger.info(
-        "RAG: Collecting existing examples of those tags to send in the prompt"
-    )
+    logger.info("Collecting existing examples of those tags to send in the prompt")
+
     dset = dset.filter(
         lambda x: any(np.isin(tags_to_augment, x["meshMajor"])), num_proc=num_proc
     )
+
     dset = dset.map(
         lambda _, y: {"idx": y},
         with_indices=True,
@@ -173,14 +173,14 @@ def augment_cli(
     min_examples: int = typer.Option(
         None,
         help="Minimum number of examples to require. "
-             "Less than that will trigger data augmentation.",
+        "Less than that will trigger data augmentation.",
     ),
     examples: int = typer.Option(25, help="Examples to generate per each tag."),
     prompt_template: str = typer.Option(
         "grants_tagger_light/augmentation/prompt.template",
         help="File to use as a prompt. "
-             "Make sure to ask the LLM to return a dict with two fields: "
-             "`abstract` and `tags`",
+        "Make sure to ask the LLM to return a dict with two fields: "
+        "`abstract` and `tags`",
     ),
     concurrent_calls: int = typer.Option(
         os.cpu_count() * 2,
@@ -196,7 +196,7 @@ def augment_cli(
     tags_file_path: str = typer.Option(
         None,
         help="Text file containing one line per tag to be considered. "
-             "The rest will be discarded.",
+        "The rest will be discarded.",
     ),
 ):
     if not os.path.isdir(data_path):
