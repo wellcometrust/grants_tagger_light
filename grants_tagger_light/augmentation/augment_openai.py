@@ -1,5 +1,6 @@
 import datetime
 import json
+import math
 import os
 import random
 import uuid
@@ -86,16 +87,21 @@ class AugmentOpenAI:
 
         tmp_dset = dset.filter(lambda x: any(np.isin([tag], x["meshMajor"])), num_proc=num_proc)
 
-        abstracts_num = [i for i in range(len(tmp_dset))]
-        random.shuffle(abstracts_num)
+        # abstracts_num = [i for i in range(len(tmp_dset))]
+        # random.shuffle(abstracts_num)
 
-        for i in range(missing_num):
-            selected_row = abstracts_num[i % len(tmp_dset)]
-            abstract = tmp_dset['abstractText'][selected_row]
-            tags = tmp_dset['meshMajor'][selected_row]
+        required_examples = missing_num
+        existing_examples = min(required_examples, len(tmp_dset))
+
+        n_per_example = math.ceil(required_examples / existing_examples)
+        logger.info(f"Augmenting {tag} with {required_examples} examples, using {existing_examples} in RAG mode")
+
+        for i in range(existing_examples):
+            abstract = tmp_dset['abstractText'][i]
+            tags = tmp_dset['meshMajor'][i]
             data = {
                 "model": self.model_key,
-                "n": 1,
+                "n": n_per_example,
                 "temperature": temperature,
                 "top_p": top_p,
                 "presence_penalty": presence_penalty,

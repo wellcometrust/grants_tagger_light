@@ -11,6 +11,8 @@ from grants_tagger_light.augmentation.augment_openai import AugmentOpenAI
 
 from datasets import load_from_disk
 
+from grants_tagger_light.augmentation.parallel_augment_openai import ParallelAugmentOpenAI
+
 augment_app = typer.Typer()
 
 
@@ -78,7 +80,10 @@ def augment(
     with open(f"{save_to_path}.count", 'w') as f:
         f.write(json.dumps(sorted_merged_element_counts_dict, indent=2))
 
-    tags_to_augment = list(sorted_merged_element_counts_dict.keys())
+    tags_to_augment_counts = {
+        k: v for k, v in sorted_merged_element_counts_dict.items() if v < min_examples
+    }
+    tags_to_augment = list(tags_to_augment_counts.keys())
 
     biggest_tags_to_augment = [f"{k}({sorted_merged_element_counts_dict[k]})"
                                for k in tags_to_augment[:5]]
@@ -98,10 +103,17 @@ def augment(
         desc="Creating idx",
         num_proc=num_proc,
     )
+
+    if concurrent_calls == 1:
+        openai = AugmentOpenAI
+    else:
+        openai = ParallelAugmentOpenAI
+
     collect_concurrent_calls = []
+
     for t in tags_to_augment:
         if len(collect_concurrent_calls) >= concurrent_calls:
-            AugmentOpenAI(prompt_template_path=prompt_template, model_key=model_key).generate(
+            openai(prompt_template_path=prompt_template, model_key=model_key).generate(
                 collect_concurrent_calls,
                 dset,
                 save_to_path,
@@ -113,8 +125,9 @@ def augment(
         else:
             collect_concurrent_calls.append((t, examples))
 
+    # Remaining rows of the last batch
     if len(collect_concurrent_calls) > 0:
-        AugmentOpenAI(prompt_template_path=prompt_template, model_key=model_key).generate(
+        openai(prompt_template_path=prompt_template, model_key=model_key).generate(
             collect_concurrent_calls,
             dset,
             save_to_path,
@@ -158,11 +171,14 @@ def augment_cli(
     ),
     concurrent_calls: int = typer.Option(
         os.cpu_count()*2,
+        min=1,
         help="Concurrent calls with 1 tag each to the different model"
     ),
     temperature: float = typer.Option(
         1.5,
-        help="A value between -2 and 2. The bigger - the more creative."
+        min=0,
+        max=2,
+        help="A value between 0 and 2. The bigger - the more creative."
     ),
     tags_file_path: str = typer.Option(
         None,
