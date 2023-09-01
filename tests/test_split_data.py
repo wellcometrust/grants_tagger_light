@@ -27,12 +27,12 @@ def test_split_data():
 
         examples = 0
         with open(train_output_path) as f:
-            for line in f:
+            for _ in f:
                 examples += 1
         assert examples == 9
 
         examples = 0
         with open(test_output_path) as f:
-            for line in f:
+            for _ in f:
                 examples += 1
         assert examples == 1
