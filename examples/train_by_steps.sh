@@ -1,8 +1,7 @@
-# Run on g5.12xlargeinstance
+# Run on g5.12xlarge instance
 
 # After preprocessing
-SOURCE="output_folder_from_preprocessing"
-
+SOURCE="[SET_YOUR_PREPROCESSING_FOLDER_HERE]"
 
 grants-tagger train bertmesh \
     "" \

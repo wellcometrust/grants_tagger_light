@@ -56,5 +56,5 @@ def test_train_bertmesh_from_model_key(data_path, save_path):
     _train_bertmesh_from_model_key(data_path, save_path, "Wellcome/WellcomeBertMesh")
 
 
-"""def test_train_bertmesh_from_scratch(data_path, save_path):
-    _train_bertmesh_from_model_key(data_path, save_path, "")"""
+def test_train_bertmesh_from_scratch(data_path, save_path):
+    _train_bertmesh_from_model_key(data_path, save_path, "")

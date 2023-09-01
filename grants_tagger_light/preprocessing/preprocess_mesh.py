@@ -122,7 +122,7 @@ def preprocess_mesh(
     if label2id is None:
         logger.info("Getting the labels...")
         dset = dset.map(
-            lambda x: {"labels": x["meshMajor"]},
+            lambda x: {"meshMajor": x["meshMajor"]},
             batched=True,
             batch_size=batch_size,
             num_proc=num_proc,
@@ -134,7 +134,7 @@ def preprocess_mesh(
 
         logger.info("Obtaining unique values from the labels...")
         # Iterate through the lists and add elements to the set
-        for arr in tqdm(dset["labels"]):
+        for arr in tqdm(dset["meshMajor"]):
             unique_labels_set.update(arr)
 
         # Most efficient way to do dictionary creation

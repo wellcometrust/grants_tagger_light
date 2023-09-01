@@ -1,7 +1,7 @@
 # Run on g5.12xlarge instance
 
 # After preprocessing
-SOURCE="output_folder_from_preprocessing"
+SOURCE="[SET_YOUR_PREPROCESSING_FOLDER_HERE]"
 
 # Checkpoint
 CHECKPOINT="checkpoint-100000"
@@ -18,7 +18,7 @@ grants-tagger train bertmesh \
     --learning_rate 5e-5 \
     --dropout 0.1 \
     --hidden_size 1024 \
-    --warmup_steps 5000 \
+    --warmup_steps 0 \
     --max_grad_norm 2.0 \
     --scheduler_type cosine_hard_restart \
     --weight_decay 0.2 \
