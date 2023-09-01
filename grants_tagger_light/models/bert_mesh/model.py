@@ -65,7 +65,7 @@ class BertMesh(PreTrainedModel):
     def unfreeze_backbone(self, only_bias=False):
         for name, param in self.bert.named_parameters():
             if only_bias:
-                if 'bias' in name.lower():
+                if "bias" in name.lower():
                     logger.info(f"Unfreezing {name}")
                     param.requires_grad = True
                 else:
