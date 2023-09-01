@@ -60,7 +60,7 @@ def preprocess_mesh(
     batch_size: int = 256,
     tags: list = None,
     train_years: list = None,
-    test_years: list = None
+    test_years: list = None,
 ):
     if max_samples != -1:
         logger.info(f"Filtering examples to {max_samples}")
@@ -94,14 +94,18 @@ def preprocess_mesh(
 
     if len(years) > 0:
         logger.info(f"Removing all years which are not in {years}")
-        dset = dset.filter(lambda x: any(np.isin(years, [str(x["year"])])), num_proc=num_proc)
+        dset = dset.filter(
+            lambda x: any(np.isin(years, [str(x["year"])])), num_proc=num_proc
+        )
 
     if tags is None:
         tags = []
 
     if len(tags) > 0:
         logger.info(f"Removing all tags which are not in {tags}")
-        dset = dset.filter(lambda x: any(np.isin(tags, x["meshMajor"])), num_proc=num_proc)
+        dset = dset.filter(
+            lambda x: any(np.isin(tags, x["meshMajor"])), num_proc=num_proc
+        )
 
     # Remove unused columns to save space & time
     dset = dset.remove_columns(["journal", "pmid", "title"])
@@ -161,33 +165,44 @@ def preprocess_mesh(
     t1 = time.time()
     if len(years) > 0:
         logger.info("Splitting the dataset by training and test years")
-        train_dset = dset.filter(_filter_rows_by_years,
-                                 batched=True,
-                                 batch_size=batch_size,
-                                 desc=f"Creating training dataset with years {train_years}",
-                                 num_proc=num_proc,
-                                 fn_kwargs={"years": train_years})
-        test_dset = dset.filter(_filter_rows_by_years,
-                                batched=True,
-                                batch_size=batch_size,
-                                desc=f"Creating test dataset with years {test_years}",
-                                num_proc=num_proc,
-                                fn_kwargs={"years": test_years})
+        train_dset = dset.filter(
+            _filter_rows_by_years,
+            batched=True,
+            batch_size=batch_size,
+            desc=f"Creating training dataset with years {train_years}",
+            num_proc=num_proc,
+            fn_kwargs={"years": train_years},
+        )
+        test_dset = dset.filter(
+            _filter_rows_by_years,
+            batched=True,
+            batch_size=batch_size,
+            desc=f"Creating test dataset with years {test_years}",
+            num_proc=num_proc,
+            fn_kwargs={"years": test_years},
+        )
 
         if test_size is None or test_size == 1.0:
             test_size = len(test_dset)
             logger.info(f"Using the whole dataset of {test_size} rows")
-            dset = DatasetDict({'train': train_dset, 'test': test_dset})
+            dset = DatasetDict({"train": train_dset, "test": test_dset})
         else:
             if test_size > 1.0:
                 test_size = int(test_size)
             logger.info(f"Using a test_size frac or number of rows of of {test_size}")
-            dset = DatasetDict({'train': train_dset, 'test': test_dset.train_test_split(test_size)['test']})
+            dset = DatasetDict(
+                {
+                    "train": train_dset,
+                    "test": test_dset.train_test_split(test_size)["test"],
+                }
+            )
 
     else:
         if test_size is None:
             test_size = 0.05
-            logger.info(f"Test size not found. Setting it to a frac of the whole dataset equal to {test_size}")
+            logger.info(
+                f"Test size not found. Setting it to a frac of the whole dataset equal to {test_size}"
+            )
         elif test_size > 1.0:
             test_size = int(test_size)
         dset = dset.train_test_split(test_size=test_size)
@@ -209,12 +224,9 @@ def preprocess_mesh(
 
 @preprocess_app.command()
 def preprocess_mesh_cli(
-    data_path: str = typer.Argument(
-        ...,
-        help="Path to mesh.jsonl"),
+    data_path: str = typer.Argument(..., help="Path to mesh.jsonl"),
     save_to_path: str = typer.Argument(
-        ...,
-        help="Path to save the serialized PyArrow dataset after preprocessing"
+        ..., help="Path to save the serialized PyArrow dataset after preprocessing"
     ),
     model_key: str = typer.Argument(
         ...,
@@ -222,31 +234,28 @@ def preprocess_mesh_cli(
         "Leave blank if training from scratch",  # noqa
     ),
     test_size: float = typer.Option(
-        None,
-        help="Fraction of data to use for testing in (0,1] or number of rows"),
+        None, help="Fraction of data to use for testing in (0,1] or number of rows"
+    ),
     num_proc: int = typer.Option(
-        os.cpu_count(),
-        help="Number of processes to use for preprocessing"
+        os.cpu_count(), help="Number of processes to use for preprocessing"
     ),
     max_samples: int = typer.Option(
         -1,
         help="Maximum number of samples to use for preprocessing",
     ),
-    batch_size: int = typer.Option(
-        256,
-        help="Size of the preprocessing batch"),
+    batch_size: int = typer.Option(256, help="Size of the preprocessing batch"),
     tags: str = typer.Option(
         None,
         help="Comma-separated tags you want to include in the dataset "
-                                               "(the rest will be discarded)"),
+        "(the rest will be discarded)",
+    ),
     train_years: str = typer.Option(
-        None,
-        help="Comma-separated years you want to include in the training dataset"),
+        None, help="Comma-separated years you want to include in the training dataset"
+    ),
     test_years: str = typer.Option(
-        None,
-        help="Comma-separated years you want to include in the test dataset"),
+        None, help="Comma-separated years you want to include in the test dataset"
+    ),
 ):
-
     if not data_path.endswith("jsonl"):
         logger.error(
             "It seems your input MeSH data is not in `jsonl` format. "
@@ -274,5 +283,5 @@ def preprocess_mesh_cli(
         save_to_path=save_to_path,
         tags=parse_tags(tags),
         train_years=parse_years(train_years),
-        test_years=parse_years(test_years)
+        test_years=parse_years(test_years),
     )

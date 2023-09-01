@@ -8,7 +8,7 @@ from transformers import (
     get_cosine_schedule_with_warmup,
     get_constant_schedule_with_warmup,
     get_cosine_with_hard_restarts_schedule_with_warmup,
-    get_linear_schedule_with_warmup
+    get_linear_schedule_with_warmup,
 )
 from grants_tagger_light.models.bert_mesh import BertMesh
 from grants_tagger_light.preprocessing.preprocess_mesh import preprocess_mesh
@@ -48,7 +48,7 @@ def train_bertmesh(
     from_checkpoint: str = None,
     tags: list = None,
     train_years: list = None,
-    test_years: list = None
+    test_years: list = None,
 ):
     if not model_key:
         assert isinstance(model_args, BertMeshModelArguments), (
@@ -78,13 +78,13 @@ def train_bertmesh(
             batch_size=training_args.per_device_train_batch_size,
             tags=tags,
             train_years=train_years,
-            test_years=test_years
+            test_years=test_years,
         )
 
     train_dset, val_dset = dset["train"], dset["test"]
 
     metric_labels = []
-    for x in train_dset['label_ids']:
+    for x in train_dset["label_ids"]:
         metric_labels.extend(x)
 
     train_dset_size = len(train_dset)
@@ -92,7 +92,11 @@ def train_bertmesh(
     if max_samples > 0:
         train_dset_size = min(max_samples, train_dset_size)
         logger.info(f"Training max samples: {train_dset_size}.")
-        train_dset.filter(lambda example, idx: idx < train_dset_size, with_indices=True, num_proc=num_proc)
+        train_dset.filter(
+            lambda example, idx: idx < train_dset_size,
+            with_indices=True,
+            num_proc=num_proc,
+        )
     else:
         logger.info("Training with all data...")
 
@@ -101,13 +105,16 @@ def train_bertmesh(
         train_dset = Sharding(num_shards=shards).shard(train_dset)
 
     if not model_key:
-        logger.info(f"Model key not found. Training from scratch {model_args.pretrained_model_key}")
+        logger.info(
+            f"Model key not found. Training from scratch {model_args.pretrained_model_key}"
+        )
 
         # Instantiate model from scratch
         logger.info(f"Loading `{model_args.pretrained_model_key}` tokenizer...")
         config = AutoConfig.from_pretrained(model_args.pretrained_model_key)
 
-        config.update({
+        config.update(
+            {
                 "pretrained_model": model_args.pretrained_model_key,
                 "num_labels": len(label2id),
                 "hidden_size": model_args.hidden_size,
@@ -118,14 +125,17 @@ def train_bertmesh(
                 "freeze_backbone": model_args.freeze_backbone,
                 "hidden_dropout_prob": model_args.hidden_dropout_prob,
                 "attention_probs_dropout_prob": model_args.attention_probs_dropout_prob,
-            })
+            }
+        )
         logger.info(f"Hidden size: {config.hidden_size}")
         logger.info(f"Dropout: {config.dropout}")
         logger.info(f"Multilabel Attention: {config.multilabel_attention}")
         logger.info(f"Freeze Backbone: {config.freeze_backbone}")
         logger.info(f"Num labels: {config.num_labels}")
         logger.info(f"hidden_dropout_prob: {config.hidden_dropout_prob}")
-        logger.info(f"attention_probs_dropout_prob: {config.attention_probs_dropout_prob}")
+        logger.info(
+            f"attention_probs_dropout_prob: {config.attention_probs_dropout_prob}"
+        )
 
         model = BertMesh(config)
 
@@ -134,15 +144,15 @@ def train_bertmesh(
         model = BertMesh.from_pretrained(model_key, trust_remote_code=True)
 
     if model_args.freeze_backbone is None:
-        model_args.freeze_backbone = 'freeze'
+        model_args.freeze_backbone = "freeze"
 
-    if model_args.freeze_backbone.lower().strip() == 'unfreeze':
+    if model_args.freeze_backbone.lower().strip() == "unfreeze":
         logger.info("Unfreezing weights&biases in the backbone")
         model.unfreeze_backbone()
-    elif model_args.freeze_backbone.lower().strip() == 'unfreeze_bias':
+    elif model_args.freeze_backbone.lower().strip() == "unfreeze_bias":
         logger.info("Unfreezing only biases in the backbone")
         model.unfreeze_backbone(only_bias=True)
-    elif model_args.freeze_backbone.lower().strip() == 'freeze':
+    elif model_args.freeze_backbone.lower().strip() == "freeze":
         logger.info("Freezing backbone")
         model.freeze_backbone()
 
@@ -160,7 +170,9 @@ def train_bertmesh(
         # report = classification_report(y_pred, y_true, output_dict=True)
 
         if training_args.prune_labels_in_evaluation:
-            logger.info(f"For metric purposes, only considering labels present in `training`: {metric_labels[:15]}")
+            logger.info(
+                f"For metric purposes, only considering labels present in `training`: {metric_labels[:15]}"
+            )
             mask = np.zeros(y_pred.shape, dtype=bool)
             mask[np.arange(y_pred.shape[0])[:, np.newaxis], metric_labels] = True
 
@@ -170,7 +182,9 @@ def train_bertmesh(
             filtered_y_pred = y_pred
             filtered_y_true = y_true
 
-        report = classification_report(filtered_y_pred, filtered_y_true, output_dict=True)
+        report = classification_report(
+            filtered_y_pred, filtered_y_true, output_dict=True
+        )
 
         metric_dict = {
             "micro_avg": report["micro avg"],
@@ -193,32 +207,46 @@ def train_bertmesh(
         model.parameters(),
         lr=training_args.learning_rate,
         weight_decay=training_args.weight_decay,
-        correct_bias=training_args.correct_bias if hasattr(training_args, 'correct_bias') else True)
+        correct_bias=training_args.correct_bias
+        if hasattr(training_args, "correct_bias")
+        else True,
+    )
 
     if training_args.warmup_steps is None:
         training_args.warmup_steps = 0
 
-    if training_args.scheduler_type.lower().strip() == 'cosine':
-        scheduler = get_cosine_schedule_with_warmup(optimizer,
-                                                    num_warmup_steps=training_args.warmup_steps,
-                                                    num_training_steps=training_args.max_steps)
-    elif training_args.scheduler_type.lower().strip() == 'constant':
-        scheduler = get_constant_schedule_with_warmup(optimizer,
-                                                      num_warmup_steps=training_args.warmup_steps)
-    elif training_args.scheduler_type.lower().strip() == 'cosine_hard_restart':
-        scheduler = get_cosine_with_hard_restarts_schedule_with_warmup(optimizer,
-                                                                       num_warmup_steps=training_args.warmup_steps,
-                                                                       num_training_steps=training_args.max_steps,
-                                                                       num_cycles=training_args.num_train_epochs)
-    elif training_args.scheduler_type.lower().strip() == 'linear':
-        scheduler = get_linear_schedule_with_warmup(optimizer,
-                                                    num_warmup_steps=training_args.warmup_steps,
-                                                    num_training_steps=training_args.max_steps)
+    if training_args.scheduler_type.lower().strip() == "cosine":
+        scheduler = get_cosine_schedule_with_warmup(
+            optimizer,
+            num_warmup_steps=training_args.warmup_steps,
+            num_training_steps=training_args.max_steps,
+        )
+    elif training_args.scheduler_type.lower().strip() == "constant":
+        scheduler = get_constant_schedule_with_warmup(
+            optimizer, num_warmup_steps=training_args.warmup_steps
+        )
+    elif training_args.scheduler_type.lower().strip() == "cosine_hard_restart":
+        scheduler = get_cosine_with_hard_restarts_schedule_with_warmup(
+            optimizer,
+            num_warmup_steps=training_args.warmup_steps,
+            num_training_steps=training_args.max_steps,
+            num_cycles=training_args.num_train_epochs,
+        )
+    elif training_args.scheduler_type.lower().strip() == "linear":
+        scheduler = get_linear_schedule_with_warmup(
+            optimizer,
+            num_warmup_steps=training_args.warmup_steps,
+            num_training_steps=training_args.max_steps,
+        )
     else:
-        logger.warning(f"{training_args.scheduler_type}: not found or not valid. Falling back to `linear`")
-        scheduler = get_linear_schedule_with_warmup(optimizer,
-                                                    num_warmup_steps=training_args.warmup_steps,
-                                                    num_training_steps=training_args.max_steps)
+        logger.warning(
+            f"{training_args.scheduler_type}: not found or not valid. Falling back to `linear`"
+        )
+        scheduler = get_linear_schedule_with_warmup(
+            optimizer,
+            num_warmup_steps=training_args.warmup_steps,
+            num_training_steps=training_args.max_steps,
+        )
 
     logger.info(f"Optimizer: {optimizer}")
     logger.info(f"Scheduler: {training_args.scheduler_type}")
@@ -236,7 +264,6 @@ def train_bertmesh(
         data_collator=collator,
         compute_metrics=sklearn_metrics,
         optimizers=(optimizer, scheduler),
-
     )
     logger.info(training_args)
 
@@ -272,11 +299,10 @@ def train_bertmesh_cli(
         "or to a folder after preprocessing and saving to disk",
     ),
     test_size: float = typer.Option(
-        None,
-        help="Fraction of data to use for testing (0,1] or number of rows"),
+        None, help="Fraction of data to use for testing (0,1] or number of rows"
+    ),
     num_proc: int = typer.Option(
-        os.cpu_count(),
-        help="Number of processes to use for preprocessing"
+        os.cpu_count(), help="Number of processes to use for preprocessing"
     ),
     max_samples: int = typer.Option(
         -1,
@@ -288,21 +314,19 @@ def train_bertmesh_cli(
         "IterativeDataset to (improves performance)",
     ),
     from_checkpoint: str = typer.Option(
-        None,
-        help="Name of the checkpoint to resume training"
+        None, help="Name of the checkpoint to resume training"
     ),
     tags: str = typer.Option(
         None,
         help="Comma-separated tags you want to include in the dataset "
-             "(the rest will be discarded)"),
+        "(the rest will be discarded)",
+    ),
     train_years: str = typer.Option(
-        None,
-        help="Comma-separated years you want to include in the training dataset"
+        None, help="Comma-separated years you want to include in the training dataset"
     ),
     test_years: str = typer.Option(
-        None,
-        help="Comma-separated years you want to include in the test dataset"
-    )
+        None, help="Comma-separated years you want to include in the test dataset"
+    ),
 ):
     parser = HfArgumentParser(
         (
@@ -333,5 +357,5 @@ def train_bertmesh_cli(
         from_checkpoint=from_checkpoint,
         tags=parse_tags(tags),
         train_years=parse_years(train_years),
-        test_years=parse_years(test_years)
+        test_years=parse_years(test_years),
     )

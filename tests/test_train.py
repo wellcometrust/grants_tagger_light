@@ -1,5 +1,8 @@
 from grants_tagger_light.training.train import train_bertmesh
-from grants_tagger_light.training.cli_args import BertMeshModelArguments, BertMeshTrainingArguments
+from grants_tagger_light.training.cli_args import (
+    BertMeshModelArguments,
+    BertMeshTrainingArguments,
+)
 import tempfile
 import pytest
 
@@ -35,7 +38,7 @@ def _train_bertmesh_from_model_key(data_path, save_path, model_key):
         report_to="none",
         no_cuda=True,
         num_train_epochs=1,
-        dataloader_num_workers=1
+        dataloader_num_workers=1,
     )
 
     model_args = BertMeshModelArguments()
@@ -48,7 +51,7 @@ def _train_bertmesh_from_model_key(data_path, save_path, model_key):
         model_args=model_args,
         num_proc=1,
         test_size=0.5,
-        shards=1
+        shards=1,
     )
 
 
