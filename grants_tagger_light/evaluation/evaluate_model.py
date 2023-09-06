@@ -56,7 +56,7 @@ def evaluate_model(
 
     Y_pred_proba = sp.csr_matrix(Y_pred_proba)
 
-    if type(threshold) != list:
+    if not isinstance(threshold, list):
         threshold = [threshold]
 
     widths = (12, 5, 5, 5)

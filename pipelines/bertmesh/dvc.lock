@@ -1,0 +1,19 @@
+schema: '2.0'
+stages:
+  train:
+    cmd: python ../../grants_tagger_light/training/train.py --model_key "" --data_path
+      ../../data/raw/allMeSH_2021.json --output_dir ../../bertmesh_outs/pipeline_test
+      --max_samples 10 --per_device_train_batch_size 4 --per_device_eval_batch_size
+      4
+    deps:
+    - path: ../../data/raw/allMeSH_2021.json
+      md5: e827a6b8062d1312664dcf075c12d89f
+      size: 27547042745
+    params:
+      ../../grants_tagger_light/training/cli_args/train_args.py:
+        BertMeshTrainingArguments: {}
+    outs:
+    - path: ../../bertmesh_outs/pipeline_test/best
+      md5: b96ff54ecd600460dbb18b3e82d8b517.dir
+      size: 439905869
+      nfiles: 3

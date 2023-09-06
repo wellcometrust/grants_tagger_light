@@ -1,9 +1,9 @@
 # Grants Tagger Light 🔖
-Light weight repository for grant tagger model deployment and inference.
+Lightweight repository for grant tagger model deployment and inference.
 Adapted from [the original repository](https://github.com/wellcometrust/grants_tagger)
 
 Grants tagger is a machine learning powered tool that
-assigns biomedically related tags to grants proposals.
+assigns biomedical-related tags to grant proposals.
 Those tags can be custom to the organisation
 or based upon a preexisting ontology like MeSH.
 
@@ -12,16 +12,16 @@ Wellcome Trust for internal use but both the models and the
 code will be made available in a reusable manner.
 
 This work started as a means to automate the tags of one
-funding division within Wellcome but currently it has expanded
+funding division within Wellcome, but currently it has expanded
 into the development and automation of a complete set of tags
 that can cover past and future directions for the organisation.
 
 Science tags refer to the custom tags for the Science funding
-division. These tags are higly specific to the research Wellcome
-funds so it is not advisable to use them.
+division. These tags are highly specific to the research Wellcome
+funds, so it is not advisable to use them.
 
 MeSH tags are subset of tags from the MeSH ontology that aim to
-tags grants according to:
+tag grants according to:
 - diseases
 - themes of research
 Those tags are generic enough to be used by other biomedical funders
@@ -41,82 +41,150 @@ For GPU-support:
 `poetry install --with gpu`
 
 For training the model, we recommend installing the version of this package with GPU support.
-For infenrece, CPU-support should suffice.
+For inference, CPU-support should suffice.
 
 ## 2. Activate the environment
 `poetry shell`
 
 You now have access to the `grants-tagger` command line interface!
 
+## OPTIONAL: 3. Install MantisNLP `remote` to connect to a remote AWS instances
+`pip install git+https://github.com/ivyleavedtoadflax/remote.py.git`
+Then add your instance
+`remote config add [instance_name]`
+And then connect and attach to your machine with a tunnel
+`remote connect -p 1234:localhost:1234 -v`
 
 # ⌨️  Commands
 
-| Commands        |                                                              | needs dev |
-| --------------- | ------------------------------------------------------------ | --------- |
-| ⚙️  preprocess   | preprocess data to use for training                          | False |
-| 🔥 train        | trains a new model                                           | True |
-| 📈 evaluate     | evaluate performance of pretrained model                     | True |
-| 🔖 predict      | predict tags given a grant abstract using a pretrained model | False |
-| 🎛 tune         | tune params and threshold                                    | True |
-| ⬇️  download    | download data from EPMC                                      | False |
+| Commands        | Description                                                  | Needs dev |
+|-----------------|--------------------------------------------------------------|-----------|
+| 🔥 train        | preprocesses the data and trains a new model                 | True      |
+| ⚙ preprocess    | (Optional) preprocess and save the data outside training    | False     |
+| 📈 evaluate     | evaluate performance of pretrained model                     | True      |
+| 🔖 predict      | predict tags given a grant abstract using a pretrained model | False     |
+| 🎛 tune         | tune params and threshold                                    | True      |
+| ⬇ download      | download data from EPMC                                      | False     |
+
 
 in square brackets the commands that are not implemented yet
 
-## ⚙️  Preprocess
+## ⚙️Preprocess
 
-Preprocess creates a JSONL datafile with `text`, `tags` and `meta` as keys.
-Text and tags are used for training whereas meta can be useful during annotation
-or to analyse predictions and performance. Each dataset needs its own
-preprocessing so the current preprocess works with the bioasq-mesh one.
+This process is optional to run, since it can be directly managed by the `Train` process.
+- If you run it manually, it will store the data in local first, which can help if you need finetune in the future, 
+rerun, etc.
+- If not run it, the `train` step will preprocess and then run, without any extra I/O operations on disk, 
+which may add latency depending on the infrastructure.
+
+It requires data in `jsonl` format for parallelization purposes. In `data/raw` you can find `allMesH_2021.jsonl` 
+already prepared for the preprocessing step.
+
+If your data is in `json` format, trasnform it to `jsonl` with tools as `jq` or using Python.
+You can use an example of `allMeSH_2021.json` conversion to `jsonl` in `scripts/mesh_json_to_jsonl.py`:
+
+```bash
+python scripts/mesh_json_to_jsonl.py --input_path data/raw/allMeSH_2021.json --output_path data/raw/test.jsonl --filter_years 2020,2021
+```
+
+Each dataset needs its own preprocessing so the current preprocess works with the `allMeSH_2021.jsonl` one.
+
 If you want to use a different dataset see section on bringing
 your own data under development.
 
 
-#### bioasq-mesh
+### Preprocessing bertmesh
+
 ```
-
- Usage: grants-tagger preprocess bioasq-mesh [OPTIONS] [INPUT_PATH]
-                                             [TRAIN_OUTPUT_PATH]
-                                             [LABEL_BINARIZER_PATH]
-
-╭─ Arguments ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
-│   input_path                [INPUT_PATH]            path to BioASQ JSON data [default: None]                                                                           │
-│   train_output_path         [TRAIN_OUTPUT_PATH]     path to JSONL output file that will be generated for the train set [default: None]                                 │
-│   label_binarizer_path      [LABEL_BINARIZER_PATH]  path to pickle file that will contain the label binarizer [default: None]                                          │
-╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
-╭─ Options ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
-│ --test-output-path        TEXT     path to JSONL output file that will be generated for the test set [default: None]                                                   │
-│ --mesh-tags-path          TEXT     path to mesh tags to filter [default: None]                                                                                         │
-│ --test-split              FLOAT    split percentage for test data. if None no split. [default: 0.01]                                                                   │
-│ --filter-years            TEXT     years to keep in form min_year,max_year with both inclusive [default: None]                                                         │
-│ --config                  PATH     path to config files that defines arguments [default: None]                                                                         │
-│ --n-max                   INTEGER  Maximum limit on the number of datapoints in the set (including training and test) [default: None]                                  │
-│ --help                             Show this message and exit.                                                                                                         │
-╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+ Usage: grants-tagger preprocess mesh [OPTIONS] DATA_PATH SAVE_TO_PATH                                                                                                                                             
+                                      MODEL_KEY                                                                                                                                                                    
+                                                                                                                                                                                                                   
+╭─ Arguments ─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
+│ *    data_path         TEXT  Path to mesh.jsonl [default: None] [required]                                                                                                                                      │
+│ *    save_to_path      TEXT  Path to save the serialized PyArrow dataset after preprocessing [default: None] [required]                                                                                         │
+│ *    model_key         TEXT  Key to use when loading tokenizer and label2id. Leave blank if training from scratch [default: None] [required]                                                                    │
+╰─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+╭─ Options ───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
+│ --test-size          FLOAT    Fraction of data to use for testing in (0,1] or number of rows [default: None]                                                                                                    │
+│ --num-proc           INTEGER  Number of processes to use for preprocessing [default: 8]                                                                                                                         │
+│ --max-samples        INTEGER  Maximum number of samples to use for preprocessing [default: -1]                                                                                                                  │
+│ --batch-size         INTEGER  Size of the preprocessing batch [default: 256]                                                                                                                                    │
+│ --tags               TEXT     Comma-separated tags you want to include in the dataset (the rest will be discarded) [default: None]                                                                              │
+│ --train-years        TEXT     Comma-separated years you want to include in the training dataset [default: None]                                                                                                 │
+│ --test-years         TEXT     Comma-separated years you want to include in the test dataset [default: None]                                                                                                     │
+│ --help                        Show this message and exit.                                                                                                                                                       │
+╰─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
 ```
 
 ## 🔥 Train
 
-Train acts as the entry point command for training all models. Currently we only support
-the BertMesh model. The command will train a model and save it to the specified path.
+The command will train a model and save it to the specified path. Currently we support on BertMesh.
 
 ### bertmesh
 ```
+ Usage: grants-tagger train bertmesh [OPTIONS] MODEL_KEY DATA_PATH                                                                                                                                                 
 
- Usage: grants-tagger train bertmesh [OPTIONS] MODEL_KEY DATA_PATH
-                                     MODEL_SAVE_PATH
-
-╭─ Arguments ─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
-│ *    model_key            TEXT  Pretrained model key. Local path or HF location [default: None] [required]                                                                          │
-│ *    data_path            TEXT  Path to data in jsonl format. Must contain text and tags field [default: None] [required]                                                           │
-│ *    model_save_path      TEXT  Path to save model to [default: None] [required]                                                                                                    │
-╰─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
-╭─ Options ───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
-│ --help          Show this message and exit.                                                                                                                                         │
-╰─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
-
+╭─ Arguments ─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
+│ *    model_key      TEXT  Pretrained model key. Local path or HF location [default: None] [required]                                                                                                            │
+│ *    data_path      TEXT  Path to allMeSH_2021.jsonl (or similar) or to a folder after preprocessing and saving to disk [default: None] [required]                                                              │
+╰─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+╭─ Options ───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
+│ --test-size              FLOAT    Fraction of data to use for testing (0,1] or number of rows [default: None]                                                                                                   │
+│ --num-proc               INTEGER  Number of processes to use for preprocessing [default: 8]                                                                                                                     │
+│ --max-samples            INTEGER  Maximum number of samples to use from the json [default: -1]                                                                                                                  │
+│ --shards                 INTEGER  Number os shards to divide training IterativeDataset to (improves performance) [default: 8]                                                                                   │
+│ --from-checkpoint        TEXT     Name of the checkpoint to resume training [default: None]                                                                                                                     │
+│ --tags                   TEXT     Comma-separated tags you want to include in the dataset (the rest will be discarded) [default: None]                                                                          │
+│ --train-years            TEXT     Comma-separated years you want to include in the training dataset [default: None]                                                                                             │
+│ --test-years             TEXT     Comma-separated years you want to include in the test dataset [default: None]                                                                                                 │
+│ --help                            Show this message and exit.                                                                                                                                                   │
+╰─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
 ```
 
+#### About `model_key`
+`model_key` possible values are:
+- A HF location for a pretrained / finetuned model 
+- "" to load a model by default and train from scratch (`microsoft/BiomedNLP-PubMedBERT-base-uncased-abstract`)
+
+#### About `sharding`
+`sharding` was proposed by [Hugging Face](https://github.com/huggingface/datasets/issues/2252#issuecomment-825596467)
+to improve performance on big datasets. To enable it:
+- set shards to something bigger than 1 (Recommended: same number as cpu cores)
+
+#### Other arguments
+Besides those arguments, feel free to add any other TrainingArgument from Hugging Face or Wand DB. 
+This is the example used to train reaching a ~0.6 F1, also available at `examples/train_by_epochs.sh`
+```commandline
+grants-tagger train bertmesh \
+    "" \
+    [YOUR_PREPROCESSED_FOLDER] \
+    --output_dir [YOUR_OUTPUT_FOLDER] \
+    --per_device_train_batch_size 16 \
+    --per_device_eval_batch_size 1 \
+    --multilabel_attention True \
+    --freeze_backbone unfreeze \
+    --num_train_epochs 7 \
+    --learning_rate 5e-5 \
+    --dropout 0.1 \
+    --hidden_size 1024 \
+    --warmup_steps 5000 \
+    --max_grad_norm 2.0 \
+    --scheduler_type cosine_hard_restart \
+    --weight_decay 0.2 \
+    --correct_bias True \
+    --threshold 0.25 \
+    --prune_labels_in_evaluation True \
+    --hidden_dropout_prob 0.2 \
+    --attention_probs_dropout_prob 0.2 \
+    --fp16 \
+    --torch_compile \
+    --evaluation_strategy epoch \
+    --eval_accumulation_steps 20 \
+    --save_strategy epoch \
+    --wandb_project wellcome-mesh \
+    --wandb_name test-train-all \
+    --wandb_api_key ${WANDB_API_KEY}
+```
 
 ## 📈 Evaluate
 
@@ -137,7 +205,6 @@ not made into production this is the way to evaluate. The plan is to extend
 evaluate to all models when train starts training explicit model approaches.
 
 ```
-
  Usage: grants-tagger evaluate model [OPTIONS] MODEL_PATH DATA_PATH
 
 ╭─ Arguments ─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
@@ -157,7 +224,6 @@ evaluate to all models when train starts training explicit model approaches.
 ### grants
 Evaluate an xlinear model on grants data.
 ```
-
  Usage: grants-tagger evaluate grants [OPTIONS] MODEL_PATH DATA_PATH
                                       LABEL_BINARIZER_PATH
 
@@ -182,7 +248,6 @@ Predict assigns tags on a given abstract text that you can pass as argument.
 
 
 ```
-
  Usage: grants-tagger predict [OPTIONS] TEXT MODEL_PATH
 
 ╭─ Arguments ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
@@ -195,7 +260,6 @@ Predict assigns tags on a given abstract text that you can pass as argument.
 │ --threshold                              FLOAT    [default: 0.5]                                                                                                           │
 │ --help                                            Show this message and exit.                                                                                              │
 ╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
-
 ```
 
 ## 🎛 Tune
@@ -203,7 +267,6 @@ Optimise the threshold used for tag decisions.
 
 ### threshold
 ```
-
  Usage: grants-tagger tune threshold [OPTIONS] DATA_PATH MODEL_PATH
                                      LABEL_BINARIZER_PATH THRESHOLDS_PATH
 
@@ -224,12 +287,14 @@ Optimise the threshold used for tag decisions.
 
 ## ⬇️  Download
 
-This commands enables you to download mesh data from EPMC
+The project has references to `dvc` big files. You can just do `dvc pull` and retrieve those,
+including `allMeSH_2021.json`  and `allMeSH_2021.jsonl` to train `bertmesh`.
+
+Also, this commands enables you to download mesh data from EPMC
 
 ### epmc-mesh
 
 ```
-
  Usage: grants-tagger download epmc-mesh [OPTIONS] DOWNLOAD_PATH
 
 ╭─ Arguments ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
@@ -248,12 +313,18 @@ Install development dependencies via:
 
 ## 📋 Env variables
 
+Variable              | Required for | Description
+--------------------- |--------------| ----------
+WANDB_API_KEY         | train        | key to dump the results to Weights&Biases
+AWS_ACCESS_KEY_ID     | train        | access key to pull data from dvc on S3
+AWS_SECRET_ACCESS_KEY | train        | secret key to pull data from dvc on S3
+
 If you want to participate to BIOASQ competition you need to set some variables.
 
 Variable              | Required for       | Description
 --------------------- | ------------------ | ----------
 BIOASQ_USERNAME       | bioasq             | username with which registered in BioASQ
-BIOASQ_PASSWORD       | bioasq             | password            --//--
+BIOASQ_PASSWORD       | bioasq             | password
 
 If you use [direnv](https://direnv.net) then you can use it to populate
 your `.envrc` which will export the variables automatically, otherwise
@@ -293,6 +364,9 @@ def epmc_mesh(...)
 and you would be able to run `grants_tagger preprocess epmc_mesh ...`
 
 ## 🚦 Test
+
+To run the test you need to have installed the `dev` dependencies first. 
+This is done by running `poetry install --with dev` after you are in the sell (`poetry shell`)
 
 Run tests with `pytest`. If you want to write some additional tests,
 they should go in the subfolde `tests/`
