@@ -89,6 +89,8 @@ def create_comparison_csv(
     num_samples_per_cat: int,
     mesh_metadata_path: str,
     mesh_terms_list_path: str,
+    active_portfolio_path: str,
+    active_portfolio_sample: int,
     pre_annotate_bertmesh: bool,
     bertmesh_path: str,
     bertmesh_thresh: float,
@@ -121,11 +123,23 @@ def create_comparison_csv(
     grants_sample = all_grants.groupby("for_first_level_name", group_keys=False).apply(
         lambda x: x.sample(min(len(x), num_samples_per_cat))
     )
+    grants_sample["active_portfolio"] = 0
+
+    # Add active portfolio
+    active_grants = pd.read_csv(active_portfolio_path)
+    active_grants = active_grants[~active_grants["Synopsis"].isna()]
+    active_grants.sample(frac=1)
+    active_grants_sample = active_grants.iloc[:active_portfolio_sample]
+    active_grants_sample = pd.DataFrame({"abstract": active_grants_sample["Synopsis"]})
+    active_grants_sample["active_portfolio"] = 1
+    grants_sample = pd.concat([grants_sample, active_grants_sample])
 
     abstracts = grants_sample["abstract"].tolist()
+    print(f"{len(abstracts)} abstracts to tag")
 
     # Annotate with bertmesh
     if pre_annotate_bertmesh:
+        print("Tagging with bertmesh")
         tags = predict_tags_bertmesh(
             abstracts,
             bertmesh_path,
@@ -141,6 +155,7 @@ def create_comparison_csv(
 
     # Annotate with xlinear
     if pre_annotate_xlinear:
+        print("Tagging with xlinear")
         model = MeshXLinear(
             model_path=xlinear_path,
             label_binarizer_path=xlinear_label_binarizer_path,
@@ -187,6 +202,8 @@ if __name__ == "__main__":
     parser.add_argument("--num-samples-per-cat", type=int, default=10)
     parser.add_argument("--mesh-metadata-path", type=str)
     parser.add_argument("--mesh-terms-list-path", type=str)
+    parser.add_argument("--active-portfolio-path", type=str)
+    parser.add_argument("--active-portfolio-sample", type=int, default=200)
     parser.add_argument("--pre-annotate-bertmesh", action="store_true")
     parser.add_argument(
         "--bertmesh-path", type=str, default="Wellcome/WellcomeBertMesh"
@@ -206,6 +223,8 @@ if __name__ == "__main__":
         num_samples_per_cat=args.num_samples_per_cat,
         mesh_metadata_path=args.mesh_metadata_path,
         mesh_terms_list_path=args.mesh_terms_list_path,
+        active_portfolio_path=args.active_portfolio_path,
+        active_portfolio_sample=args.active_portfolio_sample,
         pre_annotate_bertmesh=args.pre_annotate_bertmesh,
         bertmesh_path=args.bertmesh_path,
         bertmesh_thresh=args.bertmesh_thresh,

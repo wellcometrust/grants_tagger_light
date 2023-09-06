@@ -1,9 +1,25 @@
 vars:
   - s3-url: "s3://datalabs-data/dimensions/grants/grants"
-  - scripts_location: "../../scripts"
-  - argilla_project_name: "grants"
 stages:
   generate:
-    cmd: python ${scripts_location}/create_grants_sample.py --s3-url ${s3-url} --num-parquet-files-to-consider 10 --num-samples-per-cat 10 --pre-annotate True
+    cmd: >-
+      python scripts/create_xlinear_bertmesh_comparison_csv.py
+      --s3-url ${s3-url}
+      --num-parquet-files-to-consider 10
+      --num-samples-per-cat 10
+      --mesh-metadata-path data/raw/desc2021.xml
+      --mesh-terms-list-path data/grants_comparison/meshterms_list.txt
+      --active-portfolio-path data/raw/active_grants_last_5_years.csv
+      --bertmesh-path Wellcome/WellcomeBertMesh
+      --bertmesh-thresh 0.5
+      --pre-annotate-bertmesh
+      --xlinear-path models/xlinear-0.2.5/model
+      --xlinear-label-binarizer-path models/xlinear-0.2.5/label_binarizer.pkl
+      --xlinear-thresh 0.2
+      --pre-annotate-xlinear
+      --output-path data/grants_comparison/comparison.csv
+    deps:
+      - scripts/create_xlinear_bertmesh_comparison_csv.py
+    wdir: "../.."
     outs:
-      - grants_sample.jsonl
+      - data/grants_comparison/comparison.csv
