@@ -123,6 +123,7 @@ def create_comparison_csv(
     grants_sample = all_grants.groupby("for_first_level_name", group_keys=False).apply(
         lambda x: x.sample(min(len(x), num_samples_per_cat))
     )
+    grants_sample["active_portfolio"] = 0
 
     # Add active portfolio
     active_grants = pd.read_csv(active_portfolio_path)
@@ -130,6 +131,7 @@ def create_comparison_csv(
     active_grants.sample(frac=1)
     active_grants_sample = active_grants.iloc[:active_portfolio_sample]
     active_grants_sample = pd.DataFrame({"abstract": active_grants_sample["Synopsis"]})
+    active_grants_sample["active_portfolio"] = 1
     grants_sample = pd.concat([grants_sample, active_grants_sample])
 
     abstracts = grants_sample["abstract"].tolist()
