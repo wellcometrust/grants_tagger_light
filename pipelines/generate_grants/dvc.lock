@@ -1,9 +1,18 @@
 schema: '2.0'
 stages:
   generate:
-    cmd: python ../../scripts/create_grants_sample.py --s3-url s3://datalabs-data/dimensions/grants/grants
-      --num-parquet-files-to-consider 10 --num-samples-per-cat 10 --pre-annotate True
+    cmd: python scripts/create_xlinear_bertmesh_comparison_csv.py --s3-url s3://datalabs-data/dimensions/grants/grants
+      --num-parquet-files-to-consider 10 --num-samples-per-cat 10 --mesh-metadata-path
+      data/raw/desc2021.xml --mesh-terms-list-path data/grants_comparison/meshterms_list.txt
+      --active-portfolio-path data/raw/active_grants_last_5_years.csv --bertmesh-path
+      Wellcome/WellcomeBertMesh --bertmesh-thresh 0.5 --pre-annotate-bertmesh --xlinear-path
+      models/xlinear-0.2.5/model --xlinear-label-binarizer-path models/xlinear-0.2.5/label_binarizer.pkl
+      --xlinear-thresh 0.2 --pre-annotate-xlinear --output-path data/grants_comparison/comparison.csv
+    deps:
+    - path: scripts/create_xlinear_bertmesh_comparison_csv.py
+      md5: 3c138310387fb1d0f9fa650b3bc55842
+      size: 8123
     outs:
-    - path: grants_sample.jsonl
-      md5: 76bbfd9043e20866382ff9713cba7483
-      size: 387951
+    - path: data/grants_comparison/comparison.csv
+      md5: 72506f7ea22006c68c5707588ca7ecf2
+      size: 600428
