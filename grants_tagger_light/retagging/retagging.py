@@ -95,7 +95,7 @@ def retag(
             .setInputCols(["document"]) \
             .setOutputCol("sentence_embeddings") \
 
-        classsifierdl = nlp.ClassifierDLApproach() \
+        classifierdl = nlp.ClassifierDLApproach() \
             .setInputCols(["sentence_embeddings"]) \
             .setOutputCol("label") \
             .setLabelColumn("category") \
@@ -105,21 +105,31 @@ def retag(
             .setEnableOutputLogs(True)
         # .setOutputLogsPath('logs')
 
-        bert_clf_pipeline = nlp.Pipeline(stages=[document_assembler,
-                                             embeddings,
-                                             classsifierdl])
+        clf_pipeline = nlp.Pipeline(stages=[document_assembler,
+                                            embeddings,
+                                            classifierdl])
 
-        clf_pipelineModel = bert_clf_pipeline.fit(train_df)
-        preds = clf_pipelineModel.transform(test_df)
+        fit_clf_pipeline = clf_pipeline.fit(train_df)
+        preds = fit_clf_pipeline.transform(test_df)
         logging.info(preds.select('category', 'text', 'label.result').show(10, truncate=80))
-
         preds_df = preds.select('category', 'text', 'label.result').toPandas()
-
-        # The result is an array since in Spark NLP you can have multiple sentences.
-        # Let's explode the array and get the item(s) inside of result column out
         preds_df['result'] = preds_df['result'].apply(lambda x: x[0])
+        logging.info(classification_report(preds_df['category'], preds_df['result']))
 
-        print(classification_report(preds_df['category'], preds_df['result']))
+        logging.info("Retagging using the model...")
+        fit_clf_pipeline.stages[-1].write().overwrite().save('clf_tmp')
+        fit_clf_model = nlp.ClassifierDLModel.load('clf_tmp')
+
+        pred_pipeline = nlp.Pipeline(stages=[document_assembler,
+                                             embeddings,
+                                             fit_clf_model])
+        pred_df = spark.createDataFrame([['']]).toDF("text")
+        fit_pred_pipeline = pred_pipeline.fit(pred_df)
+        fit_pred_lightpipeline = nlp.LightPipeline(fit_pred_pipeline)
+        for i, elem in enumerate(dset["abstractText"]):
+            result = fit_pred_lightpipeline.annotate(elem)
+            print(result)
+            print(f"Tagged: {result['label']==tag} Expected: {tag in dset['meshMajor']}")
 
 
 
