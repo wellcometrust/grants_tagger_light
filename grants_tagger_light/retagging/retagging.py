@@ -126,7 +126,7 @@ def retag(
         pred_df = spark.createDataFrame([['']]).toDF("text")
         fit_pred_pipeline = pred_pipeline.fit(pred_df)
         fit_pred_lightpipeline = nlp.LightPipeline(fit_pred_pipeline)
-        for text, old_tags in enumerate(dset["abstractText"], dset["meshMajor"]):
+        for text, old_tags in zip(dset["abstractText"], dset["meshMajor"]):
             result = fit_pred_lightpipeline.annotate(text)
             print(f"New tag: {result['label'][0]==tag} Old tag: {tag in old_tags}")
 
