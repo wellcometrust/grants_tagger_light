@@ -12,7 +12,6 @@ from datasets import load_dataset
 
 from datasets import load_from_disk
 import spacy
-import spacy.cli
 from spacy.util import minibatch, compounding
 
 retag_app = typer.Typer()
@@ -78,7 +77,7 @@ def retag(
 
     for tag in tags:
         print(tag)
-        nlp = spacy.load("en_core_web_sm")
+        nlp = spacy.blank('en')
 
         textcat = nlp.create_pipe("textcat")
         nlp.add_pipe("textcat", last=True)
@@ -100,11 +99,13 @@ def retag(
         neg_x_train, neg_x_test = _load_data(negative_dset['abstractText'], limit=100, split=0.8)
 
         train_data.extend(list(zip(neg_x_train, [{'cats': {'POSITIVE': False}}])))
+        logging.info(f"Train data size: {len(train_data)}. First example: {train_data[0]}")
 
         test = pos_x_test
         test_cats = [{'cats': {'POSITIVE': True}} for _ in range(len(pos_x_test))]
         test.extend(neg_x_test)
         test_cats.extend([{'cats': {'POSITIVE': False}} for _ in range(len(neg_x_test))])
+        logging.info(f"Test data size: {len(test)}")
 
         # get names of other pipes to disable them during training
         other_pipes = [pipe for pipe in nlp.pipe_names if pipe != 'textcat']
@@ -170,8 +171,6 @@ def retag_cli(
             "To understand which tags need to be augmented set the path to the tags file in --tags-file-path"
         )
         exit(-1)
-
-    spacy.cli.download("en_core_web_sm")
 
     retag(
         data_path,
