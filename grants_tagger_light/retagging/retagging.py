@@ -49,14 +49,8 @@ def retag(
 
     for tag in tags:
         logging.info(f"Retagging: {tag}")
-        # nlp = spacy.blank('en')
+
         nlp = spacy.load("en_core_web_sm")
-
-        # textcat = nlp.create_pipe("textcat")
-        # nlp.add_pipe("textcat", last=True)
-
-        # textcat.add_label(tag)
-        # textcat.add_label("O")
 
         logging.info(f"Obtaining positive examples for {tag}...")
         positive_dset = dset.filter(
@@ -149,6 +143,9 @@ def retag_cli(
             "To understand which tags need to be augmented set the path to the tags file in --tags-file-path"
         )
         exit(-1)
+
+    spacy.cli.download("en_core_web_sm")
+    spacy.require_gpu()
 
     retag(
         data_path,
