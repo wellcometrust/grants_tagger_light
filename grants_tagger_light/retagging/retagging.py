@@ -91,18 +91,9 @@ def retag(
             .setInputCol("text") \
             .setOutputCol("document")
 
-        tokenizer = nlp.Tokenizer() \
+        embeddingsSentence = nlp.BertSentenceEmbeddings.pretrained("sent_bert_base_cased", "en") \
             .setInputCols(["document"]) \
-            .setOutputCol("token")
-
-        bert_embeddings = nlp.BertEmbeddings().pretrained(name='small_bert_L4_256', lang='en') \
-            .setInputCols(["document", 'token']) \
-            .setOutputCol("embeddings")
-
-        embeddingsSentence = nlp.SentenceEmbeddings() \
-            .setInputCols(["document", "embeddings"]) \
             .setOutputCol("sentence_embeddings") \
-            .setPoolingStrategy("AVERAGE")
 
         classsifierdl = nlp.ClassifierDLApproach() \
             .setInputCols(["sentence_embeddings"]) \
@@ -110,7 +101,7 @@ def retag(
             .setLabelColumn("category") \
             .setMaxEpochs(10) \
             .setLr(0.001) \
-            .setBatchSize(8) \
+            .setBatchSize(1) \
             .setEnableOutputLogs(True)
         # .setOutputLogsPath('logs')
 
