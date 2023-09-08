@@ -102,7 +102,7 @@ def retag(
             output_path=output_model_path,
             overrides={
                 "paths.train": "train.spacy",
-                "paths.dev": "valid.spacy",
+                "paths.dev": "test.spacy",
             },
         )
         break
