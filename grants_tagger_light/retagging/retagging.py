@@ -1,3 +1,4 @@
+import json
 import logging
 import random
 
@@ -55,13 +56,13 @@ def retag(
     for tag in tags:
         logging.info(f"Retagging: {tag}")
 
-        logging.info(f"Obtaining positive examples for {tag}...")
+        logging.info(f"- Obtaining positive examples for {tag}...")
         positive_dset = dset.filter(
             lambda x: tag in x["meshMajor"], num_proc=num_proc
         )
         pos_x_train, pos_x_test = _load_data(positive_dset['abstractText'], limit=100, split=0.8)
 
-        logging.info(f"Obtaining negative examples for {tag}...")
+        logging.info(f"- Obtaining negative examples for {tag}...")
         negative_dset = dset.filter(
             lambda x: tag not in x["meshMajor"], num_proc=num_proc
         )
@@ -116,7 +117,7 @@ def retag(
         preds_df['result'] = preds_df['result'].apply(lambda x: x[0])
         logging.info(classification_report(preds_df['category'], preds_df['result']))
 
-        logging.info("Retagging using the model...")
+        logging.info("- Loading the model for prediction...")
         fit_clf_pipeline.stages[-1].write().overwrite().save('clf_tmp')
         fit_clf_model = nlp.ClassifierDLModel.load('clf_tmp')
 
@@ -126,10 +127,20 @@ def retag(
         pred_df = spark.createDataFrame([['']]).toDF("text")
         fit_pred_pipeline = pred_pipeline.fit(pred_df)
         fit_pred_lightpipeline = nlp.LightPipeline(fit_pred_pipeline)
-        for text, old_tags in zip(dset["abstractText"], dset["meshMajor"]):
-            result = fit_pred_lightpipeline.annotate(text)
-            print(f"New tag: {result['label'][0]==tag} Old tag: {tag in old_tags}")
-
+        logging.info(f"- Retagging {tag}...")
+        with open(save_to_path, 'a') as f:
+            for i, text in dset["abstractText"]:
+                result = fit_pred_lightpipeline.annotate(text)
+                before = tag in dset['meshMajor'][i]
+                after = result['label'][0] == tag
+                if before != after:
+                    logging.info("- Corrected!")
+                    row = dset[i]
+                    if after is True:
+                        row['meshMajor'].append(tag)
+                    else:
+                        row['meshMajor'].remove(tag)
+                    json.dump(dset[i], f)
 
 
 @retag_app.command()
