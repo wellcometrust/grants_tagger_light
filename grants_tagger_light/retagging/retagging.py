@@ -21,10 +21,11 @@ def _load_data(dset: list[str], limit=100, split=0.8):
     """Load data from the IMDB dataset."""
     # Partition off part of the train data for evaluation
     random.Random(42).shuffle(dset)
+    dset = dset[:limit]
     train_size = int(split * len(dset))
-    test_size = int( (1-split) * len(dset))
-    train_dset =  dset[:train_size][:limit]
-    test_dset = dset[train_size:train_size+test_size][:limit]
+    test_size = limit - train_size
+    train_dset = dset[:train_size]
+    test_dset = dset[train_size:limit]
     return train_dset, test_dset
 
 
@@ -90,7 +91,7 @@ def retag(
         )
         pos_x_train, pos_x_test = _load_data(positive_dset['abstractText'], limit=100, split=0.8)
 
-        train_data = list(zip(pos_x_train, [{'cats': {'POSITIVE': True}}]))
+        train_data = list(zip(pos_x_train, [{'cats': {tag: True, 'O': False}}]))
 
         logging.info(f"Obtaining negative examples for {tag}...")
         negative_dset = dset.filter(
@@ -98,13 +99,13 @@ def retag(
         )
         neg_x_train, neg_x_test = _load_data(negative_dset['abstractText'], limit=100, split=0.8)
 
-        train_data.extend(list(zip(neg_x_train, [{'cats': {'POSITIVE': False}}])))
+        train_data.extend(list(zip(neg_x_train, [{'cats': {tag: False, 'O': True}}])))
         logging.info(f"Train data size: {len(train_data)}. First example: {train_data[0]}")
 
         test = pos_x_test
-        test_cats = [{'cats': {'POSITIVE': True}} for _ in range(len(pos_x_test))]
+        test_cats = [{'cats': {tag: True, 'O': False}} for _ in range(len(pos_x_test))]
         test.extend(neg_x_test)
-        test_cats.extend([{'cats': {'POSITIVE': False}} for _ in range(len(neg_x_test))])
+        test_cats.extend([{'cats': {tag: False, 'O': True}} for _ in range(len(neg_x_test))])
         logging.info(f"Test data size: {len(test)}")
 
         # get names of other pipes to disable them during training
