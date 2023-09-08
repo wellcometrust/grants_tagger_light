@@ -101,8 +101,8 @@ def retag(
             config_path,
             output_path=output_model_path,
             overrides={
-                "paths.train": "train.spacy",
-                "paths.dev": "test.spacy",
+                "paths.train": os.path.join(os.path.dirname(os.path.realpath(__file__)), "train.spacy"),
+                "paths.dev": os.path.join(os.path.dirname(os.path.realpath(__file__)), "test.spacy"),
             },
         )
         break
