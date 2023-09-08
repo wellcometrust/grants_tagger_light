@@ -86,7 +86,7 @@ def retag(
             doc.cats[tag] = 1
             doc.cats['O'] = 0
             test_data.add(doc)
-        for doc in nlp.pipe(pos_x_train):
+        for doc in nlp.pipe(pos_x_test):
             doc.cats[tag] = 0
             doc.cats['O'] = 1
             test_data.add(doc)
@@ -95,7 +95,7 @@ def retag(
         logging.info(f"Train data size: {len(train_data)}")
         logging.info(f"Test data size: {len(test_data)}")
 
-        config_path = "config.cfg"
+        config_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), "config.cfg")
         output_model_path = "spacy_textcat"
         spacy_train(
             config_path,
