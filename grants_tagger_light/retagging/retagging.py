@@ -134,15 +134,17 @@ def retag(
                 result = fit_pred_lightpipeline.annotate(text)
                 before = tag in old_tags
                 after = result['label'][0] == tag
-                print(f"- Before: {before} After: {after}")
                 if before != after:
                     logging.info("- Corrected!")
                     row = dset[counter]
                     if after is True:
                         row['meshMajor'].append(tag)
+                        row['correction'] = f"+{tag}"
                     else:
                         row['meshMajor'].remove(tag)
+                        row['correction'] = f"-{tag}"
                     json.dump(row, f)
+                    f.flush()
                 counter += 1
 
 
