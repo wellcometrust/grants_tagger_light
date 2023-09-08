@@ -133,6 +133,7 @@ def retag(
                 result = fit_pred_lightpipeline.annotate(text)
                 before = tag in dset['meshMajor'][i]
                 after = result['label'][0] == tag
+                print(f"- Before: {before} After: {after}")
                 if before != after:
                     logging.info("- Corrected!")
                     row = dset[i]
@@ -140,7 +141,7 @@ def retag(
                         row['meshMajor'].append(tag)
                     else:
                         row['meshMajor'].remove(tag)
-                    json.dump(dset[i], f)
+                    json.dump(row, f)
 
 
 @retag_app.command()
