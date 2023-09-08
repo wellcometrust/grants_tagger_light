@@ -42,11 +42,11 @@ def evaluate(tokenizer, textcat, texts, cats):
                 continue
             if score >= 0.5 and gold[label] >= 0.5:
                 tp += 1.
-            elif score >= 0.5 and gold[label] < 0.5:
+            elif score >= 0.5 > gold[label]:
                 fp += 1.
             elif score < 0.5 and gold[label] < 0.5:
                 tn += 1
-            elif score < 0.5 and gold[label] >= 0.5:
+            elif score < 0.5 <= gold[label]:
                 fn += 1
     precision = tp / (tp + fp)
     recall = tp / (tp + fn)
@@ -77,13 +77,14 @@ def retag(
         tags = [x.strip() for x in f.readlines()]
 
     for tag in tags:
-        print(tag)
+        logging.info(f"Retagging: {tag}")
         nlp = spacy.blank('en')
 
         textcat = nlp.create_pipe("textcat")
         nlp.add_pipe("textcat", last=True)
 
-        textcat.add_label("POSITIVE")
+        textcat.add_label(tag)
+        textcat.add_label("O")
 
         logging.info(f"Obtaining positive examples for {tag}...")
         positive_dset = dset.filter(
@@ -114,8 +115,8 @@ def retag(
         n_iter = 1
         with nlp.disable_pipes(*other_pipes):  # only train textcat
             optimizer = nlp.begin_training()
-            print("Training the model...")
-            print('{:^5}\t{:^5}\t{:^5}\t{:^5}'.format('LOSS', 'P', 'R', 'F'))
+            logging.info("Training the model...")
+            logging.info('{:^5}\t{:^5}\t{:^5}\t{:^5}'.format('LOSS', 'P', 'R', 'F'))
             for i in range(n_iter):
                 losses = {}
 
@@ -128,10 +129,11 @@ def retag(
             with textcat.model.use_params(optimizer.averages):
                 # evaluate on the dev data split off in load_data()
                 scores = evaluate(nlp.tokenizer, textcat, test, test_cats)
-            print('{0:.3f}\t{1:.3f}\t{2:.3f}\t{3:.3f}'  # print a simple table
+            logging.info('{0:.3f}\t{1:.3f}\t{2:.3f}\t{3:.3f}'  # print a simple table
                   .format(losses['textcat'], scores['textcat_p'],
                           scores['textcat_r'], scores['textcat_f']))
         break
+
 
 @retag_app.command()
 def retag_cli(
