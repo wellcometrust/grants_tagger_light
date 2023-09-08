@@ -79,7 +79,8 @@ def retag(
             doc.cats[tag] = 0
             doc.cats['O'] = 1
             train_data.add(doc)
-        train_data.to_disk("train.spacy")
+        train_data_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), "train.spacy")
+        train_data.to_disk(train_data_path)
 
         test_data = DocBin()
         for doc in nlp.pipe(pos_x_test):
@@ -90,7 +91,8 @@ def retag(
             doc.cats[tag] = 0
             doc.cats['O'] = 1
             test_data.add(doc)
-        test_data.to_disk("test.spacy")
+        test_data_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), "test.spacy")
+        test_data.to_disk(test_data_path)
 
         logging.info(f"Train data size: {len(train_data)}")
         logging.info(f"Test data size: {len(test_data)}")
@@ -101,8 +103,8 @@ def retag(
             config_path,
             output_path=output_model_path,
             overrides={
-                "paths.train": os.path.join(os.path.dirname(os.path.realpath(__file__)), "train.spacy"),
-                "paths.dev": os.path.join(os.path.dirname(os.path.realpath(__file__)), "test.spacy"),
+                "paths.train": train_data_path,
+                "paths.dev": test_data_path,
             },
         )
         break
