@@ -145,7 +145,6 @@ def retag_cli(
         exit(-1)
 
     spacy.cli.download("en_core_web_sm")
-    spacy.require_gpu()
 
     retag(
         data_path,
