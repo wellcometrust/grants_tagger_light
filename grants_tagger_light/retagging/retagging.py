@@ -60,13 +60,13 @@ def retag(
         positive_dset = dset.filter(
             lambda x: tag in x["meshMajor"], num_proc=num_proc
         )
-        pos_x_train, pos_x_test = _load_data(positive_dset['abstractText'], limit=100, split=0.8)
+        pos_x_train, pos_x_test = _load_data(positive_dset['abstractText'], limit=250, split=0.8)
 
         logging.info(f"- Obtaining negative examples for {tag}...")
         negative_dset = dset.filter(
             lambda x: tag not in x["meshMajor"], num_proc=num_proc
         )
-        neg_x_train, neg_x_test = _load_data(negative_dset['abstractText'], limit=100, split=0.8)
+        neg_x_train, neg_x_test = _load_data(negative_dset['abstractText'], limit=250, split=0.8)
 
         train_data = [(x, tag) for x in pos_x_train]
         train_data.extend([(x, 'other') for x in neg_x_train])
@@ -100,7 +100,7 @@ def retag(
             .setInputCols(["sentence_embeddings"]) \
             .setOutputCol("label") \
             .setLabelColumn("category") \
-            .setMaxEpochs(10) \
+            .setMaxEpochs(25) \
             .setLr(0.001) \
             .setBatchSize(1) \
             .setEnableOutputLogs(True)
