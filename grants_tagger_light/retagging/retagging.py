@@ -129,19 +129,21 @@ def retag(
         fit_pred_lightpipeline = nlp.LightPipeline(fit_pred_pipeline)
         logging.info(f"- Retagging {tag}...")
         with open(save_to_path, 'a') as f:
-            for i, text in enumerate(dset["abstractText"]):
+            counter = 0
+            for text, old_tags in zip(dset["abstractText"], dset["meshMajor"]):
                 result = fit_pred_lightpipeline.annotate(text)
-                before = tag in dset['meshMajor'][i]
+                before = tag in old_tags
                 after = result['label'][0] == tag
                 print(f"- Before: {before} After: {after}")
                 if before != after:
                     logging.info("- Corrected!")
-                    row = dset[i]
+                    row = dset[counter]
                     if after is True:
                         row['meshMajor'].append(tag)
                     else:
                         row['meshMajor'].remove(tag)
                     json.dump(row, f)
+                counter += 1
 
 
 @retag_app.command()
