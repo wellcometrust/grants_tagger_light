@@ -1,5 +1,4 @@
 import logging
-import os
 import random
 
 import typer
@@ -13,6 +12,7 @@ from johnsnowlabs import nlp
 import os
 
 from sklearn.metrics import classification_report
+from pyspark.sql.functions import *
 
 spark = nlp.start()
 
