@@ -91,7 +91,7 @@ def retag(
             .setInputCol("text") \
             .setOutputCol("document")
 
-        embeddingsSentence = nlp.BertSentenceEmbeddings.pretrained("sent_bert_base_cased", "en") \
+        embeddings = nlp.BertSentenceEmbeddings.pretrained("sent_bert_base_cased", "en") \
             .setInputCols(["document"]) \
             .setOutputCol("sentence_embeddings") \
 
@@ -106,9 +106,7 @@ def retag(
         # .setOutputLogsPath('logs')
 
         bert_clf_pipeline = nlp.Pipeline(stages=[document_assembler,
-                                             tokenizer,
-                                             bert_embeddings,
-                                             embeddingsSentence,
+                                             embeddings,
                                              classsifierdl])
 
         clf_pipelineModel = bert_clf_pipeline.fit(train_df)
