@@ -1,4 +1,4 @@
-import logging
+"""import logging
 import os
 import random
 
@@ -7,20 +7,14 @@ from loguru import logger
 
 from datasets import load_dataset
 
-
-from johnsnowlabs import nlp
-
-import os
-
-from sklearn.metrics import classification_report
-
-spark = nlp.start()
+import spacy
+from spacy.tokens import DocBin
+from spacy.cli.train import train as spacy_train
 
 retag_app = typer.Typer()
 
 
 def _load_data(dset: list[str], limit=100, split=0.8):
-    """Load data from the IMDB dataset."""
     # Partition off part of the train data for evaluation
     random.Random(42).shuffle(dset)
     train_size = int(split * limit)
@@ -55,6 +49,8 @@ def retag(
     for tag in tags:
         logging.info(f"Retagging: {tag}")
 
+        nlp = spacy.load("en_core_web_lg")
+
         logging.info(f"Obtaining positive examples for {tag}...")
         positive_dset = dset.filter(
             lambda x: tag in x["meshMajor"], num_proc=num_proc
@@ -67,71 +63,45 @@ def retag(
         )
         neg_x_train, neg_x_test = _load_data(negative_dset['abstractText'], limit=100, split=0.8)
 
-        train_data = [(x, tag) for x in pos_x_train]
-        train_data.extend([(x, 'other') for x in neg_x_train])
+        logging.info(f"Processing corpus...")
+        train_data = DocBin()
+        for doc in nlp.pipe(pos_x_train):
+            doc.cats[tag] = 1
+            doc.cats['O'] = 0
+            train_data.add(doc)
+        for doc in nlp.pipe(neg_x_train):
+            doc.cats[tag] = 0
+            doc.cats['O'] = 1
+            train_data.add(doc)
+        train_data_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), "train.spacy")
+        train_data.to_disk(train_data_path)
 
-        columns = ["text", "category"]
-        train_df = spark.createDataFrame(train_data, columns)
+        test_data = DocBin()
+        for doc in nlp.pipe(pos_x_test):
+            doc.cats[tag] = 1
+            doc.cats['O'] = 0
+            test_data.add(doc)
+        for doc in nlp.pipe(pos_x_test):
+            doc.cats[tag] = 0
+            doc.cats['O'] = 1
+            test_data.add(doc)
+        test_data_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), "test.spacy")
+        test_data.to_disk(test_data_path)
 
-        test_data = [(x, tag) for x in pos_x_test]
-        test_data.extend([(x, 'other') for x in neg_x_test])
-        test_df = spark.createDataFrame(test_data, columns)
+        logging.info(f"Train data size: {len(train_data)}")
+        logging.info(f"Test data size: {len(test_data)}")
 
-        logging.info(train_df.groupBy("category") \
-            .count() \
-            .orderBy(col("count").desc()) \
-            .show())
-
-        logging.info(train_df.groupBy("category") \
-              .count() \
-              .orderBy(col("count").desc()) \
-              .show())
-
-        document_assembler = nlp.DocumentAssembler() \
-            .setInputCol("text") \
-            .setOutputCol("document")
-
-        tokenizer = nlp.Tokenizer() \
-            .setInputCols(["document"]) \
-            .setOutputCol("token")
-
-        bert_embeddings = nlp.BertEmbeddings().pretrained(name='small_bert_L4_256', lang='en') \
-            .setInputCols(["document", 'token']) \
-            .setOutputCol("embeddings")
-
-        embeddingsSentence = nlp.SentenceEmbeddings() \
-            .setInputCols(["document", "embeddings"]) \
-            .setOutputCol("sentence_embeddings") \
-            .setPoolingStrategy("AVERAGE")
-
-        classsifierdl = nlp.ClassifierDLApproach() \
-            .setInputCols(["sentence_embeddings"]) \
-            .setOutputCol("label") \
-            .setLabelColumn("category") \
-            .setMaxEpochs(10) \
-            .setLr(0.001) \
-            .setBatchSize(8) \
-            .setEnableOutputLogs(True)
-        # .setOutputLogsPath('logs')
-
-        bert_clf_pipeline = nlp.Pipeline(stages=[document_assembler,
-                                             tokenizer,
-                                             bert_embeddings,
-                                             embeddingsSentence,
-                                             classsifierdl])
-
-        clf_pipelineModel = bert_clf_pipeline.fit(train_df)
-        preds = clf_pipelineModel.transform(test_df)
-        logging.info(preds.select('category', 'text', 'label.result').show(10, truncate=80))
-
-        preds_df = preds.select('category', 'text', 'label.result').toPandas()
-
-        # The result is an array since in Spark NLP you can have multiple sentences.
-        # Let's explode the array and get the item(s) inside of result column out
-        preds_df['result'] = preds_df['result'].apply(lambda x: x[0])
-
-        print(classification_report(preds_df['category'], preds_df['result']))
-
+        config_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), "config.cfg")
+        output_model_path = "spacy_textcat"
+        spacy_train(
+            config_path,
+            output_path=output_model_path,
+            overrides={
+                "paths.train": train_data_path,
+                "paths.dev": test_data_path,
+            },
+        )
+        break
 
 
 @retag_app.command()
@@ -174,6 +144,8 @@ def retag_cli(
         )
         exit(-1)
 
+    spacy.cli.download("en_core_web_lg")
+
     retag(
         data_path,
         save_to_path,
@@ -183,3 +155,4 @@ def retag_cli(
         concurrent_calls=concurrent_calls,
         tags_file_path=tags_file_path,
     )
+"""
