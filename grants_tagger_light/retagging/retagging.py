@@ -135,7 +135,6 @@ def retag(
                 before = tag in old_tags
                 after = result['label'][0] == tag
                 if before != after:
-                    logging.info("- Corrected!")
                     row = dset[counter]
                     if after is True:
                         row['meshMajor'].append(tag)
@@ -143,7 +142,9 @@ def retag(
                     else:
                         row['meshMajor'].remove(tag)
                         row['correction'] = f"-{tag}"
+                    logging.info(f"- Corrected: {row['correction']}")
                     json.dump(row, f)
+                    f.write("\n")
                     f.flush()
                 counter += 1
 
