@@ -129,7 +129,7 @@ def retag(
         fit_pred_lightpipeline = nlp.LightPipeline(fit_pred_pipeline)
         logging.info(f"- Retagging {tag}...")
         with open(save_to_path, 'a') as f:
-            for i, text in dset["abstractText"]:
+            for i, text in enumerate(dset["abstractText"]):
                 result = fit_pred_lightpipeline.annotate(text)
                 before = tag in dset['meshMajor'][i]
                 after = result['label'][0] == tag
