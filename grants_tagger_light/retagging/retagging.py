@@ -50,7 +50,7 @@ def retag(
     for tag in tags:
         logging.info(f"Retagging: {tag}")
 
-        nlp = spacy.load("en_core_web_sm")
+        nlp = spacy.load("en_core_web_lg")
 
         logging.info(f"Obtaining positive examples for {tag}...")
         positive_dset = dset.filter(
@@ -64,6 +64,7 @@ def retag(
         )
         neg_x_train, neg_x_test = _load_data(negative_dset['abstractText'], limit=100, split=0.8)
 
+        logging.info(f"Processing corpus...")
         train_data = DocBin()
         for doc in nlp.pipe(pos_x_train):
             doc.cats[tag] = 1
@@ -144,7 +145,7 @@ def retag_cli(
         )
         exit(-1)
 
-    spacy.cli.download("en_core_web_sm")
+    spacy.cli.download("en_core_web_lg")
 
     retag(
         data_path,
