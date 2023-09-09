@@ -29,11 +29,12 @@ def _load_data(dset: list[str], limit=100, split=0.8):
     return train_dset, test_dset
 
 
-def _process_prediction_batch(save_to_path, current_batch, lightpipeline, threshold, tag, dset_row):
+def _process_prediction_batch(save_to_path, current_batch, lightpipeline, threshold, tag, dset):
     with open(save_to_path, 'a') as f:
         # result = fit_pred_lightpipeline.fullAnnotate(text)
         batch_texts = [x[0] for x in current_batch]
         batch_tags = [x[1] for x in current_batch]
+        batch_row_nums = [x[2] for x in current_batch]
         result = lightpipeline.fullAnnotate(batch_texts)
         for r in range(len(result)):
             prediction = result[r]['label'][0].result
@@ -45,7 +46,7 @@ def _process_prediction_batch(save_to_path, current_batch, lightpipeline, thresh
 
             before = tag in prediction_old_tags
             after = prediction == tag
-
+            dset_row = dset[batch_row_nums[r]]
             if before != after:
                 if 'correction' not in dset_row:
                     dset_row['correction'] = []
@@ -161,17 +162,16 @@ def retag(
         fit_pred_lightpipeline = nlp.LightPipeline(fit_pred_pipeline)
         logging.info(f"- Retagging {tag}...")
 
-        counter = 0
+        counter = -1
         current_batch = []
         for text, old_tags in zip(dset["abstractText"], dset["meshMajor"]):
+            counter += 1
             if len(current_batch) < batch_size:
-                current_batch.append((text, old_tags))
+                current_batch.append((text, old_tags, counter))
                 continue
             else:
-                _process_prediction_batch(save_to_path, current_batch, fit_pred_lightpipeline, threshold, tag,
-                                          dset[counter])
+                _process_prediction_batch(save_to_path, current_batch, fit_pred_lightpipeline, threshold, tag, dset)
                 current_batch = []
-            counter += 1
 
         # Remaining
         if len(current_batch) > 0:
