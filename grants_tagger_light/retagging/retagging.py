@@ -32,8 +32,8 @@ def _load_data(dset: list[str], limit=100, split=0.8):
 def _process_prediction_batch(save_to_path, current_batch, lightpipeline, threshold, tag, dset_row):
     with open(save_to_path, 'a') as f:
         # result = fit_pred_lightpipeline.fullAnnotate(text)
-        batch_texts = [x for x in current_batch[0]]
-        batch_tags = [x for x in current_batch[1]]
+        batch_texts = [x[0] for x in current_batch]
+        batch_tags = [x[1] for x in current_batch]
         result = lightpipeline.fullAnnotate(batch_texts)
         for r in range(len(result)):
             prediction = result[r]['label'][0].result
