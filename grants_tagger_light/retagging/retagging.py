@@ -30,14 +30,46 @@ def _load_data(dset: list[str], limit=100, split=0.8):
     return train_dset, test_dset
 
 
+def _process_prediction_batch(save_to_path, current_batch, lightpipeline, threshold, tag, dset_row):
+    with open(save_to_path, 'a') as f:
+        # result = fit_pred_lightpipeline.fullAnnotate(text)
+        batch_texts = [x for x in current_batch[0]]
+        batch_tags = [x for x in current_batch[1]]
+        result = lightpipeline.fullAnnotate(batch_texts)
+        for r in range(len(result)):
+            prediction = result[r]['label'][0].result
+            prediction_confidence = float(result[r]['label'][0].metadata[tag])
+            prediction_old_tags = batch_tags[r]
+
+            if prediction_confidence < threshold:
+                continue
+
+            before = tag in prediction_old_tags
+            after = prediction == tag
+
+            if before != after:
+                if 'correction' not in dset_row:
+                    dset_row['correction'] = []
+                if after is True:
+                    dset_row['meshMajor'].append(tag)
+                    dset_row['correction'].append(f"+{tag}")
+                else:
+                    dset_row['meshMajor'].remove(tag)
+                    dset_row['correction'].append(f"-{tag}")
+                logging.info(f"- Corrected: {row['correction']}")
+                json.dump(dset_row, f)
+                f.write("\n")
+                f.flush()
+
+
 def retag(
     data_path: str,
     save_to_path: str,
     model_key: str = "gpt-3.5-turbo",
     num_proc: int = os.cpu_count(),
     batch_size: int = 64,
-    concurrent_calls: int = os.cpu_count() * 2,
     tags_file_path: str = None,
+    threshold: float = 0.8
 ):
     if model_key.strip().lower() not in ["gpt-3.5-turbo", "text-davinci", "gpt-4"]:
         raise NotImplementedError(
@@ -96,13 +128,14 @@ def retag(
             .setInputCols(["document"]) \
             .setOutputCol("sentence_embeddings") \
 
+        # I'm limiting the batch size to 8 since there are not many examples and big batch sizes will decrease accuracy
         classifierdl = nlp.ClassifierDLApproach() \
             .setInputCols(["sentence_embeddings"]) \
             .setOutputCol("label") \
             .setLabelColumn("category") \
             .setMaxEpochs(25) \
             .setLr(0.001) \
-            .setBatchSize(1) \
+            .setBatchSize(max(batch_size, 8)) \
             .setEnableOutputLogs(True)
         # .setOutputLogsPath('logs')
 
@@ -128,25 +161,23 @@ def retag(
         fit_pred_pipeline = pred_pipeline.fit(pred_df)
         fit_pred_lightpipeline = nlp.LightPipeline(fit_pred_pipeline)
         logging.info(f"- Retagging {tag}...")
-        with open(save_to_path, 'a') as f:
-            counter = 0
-            for text, old_tags in zip(dset["abstractText"], dset["meshMajor"]):
-                result = fit_pred_lightpipeline.annotate(text)
-                before = tag in old_tags
-                after = result['label'][0] == tag
-                if before != after:
-                    row = dset[counter]
-                    if after is True:
-                        row['meshMajor'].append(tag)
-                        row['correction'] = f"+{tag}"
-                    else:
-                        row['meshMajor'].remove(tag)
-                        row['correction'] = f"-{tag}"
-                    logging.info(f"- Corrected: {row['correction']}")
-                    json.dump(row, f)
-                    f.write("\n")
-                    f.flush()
-                counter += 1
+
+        counter = 0
+        current_batch = []
+        for text, old_tags in zip(dset["abstractText"], dset["meshMajor"]):
+            if len(current_batch) < batch_size:
+                current_batch.append((text, old_tags))
+                continue
+            else:
+                _process_prediction_batch(save_to_path, current_batch, fit_pred_lightpipeline, threshold, tag,
+                                          dset[counter])
+                current_batch = []
+            counter += 1
+
+        # Remaining
+        if len(current_batch) > 0:
+            _process_prediction_batch(save_to_path, current_batch, fit_pred_lightpipeline, threshold, tag,
+                                      dset[counter])
 
 
 @retag_app.command()
@@ -165,16 +196,15 @@ def retag_cli(
     batch_size: int = typer.Option(
         64, help="Preprocessing batch size (for dataset, filter, map, ...)"
     ),
-    concurrent_calls: int = typer.Option(
-        os.cpu_count() * 2,
-        min=1,
-        help="Concurrent calls with 1 tag each to the different model",
-    ),
     tags_file_path: str = typer.Option(
         None,
         help="Text file containing one line per tag to be considered. "
         "The rest will be discarded.",
     ),
+    threshold: float = typer.Option(
+        0.8,
+        help="Minimum threshold of confidence to retag a model. Default: 0.8"
+    )
 ):
     if not data_path.endswith("jsonl"):
         logger.error(
@@ -195,6 +225,6 @@ def retag_cli(
         model_key=model_key,
         num_proc=num_proc,
         batch_size=batch_size,
-        concurrent_calls=concurrent_calls,
         tags_file_path=tags_file_path,
+        threshold=threshold
     )
