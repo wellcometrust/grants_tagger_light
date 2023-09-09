@@ -7,13 +7,12 @@ from loguru import logger
 
 from datasets import load_dataset
 
-
 from johnsnowlabs import nlp
 
 import os
 
 from sklearn.metrics import classification_report
-from pyspark.sql.functions import *
+from pyspark.sql.functions import col
 
 spark = nlp.start()
 
@@ -56,7 +55,7 @@ def _process_prediction_batch(save_to_path, current_batch, lightpipeline, thresh
                 else:
                     dset_row['meshMajor'].remove(tag)
                     dset_row['correction'].append(f"-{tag}")
-                logging.info(f"- Corrected: {row['correction']}")
+                logging.info(f"- Corrected: {dset_row['correction']}")
                 json.dump(dset_row, f)
                 f.write("\n")
                 f.flush()
@@ -110,15 +109,15 @@ def retag(
         test_data.extend([(x, 'other') for x in neg_x_test])
         test_df = spark.createDataFrame(test_data, columns)
 
-        logging.info(train_df.groupBy("category") \
-            .count() \
-            .orderBy(col("count").desc()) \
-            .show())
+        logging.info(train_df.groupBy("category")
+                     .count()
+                     .orderBy(col("count").desc())
+                     .show())
 
-        logging.info(train_df.groupBy("category") \
-              .count() \
-              .orderBy(col("count").desc()) \
-              .show())
+        logging.info(train_df.groupBy("category")
+                     .count()
+                     .orderBy(col("count").desc())
+                     .show())
 
         document_assembler = nlp.DocumentAssembler() \
             .setInputCol("text") \
