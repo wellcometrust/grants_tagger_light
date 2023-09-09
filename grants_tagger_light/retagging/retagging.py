@@ -51,10 +51,10 @@ def _process_prediction_batch(save_to_path, current_batch, lightpipeline, thresh
                     dset_row['correction'] = []
                 if after is True:
                     dset_row['meshMajor'].append(tag)
-                    dset_row['correction'].append(f"+{tag}")
+                    dset_row['correction'].append({'change': f"+{tag}", 'confidence': prediction_confidence})
                 else:
                     dset_row['meshMajor'].remove(tag)
-                    dset_row['correction'].append(f"-{tag}")
+                    dset_row['correction'].append({'change': f"-{tag}", 'confidence': prediction_confidence})
                 logging.info(f"- Corrected: {dset_row['correction']}")
                 json.dump(dset_row, f)
                 f.write("\n")
