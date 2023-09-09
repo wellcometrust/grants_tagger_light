@@ -32,7 +32,6 @@ def _load_data(dset: list[str], limit=100, split=0.8):
 
 def _process_prediction_batch(save_to_path, current_batch, lightpipeline, threshold, tag, dset):
     with open(f"{save_to_path}.{tag}.jsonl", "a") as f:
-        # result = fit_pred_lightpipeline.fullAnnotate(text)
         batch_texts = [x[0] for x in current_batch]
         batch_tags = [x[1] for x in current_batch]
         batch_row_nums = [x[2] for x in current_batch]
@@ -66,17 +65,11 @@ def _process_prediction_batch(save_to_path, current_batch, lightpipeline, thresh
 def retag(
     data_path: str,
     save_to_path: str,
-    model_key: str = "gpt-3.5-turbo",
     num_proc: int = os.cpu_count(),
     batch_size: int = 64,
     tags_file_path: str = None,
     threshold: float = 0.8
 ):
-    if model_key.strip().lower() not in ["gpt-3.5-turbo", "text-davinci", "gpt-4"]:
-        raise NotImplementedError(
-            f"{model_key} not implemented as an augmentation framework"
-        )
-
     # We only have 1 file, so no sharding is available https://huggingface.co/docs/datasets/loading#multiprocessing
     logging.info("Loading the MeSH jsonl...")
     dset = load_dataset("json", data_files=data_path, num_proc=1)
@@ -119,15 +112,13 @@ def retag(
         test_data.extend([(x, 'other') for x in neg_x_test])
         test_df = spark.createDataFrame(test_data, columns)
 
-        logging.info(train_df.groupBy("category")
-                     .count()
-                     .orderBy(col("count").desc())
-                     .show())
+        train_df.groupBy("category")\
+            .count()\
+            .orderBy(col("count").desc())
 
-        logging.info(train_df.groupBy("category")
-                     .count()
-                     .orderBy(col("count").desc())
-                     .show())
+        train_df.groupBy("category")\
+            .count()\
+            .orderBy(col("count").desc())
 
         document_assembler = nlp.DocumentAssembler() \
             .setInputCol("text") \
@@ -171,21 +162,28 @@ def retag(
         fit_pred_lightpipeline = nlp.LightPipeline(fit_pred_pipeline)
         logging.info(f"- Retagging {tag}...")
 
-        counter = -1
+        row_counter = -1
+        batch_counter = -1
+
+        batch_total = len(dset["abstractText"])
+
         current_batch = []
+
         for text, old_tags in zip(dset["abstractText"], dset["meshMajor"]):
-            counter += 1
+            row_counter += 1
             if len(current_batch) < batch_size:
-                current_batch.append((text, old_tags, counter))
+                current_batch.append((text, old_tags, row_counter))
                 continue
             else:
+                batch_counter += 1
+                print(f"Processing batch {batch_counter}/{batch_total}", end="\r", flush=True)
+
                 _process_prediction_batch(save_to_path, current_batch, fit_pred_lightpipeline, threshold, tag, dset)
                 current_batch = []
 
         # Remaining
         if len(current_batch) > 0:
-            _process_prediction_batch(save_to_path, current_batch, fit_pred_lightpipeline, threshold, tag,
-                                      dset[counter])
+            _process_prediction_batch(save_to_path, current_batch, fit_pred_lightpipeline, threshold, tag, dset)
 
 
 @retag_app.command()
@@ -193,10 +191,6 @@ def retag_cli(
     data_path: str = typer.Argument(..., help="Path to mesh.jsonl"),
     save_to_path: str = typer.Argument(
         ..., help="Path where to save the retagged data"
-    ),
-    model_key: str = typer.Option(
-        "gpt-3.5-turbo",
-        help="LLM to use data augmentation. By now, only `openai` is supported",
     ),
     num_proc: int = typer.Option(
         os.cpu_count(), help="Number of processes to use for data augmentation"
@@ -230,7 +224,6 @@ def retag_cli(
     retag(
         data_path,
         save_to_path,
-        model_key=model_key,
         num_proc=num_proc,
         batch_size=batch_size,
         tags_file_path=tags_file_path,
