@@ -22,6 +22,7 @@ retag_app = typer.Typer()
 def _load_data(dset: list[str], limit=100, split=0.8):
     """Load data from the IMDB dataset."""
     # Partition off part of the train data for evaluation
+    limit = min(len(dset), limit)
     random.Random(42).shuffle(dset)
     train_size = int(split * limit)
     train_dset = dset[:train_size]
@@ -56,10 +57,10 @@ def _process_prediction_batch(save_to_path, current_batch, lightpipeline, thresh
                 else:
                     dset_row['meshMajor'].remove(tag)
                     dset_row['correction'].append({'change': f"-{tag}", 'confidence': prediction_confidence})
-                logging.info(f"- Corrected: {dset_row['correction']}")
+                # logging.info(f"- Corrected: {dset_row['correction']}")
                 json.dump(dset_row, f)
                 f.write("\n")
-                f.flush()
+        f.flush()
 
 
 def retag(
@@ -92,6 +93,14 @@ def retag(
         positive_dset = dset.filter(
             lambda x: tag in x["meshMajor"], num_proc=num_proc
         )
+
+        if len(positive_dset['abstractText']) < 50:
+            logging.info(f"Skipping {tag}: low examples ({len(positive_dset['abstractText'])}. "
+                         f"Check {save_to_path}.err for more information about skipped tags.")
+            with open(f"{save_to_path}.err", 'a') as f:
+                f.write(tag)
+            continue
+
         pos_x_train, pos_x_test = _load_data(positive_dset['abstractText'], limit=250, split=0.8)
 
         logging.info(f"- Obtaining negative examples for {tag}...")
