@@ -6,30 +6,35 @@ import typer
 from loguru import logger
 
 from datasets import load_dataset
-
+from datasets import Dataset
 from johnsnowlabs import nlp
 
 import os
 
 from sklearn.metrics import classification_report
-from pyspark.sql.functions import col
+from pyspark.sql.functions import col, array_contains
 
 spark = nlp.start()
 
 retag_app = typer.Typer()
 
 
-def _load_data(dset: list[str], limit=100, split=0.8):
+def _load_data(dset: Dataset, tag, limit=100, split=0.8):
     """Load data from the IMDB dataset."""
-    # Partition off part of the train data for evaluation
-    limit = min(len(dset), limit)
-    random.Random(42).shuffle(dset)
-    train_size = int(split * limit)
-    train_dset = dset[:train_size]
-    test_dset = dset[train_size:limit]
+    min_limit = min(len(dset), limit)
+    dset = dset.select([x for x in range(limit)])
+    # Not in parallel since the data is very small and it's worse to divide and conquer
+    dset.map(
+        lambda x: {'featured_tag': tag},
+        desc=f"Adding featured tag ({tag})",
+    )
+    train_size = int(split * min_limit)
+    train_dset = dset.select([x for x in range(train_size)])
+    test_dset = dset.select([x for x in range(train_size, min_limit)])
     return train_dset, test_dset
 
 
+"""
 def _process_prediction_batch(save_to_path, current_batch, lightpipeline, threshold, tag, dset):
     with open(f"{save_to_path}.{tag}.jsonl", "a") as f:
         batch_texts = [x[0] for x in current_batch]
@@ -59,7 +64,63 @@ def _process_prediction_batch(save_to_path, current_batch, lightpipeline, thresh
                 # logging.info(f"- Corrected: {dset_row['correction']}")
                 json.dump(dset_row, f)
                 f.write("\n")
-        f.flush()
+        f.flush()"""
+
+
+def _create_pipelines(batch_size, train_df, test_df):
+    """
+        This method creates a Spark pipeline (to run on dataframes) and a Spark Lightpipeline (to run on arrays of str)
+        Lightpipelines are faster in less data.
+    Args:
+        batch_size: max size of the batch to train. Since data is small for training, I limit it to 8.
+        train_df: Spark Dataframe of the train data
+        test_df: Spark Dataframe of the test data
+
+    Returns:
+        a tuple of (pipeline, lightpipeline)
+    """
+    document_assembler = nlp.DocumentAssembler() \
+        .setInputCol("abstractText") \
+        .setOutputCol("document")
+
+    embeddings = nlp.BertSentenceEmbeddings.pretrained("sent_bert_base_cased", "en") \
+        .setInputCols(["document"]) \
+        .setOutputCol("sentence_embeddings") \
+ \
+        # I'm limiting the batch size to 8 since there are not many examples and big batch sizes will decrease accuracy
+    classifierdl = nlp.ClassifierDLApproach() \
+        .setInputCols(["sentence_embeddings"]) \
+        .setOutputCol("label") \
+        .setLabelColumn("featured_tag") \
+        .setMaxEpochs(25) \
+        .setLr(0.001) \
+        .setBatchSize(max(batch_size, 8)) \
+        .setEnableOutputLogs(True)
+    # .setOutputLogsPath('logs')
+
+    clf_pipeline = nlp.Pipeline(stages=[document_assembler,
+                                        embeddings,
+                                        classifierdl])
+
+    fit_clf_pipeline = clf_pipeline.fit(train_df)
+    preds = fit_clf_pipeline.transform(test_df)
+    logging.info(preds.select('category', 'text', 'label.result').show(10, truncate=80))
+    preds_df = preds.select('category', 'text', 'label.result').toPandas()
+    preds_df['result'] = preds_df['result'].apply(lambda x: x[0])
+    logging.info(classification_report(preds_df['category'], preds_df['result']))
+
+    logging.info("- Loading the model for prediction...")
+    fit_clf_pipeline.stages[-1].write().overwrite().save('clf_tmp')
+    fit_clf_model = nlp.ClassifierDLModel.load('clf_tmp')
+
+    pred_pipeline = nlp.Pipeline(stages=[document_assembler,
+                                         embeddings,
+                                         fit_clf_model])
+    pred_df = spark.createDataFrame([['']]).toDF("text")
+    fit_pred_pipeline = pred_pipeline.fit(pred_df)
+    fit_pred_lightpipeline = nlp.LightPipeline(fit_pred_pipeline)
+
+    return fit_pred_pipeline, fit_pred_lightpipeline
 
 
 def retag(
@@ -94,81 +155,45 @@ def retag(
                 f.write(tag)
             continue
 
-        pos_x_train, pos_x_test = _load_data(positive_dset['abstractText'], limit=250, split=0.8)
+        pos_x_train, pos_x_test = _load_data(positive_dset, tag, limit=250, split=0.8)
 
-        logging.info(f"- Obtaining negative examples for {tag}...")
+        logging.info(f"- Obtaining negative examples ('other') for {tag}...")
         negative_dset = dset.filter(
             lambda x: tag not in x["meshMajor"], num_proc=num_proc
         )
-        neg_x_train, neg_x_test = _load_data(negative_dset['abstractText'], limit=250, split=0.8)
+        neg_x_train, neg_x_test = _load_data(negative_dset, "other", limit=250, split=0.8)
 
-        train_data = [(x, tag) for x in pos_x_train]
-        train_data.extend([(x, 'other') for x in neg_x_train])
+        train_df = spark.createDataFrame(pos_x_train)
+        train_df = train_df.union(neg_x_train)
 
-        columns = ["text", "category"]
-        train_df = spark.createDataFrame(train_data, columns)
+        test_df = spark.createDataFrame(pos_x_test)
+        test_df = test_df.union(neg_x_test)
 
-        test_data = [(x, tag) for x in pos_x_test]
-        test_data.extend([(x, 'other') for x in neg_x_test])
-        test_df = spark.createDataFrame(test_data, columns)
-
-        train_df.groupBy("category")\
-            .count()\
+        train_df.groupBy("featured_tag") \
+            .count() \
             .orderBy(col("count").desc())
 
-        train_df.groupBy("category")\
-            .count()\
+        test_df.groupBy("featured_tag") \
+            .count() \
             .orderBy(col("count").desc())
 
-        document_assembler = nlp.DocumentAssembler() \
-            .setInputCol("text") \
-            .setOutputCol("document")
+        pipeline, lightpipeline = _create_pipelines(batch_size, train_df, test_df)
 
-        embeddings = nlp.BertSentenceEmbeddings.pretrained("sent_bert_base_cased", "en") \
-            .setInputCols(["document"]) \
-            .setOutputCol("sentence_embeddings") \
-
-        # I'm limiting the batch size to 8 since there are not many examples and big batch sizes will decrease accuracy
-        classifierdl = nlp.ClassifierDLApproach() \
-            .setInputCols(["sentence_embeddings"]) \
-            .setOutputCol("label") \
-            .setLabelColumn("category") \
-            .setMaxEpochs(25) \
-            .setLr(0.001) \
-            .setBatchSize(max(batch_size, 8)) \
-            .setEnableOutputLogs(True)
-        # .setOutputLogsPath('logs')
-
-        clf_pipeline = nlp.Pipeline(stages=[document_assembler,
-                                            embeddings,
-                                            classifierdl])
-
-        fit_clf_pipeline = clf_pipeline.fit(train_df)
-        preds = fit_clf_pipeline.transform(test_df)
-        logging.info(preds.select('category', 'text', 'label.result').show(10, truncate=80))
-        preds_df = preds.select('category', 'text', 'label.result').toPandas()
-        preds_df['result'] = preds_df['result'].apply(lambda x: x[0])
-        logging.info(classification_report(preds_df['category'], preds_df['result']))
-
-        logging.info("- Loading the model for prediction...")
-        fit_clf_pipeline.stages[-1].write().overwrite().save('clf_tmp')
-        fit_clf_model = nlp.ClassifierDLModel.load('clf_tmp')
-
-        pred_pipeline = nlp.Pipeline(stages=[document_assembler,
-                                             embeddings,
-                                             fit_clf_model])
-        pred_df = spark.createDataFrame([['']]).toDF("text")
-        fit_pred_pipeline = pred_pipeline.fit(pred_df)
-        fit_pred_lightpipeline = nlp.LightPipeline(fit_pred_pipeline)
         logging.info(f"- Retagging {tag}...")
 
-        row_counter = -1
-        batch_counter = -1
+        # This is the most performant way to do it in Spark:
+        # 1) You predict using transform. It leverages all the nodes.
+        # 2) We filter on the fly - we only want rows predicted as {tag} but with that tag NOT (~) included in meshMajor
+        # 3) We save on the fly too
+        pipeline.transform(dset).\
+            filter(~array_contains(col('meshMajor'), col('featured_tag'))).\
+            write.mode('overwrite').save(f"{save_to_path}.{tag}")
 
-        batch_total = len(dset["abstractText"])
+        # batch_counter = -1
+        # batch_total = len(dset["abstractText"])
 
-        current_batch = []
-
+        # current_batch = []
+        """
         for text, old_tags in zip(dset["abstractText"], dset["meshMajor"]):
             row_counter += 1
             if len(current_batch) < batch_size:
@@ -178,13 +203,14 @@ def retag(
                 batch_counter += 1
                 print(f"Processing batch {batch_counter}/{batch_total}", end="\r", flush=True)
 
-                _process_prediction_batch(save_to_path, current_batch, fit_pred_lightpipeline, threshold, tag, dset)
+                _process_prediction_batch(save_to_path, current_batch, lightpipeline, threshold, tag, dset)
                 current_batch = []
-
+        
+        
         # Remaining
         if len(current_batch) > 0:
-            _process_prediction_batch(save_to_path, current_batch, fit_pred_lightpipeline, threshold, tag, dset)
-
+            _process_prediction_batch(save_to_path, current_batch, lightpipeline, threshold, tag, dset)
+        """
 
 @retag_app.command()
 def retag_cli(
