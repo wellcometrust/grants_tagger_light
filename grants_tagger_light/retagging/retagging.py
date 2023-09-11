@@ -22,9 +22,9 @@ spark = nlp.start(spark_conf={
     # Fraction of heap space used for storage memory
     'spark.memory.storageFraction': '0.5',
     # Enable off-heap storage (for large datasets)
-    'spark.memory.offHeap.enabled': 'true',
+    'spark.memory.offHeap.enabled': 'false',
     # Off-heap memory size (adjust as needed)
-    'spark.memory.offHeap.size': '16g',
+    # 'spark.memory.offHeap.size': '10g',
     'spark.shuffle.manager': 'sort',
     'spark.shuffle.spill': 'true',
     'spark.master': f'local[{os.cpu_count()}]',
@@ -54,11 +54,11 @@ def _load_data(dset: Dataset, tag, limit=100, split=0.8):
     return train_dset, test_dset
 
 
-def _create_pipelines(batch_size, train_df, test_df):
+def _create_pipelines(save_to_path, batch_size, train_df, test_df, tag):
     """
-        This method creates a Spark pipeline (to run on dataframes) and a Spark Lightpipeline (to run on arrays of str)
-        Lightpipelines are faster in less data.
+        This method creates a Spark pipeline (to run on dataframes)
     Args:
+        save_to_path: path where to save the final results.
         batch_size: max size of the batch to train. Since data is small for training, I limit it to 8.
         train_df: Spark Dataframe of the train data
         test_df: Spark Dataframe of the test data
@@ -75,39 +75,49 @@ def _create_pipelines(batch_size, train_df, test_df):
         .setInputCols(["document"]) \
         .setOutputCol("sentence_embeddings")
 
-    # I'm limiting the batch size to 8 since there are not many examples and big batch sizes will decrease accuracy
-    classifierdl = nlp.ClassifierDLApproach() \
-        .setInputCols(["sentence_embeddings"]) \
-        .setOutputCol("label") \
-        .setLabelColumn("featured_tag") \
-        .setMaxEpochs(25) \
-        .setLr(0.001) \
-        .setBatchSize(max(batch_size, 8)) \
-        .setEnableOutputLogs(True)
-    # .setOutputLogsPath('logs')
+    retrain = True
+    clf_dir = f"{save_to_path}.{tag}_clf"
+    if os.path.isdir(clf_dir):
+        answer = "Classifier already trained. Do you want to reuse it? [y|n]: "
+        while answer not in ['y', 'n']:
+            answer = "Classifier already trained. Do you want to reuse it? [y|n]: "
+        if answer == 'n':
+            retrain = False
 
-    clf_pipeline = nlp.Pipeline(stages=[document_assembler,
-                                        embeddings,
-                                        classifierdl])
+    if retrain:
+        # I'm limiting the batch size to 8 since there are not many examples and big batch sizes will decrease accuracy
+        classifierdl = nlp.ClassifierDLApproach() \
+            .setInputCols(["sentence_embeddings"]) \
+            .setOutputCol("label") \
+            .setLabelColumn("featured_tag") \
+            .setMaxEpochs(25) \
+            .setLr(0.001) \
+            .setBatchSize(max(batch_size, 8)) \
+            .setEnableOutputLogs(True)
+        # .setOutputLogsPath('logs')
 
-    fit_clf_pipeline = clf_pipeline.fit(train_df)
-    preds = fit_clf_pipeline.transform(test_df)
-    preds_df = preds.select('featured_tag', 'abstractText', 'label.result').toPandas()
-    preds_df['result'] = preds_df['result'].apply(lambda x: x[0])
-    logging.info(classification_report(preds_df['featured_tag'], preds_df['result']))
+        clf_pipeline = nlp.Pipeline(stages=[document_assembler,
+                                            embeddings,
+                                            classifierdl])
 
-    logging.info("- Loading the model for prediction...")
-    fit_clf_pipeline.stages[-1].write().overwrite().save('clf_tmp')
-    fit_clf_model = nlp.ClassifierDLModel.load('clf_tmp')
+        fit_clf_pipeline = clf_pipeline.fit(train_df)
+        preds = fit_clf_pipeline.transform(test_df)
+        preds_df = preds.select('featured_tag', 'abstractText', 'label.result').toPandas()
+        preds_df['result'] = preds_df['result'].apply(lambda x: x[0])
+        logging.info(classification_report(preds_df['featured_tag'], preds_df['result']))
+
+        logging.info("- Loading the model for prediction...")
+        fit_clf_pipeline.stages[-1].write().overwrite().save(clf_dir)
+
+    fit_clf_model = nlp.ClassifierDLModel.load(clf_dir)
 
     pred_pipeline = nlp.Pipeline(stages=[document_assembler,
                                          embeddings,
                                          fit_clf_model])
     pred_df = spark.createDataFrame([['']]).toDF("text")
     fit_pred_pipeline = pred_pipeline.fit(pred_df)
-    fit_pred_lightpipeline = nlp.LightPipeline(fit_pred_pipeline)
 
-    return fit_pred_pipeline, fit_pred_lightpipeline
+    return fit_pred_pipeline
 
 
 def _annotate(save_to_path, dset, tag, limit, is_positive):
@@ -235,7 +245,7 @@ def retag(
         logging.info(f"- Test dataset size: {test_df.count()}")
 
         logging.info(f"- Creating `sparknlp` pipelines...")
-        pipeline, lightpipeline = _create_pipelines(batch_size, train_df, test_df)
+        pipeline = _create_pipelines(save_to_path, batch_size, train_df, test_df, tag)
 
         logging.info(f"- Optimizing dataframe...")
         data_in_parquet = f"{save_to_path}.data.parquet"
