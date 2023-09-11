@@ -12,6 +12,7 @@ from johnsnowlabs import nlp
 import os
 
 from sklearn.metrics import classification_report
+import pyarrow.parquet as pq
 
 spark = nlp.start(spark_conf={'spark.executor.memory': '6g'})
 spark.sparkContext.setLogLevel("OFF")
@@ -217,12 +218,13 @@ def retag(
         logging.info(f"- Creating `sparknlp` pipelines...")
         pipeline, lightpipeline = _create_pipelines(batch_size, train_df, test_df)
 
-        logging.info(f"- Retagging {tag}...")
+        logging.info(f"- Optimizing dataframe in parquet...")
+        data_in_parquet = f"{save_to_path}.data.parquet"
+        pq.write_table(dset.data.table, data_in_parquet)
+        sdf = spark.read.load(data_in_parquet)
 
-        # This is the most performant way to do it in Spark:
-        # 1) You predict using transform. It leverages all the nodes.
-        # 2) Instead of returning the result, we save to disk and then load.
-        pipeline.transform(spark.createDataFrame(dset).repartition(num_proc)). \
+        logging.info(f"- Retagging {tag}...")
+        pipeline.transform(sdf.repartition(num_proc)). \
             write.mode('overwrite').save(f"{save_to_path}.{tag}.prediction")
 
         # 1) We load
