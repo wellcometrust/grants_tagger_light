@@ -78,9 +78,9 @@ def _create_pipelines(save_to_path, batch_size, train_df, test_df, tag):
     retrain = True
     clf_dir = f"{save_to_path}.{tag.replace(' ', '')}_clf"
     if os.path.isdir(clf_dir):
-        answer = "Classifier already trained. Do you want to reuse it? [y|n]: "
+        answer = input("Classifier already trained. Do you want to reuse it? [y|n]: ")
         while answer not in ['y', 'n']:
-            answer = "Classifier already trained. Do you want to reuse it? [y|n]: "
+            answer = input("Classifier already trained. Do you want to reuse it? [y|n]: ")
         if answer == 'n':
             retrain = False
 
