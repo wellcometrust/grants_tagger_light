@@ -221,7 +221,7 @@ def retag(
         pipeline, lightpipeline = _create_pipelines(batch_size, train_df, test_df)
 
         logging.info(f"- Optimizing dataframe...")
-        dset = dset.remove_columns(["title", "journal", "title"])
+        dset = dset.remove_columns(["title", "journal", "year"])
         data_in_parquet = f"{save_to_path}.data.parquet"
         pq.write_table(dset.data.table, data_in_parquet)
         del dset, train, train_df, test, test_df, pos_x_train, pos_x_test, neg_x_train, neg_x_test, positive_dset, \
