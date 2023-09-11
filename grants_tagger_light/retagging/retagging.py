@@ -15,16 +15,16 @@ from sklearn.metrics import classification_report
 import pyarrow.parquet as pq
 
 spark = nlp.start(spark_conf={
-    'spark.driver.memory': '12g',
-    'spark.executor.memory': '12g',
+    'spark.driver.memory': '6g',
+    'spark.executor.memory': '6g',
     # Fraction of heap space used for execution memory
-    'spark.memory.fraction': '0.5',
+    'spark.memory.fraction': '0.6',
     # Fraction of heap space used for storage memory
-    'spark.memory.storageFraction': '0.5',
+    'spark.memory.storageFraction': '0.4',
     # Enable off-heap storage (for large datasets)
-    'spark.memory.offHeap.enabled': 'false',
+    'spark.memory.offHeap.enabled': 'true',
     # Off-heap memory size (adjust as needed)
-    # 'spark.memory.offHeap.size': '10g',
+    'spark.memory.offHeap.size': '10g',
     'spark.shuffle.manager': 'sort',
     'spark.shuffle.spill': 'true',
     'spark.master': f'local[{os.cpu_count()}]',
