@@ -81,7 +81,7 @@ def _create_pipelines(save_to_path, batch_size, train_df, test_df, tag):
         answer = input("Classifier already trained. Do you want to reuse it? [y|n]: ")
         while answer not in ['y', 'n']:
             answer = input("Classifier already trained. Do you want to reuse it? [y|n]: ")
-        if answer == 'n':
+        if answer == 'y':
             retrain = False
 
     if retrain:
