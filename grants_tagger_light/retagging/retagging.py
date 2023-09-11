@@ -12,9 +12,8 @@ from johnsnowlabs import nlp
 import os
 
 from sklearn.metrics import classification_report
-from pyspark.sql.functions import col, lit, array_contains
 
-spark = nlp.start()
+spark = nlp.start(spark_conf={'spark.executor.memory': '6g'})
 spark.sparkContext.setLogLevel("OFF")
 
 retag_app = typer.Typer()
