@@ -14,8 +14,10 @@ import os
 from sklearn.metrics import classification_report
 import pyarrow.parquet as pq
 
-spark = nlp.start(spark_conf={'spark.executor.memory': '6g',
-                              'spark.driver.maxResultSize': '6g'}
+spark = nlp.start(spark_conf={'spark.executor.memory': '10g',
+                              'spark.driver.maxResultSize': '6g',
+                              'spark.executor.memoryOverhead': '1g',
+                              'spark.memory.fraction': '0.6'}
                   )
 spark.sparkContext.setLogLevel("OFF")
 
