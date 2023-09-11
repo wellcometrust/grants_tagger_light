@@ -14,12 +14,27 @@ import os
 from sklearn.metrics import classification_report
 import pyarrow.parquet as pq
 
-spark = nlp.start(spark_conf={'spark.executor.memory': '10g',
-                              'spark.driver.maxResultSize': '6g',
-                              'spark.executor.memoryOverhead': '1g',
-                              'spark.memory.fraction': '0.6'}
-                  )
-spark.sparkContext.setLogLevel("OFF")
+spark = nlp.start(spark_conf={
+    'spark.driver.memory': '8g',
+    'spark.executor.memory': '8g',
+    # Fraction of heap space used for execution memory
+    'spark.memory.fraction': '0.7',
+    # Fraction of heap space used for storage memory
+    'spark.memory.storageFraction': '0.3',
+    # Enable off-heap storage (for large datasets)
+    'spark.memory.offHeap.enabled': 'true',
+    # Off-heap memory size (adjust as needed)
+    'spark.memory.offHeap.size': '8g',
+    'spark.shuffle.manager': 'sort',
+    'spark.shuffle.spill': 'true',
+    'spark.master': f'local[{os.cpu_count()}]',
+    'spark.default.parallelism': f'{os.cpu_count()*2}',
+    'spark.speculation': 'false',
+    'spark.task.maxFailures': '4',
+    'spark.local.dir': f"{os.path.join(os.getcwd(), '.spark')}",
+    'spark.eventLog.enabled': 'true',
+    'spark.eventLog.dir': f"{os.path.join(os.getcwd(), '.sparklogs')}"
+})
 
 retag_app = typer.Typer()
 
