@@ -31,9 +31,9 @@ spark = nlp.start(spark_conf={
     'spark.default.parallelism': f'{os.cpu_count()*2}',
     'spark.speculation': 'false',
     'spark.task.maxFailures': '4',
-    'spark.local.dir': f"{os.path.join(os.getcwd(), '.spark')}",
+    'spark.local.dir': f"{os.path.join(os.getcwd())}",
     'spark.eventLog.enabled': 'true',
-    'spark.eventLog.dir': f"{os.path.join(os.getcwd(), '.sparklogs')}"
+    'spark.eventLog.dir': f"{os.path.join(os.getcwd())}"
 })
 
 retag_app = typer.Typer()
