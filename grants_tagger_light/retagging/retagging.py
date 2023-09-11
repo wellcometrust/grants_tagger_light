@@ -14,7 +14,9 @@ import os
 from sklearn.metrics import classification_report
 import pyarrow.parquet as pq
 
-spark = nlp.start(spark_conf={'spark.executor.memory': '6g'})
+spark = nlp.start(spark_conf={'spark.executor.memory': '6g',
+                              'spark.driver.maxResultSize': '6g'}
+                  )
 spark.sparkContext.setLogLevel("OFF")
 
 retag_app = typer.Typer()
@@ -218,14 +220,19 @@ def retag(
         logging.info(f"- Creating `sparknlp` pipelines...")
         pipeline, lightpipeline = _create_pipelines(batch_size, train_df, test_df)
 
-        logging.info(f"- Optimizing dataframe in parquet...")
+        logging.info(f"- Optimizing dataframe...")
+        dset = dset.remove_columns(["title", "journal", "title"])
         data_in_parquet = f"{save_to_path}.data.parquet"
         pq.write_table(dset.data.table, data_in_parquet)
+        del dset, train, train_df, test, test_df, pos_x_train, pos_x_test, neg_x_train, neg_x_test, positive_dset, \
+            negative_dset
         sdf = spark.read.load(data_in_parquet)
 
+        logging.info(f"- Repartitioning...")
+        sdf = sdf.repartition(num_proc)
+
         logging.info(f"- Retagging {tag}...")
-        pipeline.transform(sdf.repartition(num_proc)). \
-            write.mode('overwrite').save(f"{save_to_path}.{tag}.prediction")
+        pipeline.transform(sdf).write.mode('overwrite').save(f"{save_to_path}.{tag}.prediction")
 
         # 1) We load
         # 2) We filter to get those results where the predicted tag was not initially in meshMajor
