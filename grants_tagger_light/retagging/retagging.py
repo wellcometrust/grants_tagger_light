@@ -15,16 +15,16 @@ from sklearn.metrics import classification_report
 import pyarrow.parquet as pq
 
 spark = nlp.start(spark_conf={
-    'spark.driver.memory': '8g',
-    'spark.executor.memory': '8g',
+    'spark.driver.memory': '12g',
+    'spark.executor.memory': '12g',
     # Fraction of heap space used for execution memory
-    'spark.memory.fraction': '0.7',
+    'spark.memory.fraction': '0.5',
     # Fraction of heap space used for storage memory
-    'spark.memory.storageFraction': '0.3',
+    'spark.memory.storageFraction': '0.5',
     # Enable off-heap storage (for large datasets)
     'spark.memory.offHeap.enabled': 'true',
     # Off-heap memory size (adjust as needed)
-    'spark.memory.offHeap.size': '8g',
+    'spark.memory.offHeap.size': '16g',
     'spark.shuffle.manager': 'sort',
     'spark.shuffle.spill': 'true',
     'spark.master': f'local[{os.cpu_count()}]',
@@ -238,10 +238,20 @@ def retag(
         pipeline, lightpipeline = _create_pipelines(batch_size, train_df, test_df)
 
         logging.info(f"- Optimizing dataframe...")
-        dset = dset.remove_columns(["title", "journal", "year"])
         data_in_parquet = f"{save_to_path}.data.parquet"
-        pq.write_table(dset.data.table, data_in_parquet)
-        del dset, train, train_df, test, test_df, pos_x_train, pos_x_test, neg_x_train, neg_x_test, positive_dset, \
+        optimize=True
+        if os.path.isfile(data_in_parquet):
+            answer = input("Optimized dataframe found. Do you want to use it? [y|n]: ")
+            while answer not in ['y', 'n']:
+                answer = input("Optimized dataframe found. Do you want to use it? [y|n]: ")
+            if answer == 'y':
+                optimize = False
+
+        if optimize:
+            dset = dset.remove_columns(["title", "journal", "year"])
+
+            pq.write_table(dset.data.table, data_in_parquet)
+        del dset, train, train_df, test, test_df, pos_x_train, pos_x_test, neg_x_train, neg_x_test, positive_dset,\
             negative_dset
         sdf = spark.read.load(data_in_parquet)
 
