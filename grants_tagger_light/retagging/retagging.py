@@ -76,7 +76,7 @@ def _create_pipelines(save_to_path, batch_size, train_df, test_df, tag):
         .setOutputCol("sentence_embeddings")
 
     retrain = True
-    clf_dir = f"{save_to_path}.{tag}_clf"
+    clf_dir = f"{save_to_path}.{tag.replace(' ', '')}_clf"
     if os.path.isdir(clf_dir):
         answer = "Classifier already trained. Do you want to reuse it? [y|n]: "
         while answer not in ['y', 'n']:
@@ -122,7 +122,7 @@ def _create_pipelines(save_to_path, batch_size, train_df, test_df, tag):
 
 def _annotate(save_to_path, dset, tag, limit, is_positive):
     human_supervision = {}
-    curation_file = f"{save_to_path}.{tag}.curation.json"
+    curation_file = f"{save_to_path}.{tag.replace(' ', '')}.curation.json"
     if os.path.isfile(curation_file):
         with open(curation_file, 'r') as f:
             human_supervision = json.load(f)
@@ -219,7 +219,7 @@ def retag(
             logging.info(f"- Curating data...")
             _curate(save_to_path, positive_dset, negative_dset, tag, train_examples)
 
-            curation_file = f"{save_to_path}.{tag}.curation.json"
+            curation_file = f"{save_to_path}.{tag.replace(' ', '')}.curation.json"
             if os.path.isfile(curation_file):
                 with open(curation_file, "r") as fr:
                     # I load the curated data file
@@ -269,7 +269,7 @@ def retag(
         sdf = sdf.repartition(num_proc)
 
         logging.info(f"- Retagging {tag}...")
-        pipeline.transform(sdf).write.mode('overwrite').save(f"{save_to_path}.{tag}.prediction")
+        pipeline.transform(sdf).write.mode('overwrite').save(f"{save_to_path}.{tag.replace(' ', '')}.prediction")
 
         # 1) We load
         # 2) We filter to get those results where the predicted tag was not initially in meshMajor
