@@ -223,7 +223,7 @@ def retag(
         # This is the most performant way to do it in Spark:
         # 1) You predict using transform. It leverages all the nodes.
         # 2) Instead of returning the result, we save to disk and then load.
-        pipeline.transform(spark.createDataFrame(dset)). \
+        pipeline.transform(spark.createDataFrame(dset).repartition(num_proc)). \
             write.mode('overwrite').save(f"{save_to_path}.{tag}.prediction")
 
         # 1) We load
