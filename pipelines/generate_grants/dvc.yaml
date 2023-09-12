@@ -22,4 +22,4 @@ stages:
       - scripts/create_xlinear_bertmesh_comparison_csv.py
     wdir: "../.."
     outs:
-      - data/grants_comparison/comparison.csv
+      - data/grants_comparison/comparison.xlsx

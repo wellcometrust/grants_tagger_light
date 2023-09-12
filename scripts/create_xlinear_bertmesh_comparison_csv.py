@@ -193,7 +193,7 @@ def create_comparison_csv(
         )
 
     # Output df to csv
-    grants_sample.to_csv(output_path, index=False)
+    grants_sample.to_excel(output_path, index=False)
 
 
 if __name__ == "__main__":
