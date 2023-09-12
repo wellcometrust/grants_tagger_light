@@ -17,7 +17,7 @@ stages:
       --xlinear-label-binarizer-path models/xlinear-0.2.5/label_binarizer.pkl
       --xlinear-thresh 0.2
       --pre-annotate-xlinear
-      --output-path data/grants_comparison/comparison.csv
+      --output-path data/grants_comparison/comparison.xlsx
     deps:
       - scripts/create_xlinear_bertmesh_comparison_csv.py
     wdir: "../.."
