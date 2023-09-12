@@ -130,8 +130,9 @@ def create_comparison_csv(
     active_grants = active_grants[~active_grants["Synopsis"].isna()]
     active_grants.sample(frac=1)
     active_grants_sample = active_grants.iloc[:active_portfolio_sample]
-    active_grants_sample = pd.DataFrame({"abstract": active_grants_sample["Synopsis"]})
+    active_grants_sample = pd.DataFrame({"abstract": active_grants_sample["Synopsis"], "Reference": active_grants_sample["Reference"]})
     active_grants_sample["active_portfolio"] = 1
+    active_grants.drop_duplicates(subset="abstract", inplace=True)
     grants_sample = pd.concat([grants_sample, active_grants_sample])
 
     abstracts = grants_sample["abstract"].tolist()
