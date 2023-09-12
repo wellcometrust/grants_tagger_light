@@ -6,17 +6,19 @@ import time
 import typer
 from loguru import logger
 
-from datasets import Dataset, load_dataset, concatenate_datasets
-from johnsnowlabs import nlp
+from datasets import Dataset, load_dataset, concatenate_datasets, load_from_disk
 
 import os
 
-from sklearn.metrics import classification_report
-import pyarrow.parquet as pq
+from sklearn import preprocessing
 
+from grants_tagger_light.models.xlinear import MeshXLinear
 from grants_tagger_light.utils.years_tags_parser import parse_years, parse_tags
+import scipy
+import pickle as pkl
 
 import numpy as np
+import tqdm
 
 retag_app = typer.Typer()
 
@@ -36,94 +38,22 @@ def _load_data(dset: Dataset, tag, limit=100, split=0.8):
     return train_dset, test_dset
 
 
-def _create_pipelines(save_to_path, batch_size, train_df, test_df, tag, spark):
-    """
-        This method creates a Spark pipeline (to run on dataframes)
-    Args:
-        save_to_path: path where to save the final results.
-        batch_size: max size of the batch to train. Since data is small for training, I limit it to 8.
-        train_df: Spark Dataframe of the train data
-        test_df: Spark Dataframe of the test data
-        spark: the Spark Object
-
-    Returns:
-        a tuple of (pipeline, lightpipeline)
-    """
-    document_assembler = nlp.DocumentAssembler() \
-        .setInputCol("abstractText") \
-        .setOutputCol("document")
-
-    # Biobert Sentence Embeddings (clinical)
-    embeddings = nlp.BertSentenceEmbeddings.pretrained("sent_biobert_clinical_base_cased", "en") \
-        .setInputCols(["document"]) \
-        .setOutputCol("sentence_embeddings")
-
-    retrain = True
-    clf_dir = f"{save_to_path}.{tag.replace(' ', '')}_clf"
-    if os.path.isdir(clf_dir):
-        answer = input("Classifier already trained. Do you want to reuse it? [y|n]: ")
-        while answer not in ['y', 'n']:
-            answer = input("Classifier already trained. Do you want to reuse it? [y|n]: ")
-        if answer == 'y':
-            retrain = False
-
-    if retrain:
-        # I'm limiting the batch size to 8 since there are not many examples and big batch sizes will decrease accuracy
-        classifierdl = nlp.ClassifierDLApproach() \
-            .setInputCols(["sentence_embeddings"]) \
-            .setOutputCol("label") \
-            .setLabelColumn("featured_tag") \
-            .setMaxEpochs(25) \
-            .setLr(0.001) \
-            .setBatchSize(max(batch_size, 8)) \
-            .setEnableOutputLogs(True)
-        # .setOutputLogsPath('logs')
-
-        clf_pipeline = nlp.Pipeline(stages=[document_assembler,
-                                            embeddings,
-                                            classifierdl])
-
-        fit_clf_pipeline = clf_pipeline.fit(train_df)
-        preds = fit_clf_pipeline.transform(test_df)
-        preds_df = preds.select('featured_tag', 'abstractText', 'label.result').toPandas()
-        preds_df['result'] = preds_df['result'].apply(lambda x: x[0])
-        logging.info(classification_report(preds_df['featured_tag'], preds_df['result']))
-
-        logging.info("- Loading the model for prediction...")
-        fit_clf_pipeline.stages[-1].write().overwrite().save(clf_dir)
-
-    fit_clf_model = nlp.ClassifierDLModel.load(clf_dir)
-
-    pred_pipeline = nlp.Pipeline(stages=[document_assembler,
-                                         embeddings,
-                                         fit_clf_model])
-    pred_df = spark.createDataFrame([['']]).toDF("text")
-    fit_pred_pipeline = pred_pipeline.fit(pred_df)
-
-    return fit_pred_pipeline
-
-
-def _annotate(save_to_path, dset, tag, limit, is_positive):
-    human_supervision = {}
-    curation_file = f"{save_to_path}.{tag.replace(' ', '')}.curation.json"
+def _annotate(curation_file, dset, tag, limit, is_positive):
+    field = 'positive' if is_positive else 'negative'
+    human_supervision = {tag: {'positive': [], 'negative': []}}
     if os.path.isfile(curation_file):
-        with open(curation_file, 'r') as f:
-            human_supervision = json.load(f)
         prompt = f"File `{curation_file}` found. Do you want to reuse previous work? [y|n]: "
         answer = input(prompt)
         while answer not in ['y', 'n']:
             answer = input(prompt)
-        if answer == 'n':
-            human_supervision[tag][is_positive] = []
+        if answer == 'y':
+            with open(curation_file, 'r') as f:
+                human_supervision = json.load(f)
 
-    if tag not in human_supervision:
-        human_supervision[tag] = {'positive': [], 'negative': []}
-
-    field = 'positive' if is_positive else 'negative'
     count = len(human_supervision[tag][field])
     logging.info(f"[{tag}] Annotated: {count} Required: {limit} Available: {len(dset) - count}")
     finished = False
-    while count <= limit:
+    while count < limit:
         tries = 0
         random.seed(time.time())
         random_pos_row = random.randint(0, len(dset))
@@ -148,7 +78,7 @@ def _annotate(save_to_path, dset, tag, limit, is_positive):
             human_supervision[tag][field].append(dset[random_pos_row])
             with open(curation_file, 'w') as f:
                 json.dump(human_supervision, f)
-        count = len(human_supervision[tag][field])
+        count = len(human_supervision[tag])
 
 
 def _curate(save_to_path, pos_dset, neg_dset, tag, limit):
@@ -162,9 +92,8 @@ def _curate(save_to_path, pos_dset, neg_dset, tag, limit):
 def retag(
     data_path: str,
     save_to_path: str,
-    spark_memory: int = 27,
     num_proc: int = os.cpu_count(),
-    batch_size: int = 64,
+    batch_size: int = 1024,
     tags: list = None,
     tags_file_path: str = None,
     threshold: float = 0.8,
@@ -172,11 +101,6 @@ def retag(
     supervised: bool = True,
     years: list = None,
 ):
-
-    spark = nlp.start(spark_conf={
-        'spark.driver.memory': f'{spark_memory}g',
-        'spark.executor.memory': f'{spark_memory}g',
-    })
 
     # We only have 1 file, so no sharding is available https://huggingface.co/docs/datasets/loading#multiprocessing
     logging.info("Loading the MeSH jsonl...")
@@ -194,18 +118,19 @@ def retag(
         with open(tags_file_path, 'r') as f:
             tags = [x.strip() for x in f.readlines()]
 
-    logging.info(f"Total tags detected: {tags}")
+    logging.info(f"- Total tags detected: {tags}.")
+    logging.info("- Training classifiers (retaggers)")
 
     for tag in tags:
-        logging.info(f"Retagging: {tag}")
-
+        os.makedirs(os.path.join(save_to_path, tag.replace(" ", "")), exist_ok=True)
         logging.info(f"- Obtaining positive examples for {tag}...")
         positive_dset = dset.filter(
             lambda x: tag in x["meshMajor"], num_proc=num_proc
         )
 
-        if len(positive_dset['abstractText']) < 50:
-            logging.info(f"Skipping {tag}: low examples ({len(positive_dset['abstractText'])}. "
+        if len(positive_dset['abstractText']) < train_examples:
+            logging.info(f"Skipping {tag}: low examples ({len(positive_dset['abstractText'])} vs "
+                         f"expected {train_examples}). "
                          f"Check {save_to_path}.err for more information about skipped tags.")
             with open(f"{save_to_path}.err", 'a') as f:
                 f.write(tag)
@@ -216,80 +141,85 @@ def retag(
             lambda x: tag not in x["meshMajor"], num_proc=num_proc
         )
 
+        curation_file = os.path.join(save_to_path, tag.replace(' ', ''), "curation")
         if supervised:
-            logging.info(f"- Curating data...")
-            _curate(save_to_path, positive_dset, negative_dset, tag, train_examples)
+            logging.info(f"- Curating {tag}...")
+            _curate(curation_file, positive_dset, negative_dset, tag, train_examples)
+        else:
+            with open(curation_file, 'w') as f:
+                json.dump({tag: {'positive': [positive_dset[i] for i in range(train_examples)],
+                                 'negative': [negative_dset[i] for i in range(train_examples)]
+                                 }
+                           }, f)
 
-            curation_file = f"{save_to_path}.{tag.replace(' ', '')}.curation.json"
-            if os.path.isfile(curation_file):
-                with open(curation_file, "r") as fr:
-                    # I load the curated data file
-                    human_supervision = json.load(fr)
-                    positive_dset = Dataset.from_list(human_supervision[tag]['positive'])
-                    negative_dset = Dataset.from_list(human_supervision[tag]['negative'])
+    logging.info("- Retagging...")
+
+    models = {}
+    for tag in tags:
+        curation_file = os.path.join(save_to_path, tag.replace(' ', ''), "curation")
+        if not os.path.isfile(curation_file):
+            logger.info(f"Skipping `{tag}` retagging as no curation data was found. "
+                        f"Maybe there were too little examples? (check {save_to_path}.err)")
+            continue
+        with open(curation_file, "r") as fr:
+            data = json.load(fr)
+            positive_dset = Dataset.from_list(data[tag]['positive'])
+            negative_dset = Dataset.from_list(data[tag]['negative'])
 
         pos_x_train, pos_x_test = _load_data(positive_dset, tag, limit=train_examples, split=0.8)
         neg_x_train, neg_x_test = _load_data(negative_dset, "other", limit=train_examples, split=0.8)
 
-        pos_x_train = pos_x_train.add_column("featured_tag", [tag] * len(pos_x_train))
-        pos_x_test = pos_x_test.add_column("featured_tag", [tag] * len(pos_x_test))
-        neg_x_train = neg_x_train.add_column("featured_tag", ["other"] * len(neg_x_train))
-        neg_x_test = neg_x_test.add_column("featured_tag", ["other"] * len(neg_x_test))
+        pos_x_train = pos_x_train.add_column("tag", [tag] * len(pos_x_train))
+        pos_x_test = pos_x_test.add_column("tag", [tag] * len(pos_x_test))
+        neg_x_train = neg_x_train.add_column("tag", ["other"] * len(neg_x_train))
+        neg_x_test = neg_x_test.add_column("tag", ["other"] * len(neg_x_test))
 
         logging.info(f"- Creating train/test sets...")
         train = concatenate_datasets([pos_x_train, neg_x_train])
-        train_df = spark.createDataFrame(train)
         test = concatenate_datasets([pos_x_test, neg_x_test])
-        test_df = spark.createDataFrame(test)
 
-        logging.info(f"- Train dataset size: {train_df.count()}")
-        logging.info(f"- Test dataset size: {test_df.count()}")
+        label_binarizer = preprocessing.LabelBinarizer()
+        label_binarizer_path = os.path.join(save_to_path, tag.replace(" ", ""), 'labelbinarizer')
+        labels = [1 if x == tag else 0 for x in train["tag"]]
+        label_binarizer.fit(labels)
+        with open(label_binarizer_path, 'wb') as f:
+            pkl.dump(label_binarizer, f)
 
-        logging.info(f"- Creating `sparknlp` pipelines...")
-        pipeline = _create_pipelines(save_to_path, batch_size, train_df, test_df, tag, spark)
+        model = MeshXLinear(label_binarizer_path=label_binarizer_path)
+        model.fit(train["abstractText"], scipy.sparse.csr_matrix(label_binarizer.transform(labels)))
+        models[tag] = model
+        model_path = os.path.join(save_to_path, tag.replace(" ", ""), "clf")
+        os.makedirs(model_path, exist_ok=True)
+        model.save(model_path)
 
-        logging.info(f"- Optimizing dataframe...")
-        data_in_parquet = f"{save_to_path}.data.parquet"
-        optimize=True
-        if os.path.isfile(data_in_parquet):
-            answer = input("Optimized dataframe found. Do you want to use it? [y|n]: ")
-            while answer not in ['y', 'n']:
-                answer = input("Optimized dataframe found. Do you want to use it? [y|n]: ")
-            if answer == 'y':
-                optimize = False
-
-        if optimize:
-            dset = dset.remove_columns(["title", "journal", "year"])
-
-            pq.write_table(dset.data.table, data_in_parquet)
-        del dset, train, train_df, test, test_df, pos_x_train, pos_x_test, neg_x_train, neg_x_test, positive_dset,\
-            negative_dset
-        sdf = spark.read.load(data_in_parquet)
-
-        logging.info(f"- Repartitioning...")
-        sdf = sdf.repartition(num_proc)
-
-        logging.info(f"- Retagging {tag}...")
-        pipeline.transform(sdf).write.mode('overwrite').save(f"{save_to_path}.{tag.replace(' ', '')}.prediction")
-
-        # 1) We load
-        # 2) We filter to get those results where the predicted tag was not initially in meshMajor
-        # 3) We filter by confidence > threshold
-        # predictions = spark.read.load(f"{save_to_path}.{tag}.prediction").\
-        #   filter(~array_contains(col('meshMajor'), tag)).\
+    logging.info("- Predicting all tags")
+    for b in tqdm.tqdm(range(int(len(dset) / batch_size))):
+        start = b * batch_size
+        end = min(len(dset), (b+1) * batch_size)
+        batch = dset[start:end]["abstractText"]
+        for tag in tags:
+            if tag not in models:
+                logger.info(f"Skipping {tag} - classifier not trained. Maybe there were little data?")
+                continue
+            models[tag](batch, threshold=threshold)
 
 
 @retag_app.command()
 def retag_cli(
-    data_path: str = typer.Argument(..., help="Path to mesh.jsonl"),
+    data_path: str = typer.Argument(
+        ...,
+        help="Path to allMeSH_2021.jsonl"),
     save_to_path: str = typer.Argument(
-        ..., help="Path where to save the retagged data"
+        ...,
+        help="Path where to save the retagged data"
     ),
     num_proc: int = typer.Option(
-        os.cpu_count(), help="Number of processes to use for data augmentation"
+        os.cpu_count(),
+        help="Number of processes to use for data augmentation"
     ),
     batch_size: int = typer.Option(
-        64, help="Preprocessing batch size (for dataset, filter, map, ...)"
+        1024,
+        help="Preprocessing batch size (for dataset, filter, map, ...)"
     ),
     tags: str = typer.Option(
         None,
@@ -309,14 +239,10 @@ def retag_cli(
         help="Number of examples to use for training the retaggers"
     ),
     supervised: bool = typer.Option(
-        True,
+        False,
         help="Use human curation, showing a `limit` amount of positive and negative examples to curate data"
              " for training the retaggers. The user will be required to accept or reject. When the limit is reached,"
              " the model will be train. All intermediary steps will be saved."
-    ),
-    spark_memory: int = typer.Option(
-        20,
-        help="Gigabytes of memory to be used. Recommended at least 20 to run on MeSH."
     ),
     years: str = typer.Option(
         None, help="Comma-separated years you want to include in the retagging process"
@@ -345,7 +271,6 @@ def retag_cli(
     retag(
         data_path,
         save_to_path,
-        spark_memory=spark_memory,
         num_proc=num_proc,
         batch_size=batch_size,
         tags=parse_tags(tags),
