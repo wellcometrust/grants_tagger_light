@@ -72,12 +72,12 @@ in square brackets the commands that are not implemented yet
 ## ⚙️Preprocess
 
 This process is optional to run, since it can be directly managed by the `Train` process.
-- If you run it manually, it will store the data in local first, which can help if you need finetune in the future, 
+- If you run it manually, it will store the data in local first, which can help if you need finetune in the future,
 rerun, etc.
-- If not run it, the `train` step will preprocess and then run, without any extra I/O operations on disk, 
+- If not run it, the `train` step will preprocess and then run, without any extra I/O operations on disk,
 which may add latency depending on the infrastructure.
 
-It requires data in `jsonl` format for parallelization purposes. In `data/raw` you can find `allMesH_2021.jsonl` 
+It requires data in `jsonl` format for parallelization purposes. In `data/raw` you can find `allMesH_2021.jsonl`
 already prepared for the preprocessing step.
 
 If your data is in `json` format, trasnform it to `jsonl` with tools as `jq` or using Python.
@@ -96,9 +96,9 @@ your own data under development.
 ### Preprocessing bertmesh
 
 ```
- Usage: grants-tagger preprocess mesh [OPTIONS] DATA_PATH SAVE_TO_PATH                                                                                                                                             
-                                      MODEL_KEY                                                                                                                                                                    
-                                                                                                                                                                                                                   
+ Usage: grants-tagger preprocess mesh [OPTIONS] DATA_PATH SAVE_TO_PATH
+                                      MODEL_KEY
+
 ╭─ Arguments ─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
 │ *    data_path         TEXT  Path to mesh.jsonl [default: None] [required]                                                                                                                                      │
 │ *    save_to_path      TEXT  Path to save the serialized PyArrow dataset after preprocessing [default: None] [required]                                                                                         │
@@ -122,7 +122,7 @@ The command will train a model and save it to the specified path. Currently we s
 
 ### bertmesh
 ```
- Usage: grants-tagger train bertmesh [OPTIONS] MODEL_KEY DATA_PATH                                                                                                                                                 
+ Usage: grants-tagger train bertmesh [OPTIONS] MODEL_KEY DATA_PATH
 
 ╭─ Arguments ─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
 │ *    model_key      TEXT  Pretrained model key. Local path or HF location [default: None] [required]                                                                                                            │
@@ -143,7 +143,7 @@ The command will train a model and save it to the specified path. Currently we s
 
 #### About `model_key`
 `model_key` possible values are:
-- A HF location for a pretrained / finetuned model 
+- A HF location for a pretrained / finetuned model
 - "" to load a model by default and train from scratch (`microsoft/BiomedNLP-PubMedBERT-base-uncased-abstract`)
 
 #### About `sharding`
@@ -152,7 +152,7 @@ to improve performance on big datasets. To enable it:
 - set shards to something bigger than 1 (Recommended: same number as cpu cores)
 
 #### Other arguments
-Besides those arguments, feel free to add any other TrainingArgument from Hugging Face or Wand DB. 
+Besides those arguments, feel free to add any other TrainingArgument from Hugging Face or Wand DB.
 This is the example used to train reaching a ~0.6 F1, also available at `examples/train_by_epochs.sh`
 ```commandline
 grants-tagger train bertmesh \
@@ -365,7 +365,7 @@ and you would be able to run `grants_tagger preprocess epmc_mesh ...`
 
 ## 🚦 Test
 
-To run the test you need to have installed the `dev` dependencies first. 
+To run the test you need to have installed the `dev` dependencies first.
 This is done by running `poetry install --with dev` after you are in the sell (`poetry shell`)
 
 Run tests with `pytest`. If you want to write some additional tests,
