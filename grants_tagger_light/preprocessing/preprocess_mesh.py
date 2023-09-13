@@ -117,7 +117,7 @@ def preprocess_mesh(
         batch_size=batch_size,
         num_proc=num_proc,
         desc="Tokenizing",
-        fn_kwargs={"tokenizer": tokenizer, "x_col": "abstractText"}
+        fn_kwargs={"tokenizer": tokenizer, "x_col": "abstractText"},
     )
     logger.info("Time taken to tokenize: {}".format(time.time() - t1))
 
@@ -225,13 +225,9 @@ def preprocess_mesh(
 
 @preprocess_app.command()
 def preprocess_mesh_cli(
-    data_path: str = typer.Argument(
-        ...,
-        help="Path to mesh.jsonl"
-    ),
+    data_path: str = typer.Argument(..., help="Path to mesh.jsonl"),
     save_to_path: str = typer.Argument(
-        ...,
-        help="Path to save the serialized PyArrow dataset after preprocessing"
+        ..., help="Path to save the serialized PyArrow dataset after preprocessing"
     ),
     model_key: str = typer.Argument(
         ...,
@@ -239,21 +235,16 @@ def preprocess_mesh_cli(
         "Leave blank if training from scratch",  # noqa
     ),
     test_size: float = typer.Option(
-        None,
-        help="Fraction of data to use for testing in (0,1] or number of rows"
+        None, help="Fraction of data to use for testing in (0,1] or number of rows"
     ),
     num_proc: int = typer.Option(
-        os.cpu_count(),
-        help="Number of processes to use for preprocessing"
+        os.cpu_count(), help="Number of processes to use for preprocessing"
     ),
     max_samples: int = typer.Option(
         -1,
         help="Maximum number of samples to use for preprocessing",
     ),
-    batch_size: int = typer.Option(
-        256,
-        help="Size of the preprocessing batch"
-    ),
+    batch_size: int = typer.Option(256, help="Size of the preprocessing batch"),
     tags: str = typer.Option(
         None,
         help="Comma-separated tags you want to include in the dataset "

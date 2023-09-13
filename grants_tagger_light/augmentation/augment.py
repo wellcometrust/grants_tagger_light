@@ -156,33 +156,24 @@ def augment(
 
 @augment_app.command()
 def augment_cli(
-    data_path: str = typer.Argument(
-        ...,
-        help="Path to mesh.jsonl"),
-    save_to_path: str = typer.Argument(
-        ...,
-        help="Path to save the new jsonl data"
-    ),
+    data_path: str = typer.Argument(..., help="Path to mesh.jsonl"),
+    save_to_path: str = typer.Argument(..., help="Path to save the new jsonl data"),
     model_key: str = typer.Option(
         "gpt-3.5-turbo",
         help="LLM to use data augmentation. By now, only `openai` is supported",
     ),
     num_proc: int = typer.Option(
-        os.cpu_count(),
-        help="Number of processes to use for data augmentation"
+        os.cpu_count(), help="Number of processes to use for data augmentation"
     ),
     batch_size: int = typer.Option(
-        64,
-        help="Preprocessing batch size (for dataset, filter, map, ...)"
+        64, help="Preprocessing batch size (for dataset, filter, map, ...)"
     ),
     min_examples: int = typer.Option(
         None,
         help="Minimum number of examples to require. "
         "Less than that will trigger data augmentation.",
     ),
-    examples: int = typer.Option(
-        25,
-        help="Examples to generate per each tag."),
+    examples: int = typer.Option(25, help="Examples to generate per each tag."),
     prompt_template: str = typer.Option(
         "grants_tagger_light/augmentation/prompt.template",
         help="File to use as a prompt. "
