@@ -81,7 +81,7 @@ def _annotate(curation_file, dset, tag, limit, is_positive):
         print("=" * 50)
         res = input(
             f'[{count}/{limit}]> Is this {"NOT " if not is_positive else ""}'
-            f' a `{tag}` text? [a to accept]: '
+            f" a `{tag}` text? [a to accept]: "
         )
         if res == "a":
             human_supervision[tag][field].append(dset[random_pos_row])
@@ -195,14 +195,10 @@ def retag(
             negative_dset, "other", limit=train_examples, split=0.8
         )
 
-        pos_x_train = pos_x_train.add_column("tag",
-                                             [tag] * len(pos_x_train))
-        pos_x_test = pos_x_test.add_column("tag",
-                                           [tag] * len(pos_x_test))
-        neg_x_train = neg_x_train.add_column("tag",
-                                             ["other"] * len(neg_x_train))
-        neg_x_test = neg_x_test.add_column("tag",
-                                           ["other"] * len(neg_x_test))
+        pos_x_train = pos_x_train.add_column("tag", [tag] * len(pos_x_train))
+        pos_x_test = pos_x_test.add_column("tag", [tag] * len(pos_x_test))
+        neg_x_train = neg_x_train.add_column("tag", ["other"] * len(neg_x_train))
+        neg_x_test = neg_x_test.add_column("tag", ["other"] * len(neg_x_test))
 
         logging.info("- Creating train/test sets...")
         train = concatenate_datasets([pos_x_train, neg_x_train])
@@ -272,8 +268,7 @@ def retag_cli(
         "The rest will be discarded.",
     ),
     threshold: float = typer.Option(
-        0.9, help="Minimum threshold of confidence to retag a model. "
-                  "Default: 0.9"
+        0.9, help="Minimum threshold of confidence to retag a model. " "Default: 0.9"
     ),
     train_examples: int = typer.Option(
         100, help="Number of examples to use for training the retaggers"
@@ -281,14 +276,14 @@ def retag_cli(
     supervised: bool = typer.Option(
         False,
         help="Use human curation, showing a `limit` amount of positive "
-             "and negative examples to curate data"
-             " for training the retaggers. The user will be required to accept"
-             " or reject. When the limit is reached,"
-             " the model will be train. All intermediary steps will be saved.",
+        "and negative examples to curate data"
+        " for training the retaggers. The user will be required to accept"
+        " or reject. When the limit is reached,"
+        " the model will be train. All intermediary steps will be saved.",
     ),
     years: str = typer.Option(
-        None, help="Comma-separated years you want to include in "
-                   "the retagging process"
+        None,
+        help="Comma-separated years you want to include in " "the retagging process",
     ),
 ):
     if not data_path.endswith("jsonl"):
