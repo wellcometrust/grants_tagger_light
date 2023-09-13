@@ -1,4 +1,3 @@
-import io
 import json
 import logging
 import random
@@ -7,7 +6,7 @@ import time
 import typer
 from loguru import logger
 
-from datasets import Dataset, load_dataset, concatenate_datasets, load_from_disk
+from datasets import Dataset, load_dataset, concatenate_datasets
 
 import os
 
@@ -69,7 +68,8 @@ def _annotate(curation_file, dset, tag, limit, is_positive):
             tries += 1
             if tries >= 10:
                 logger.error(
-                    f"Unable to find more examples for {field} {tag} which are not already tagged. "
+                    f"Unable to find more examples for {field} {tag} "
+                    f"which are not already tagged. "
                     f"Continuing with {count} examples..."
                 )
                 finished = True
@@ -80,8 +80,8 @@ def _annotate(curation_file, dset, tag, limit, is_positive):
         print(dset[random_pos_row]["abstractText"])
         print("=" * 50)
         res = input(
-            f'[{count}/{limit}]> Is this {"NOT " if not is_positive else ""} a `{tag}` text? '
-            f"[a to accept]: "
+            f'[{count}/{limit}]> Is this {"NOT " if not is_positive else ""}'
+            f' a `{tag}` text? [a to accept]: '
         )
         if res == "a":
             human_supervision[tag][field].append(dset[random_pos_row])
@@ -136,9 +136,11 @@ def retag(
 
         if len(positive_dset["abstractText"]) < train_examples:
             logging.info(
-                f"Skipping {tag}: low examples ({len(positive_dset['abstractText'])} vs "
+                f"Skipping {tag}: low examples "
+                f"({len(positive_dset['abstractText'])} vs "
                 f"expected {train_examples}). "
-                f"Check {save_to_path}.err for more information about skipped tags."
+                f"Check {save_to_path}.err for more information "
+                f"about skipped tags."
             )
             with open(f"{save_to_path}.err", "a") as f:
                 f.write(tag)
@@ -193,10 +195,14 @@ def retag(
             negative_dset, "other", limit=train_examples, split=0.8
         )
 
-        pos_x_train = pos_x_train.add_column("tag", [tag] * len(pos_x_train))
-        pos_x_test = pos_x_test.add_column("tag", [tag] * len(pos_x_test))
-        neg_x_train = neg_x_train.add_column("tag", ["other"] * len(neg_x_train))
-        neg_x_test = neg_x_test.add_column("tag", ["other"] * len(neg_x_test))
+        pos_x_train = pos_x_train.add_column("tag",
+                                             [tag] * len(pos_x_train))
+        pos_x_test = pos_x_test.add_column("tag",
+                                           [tag] * len(pos_x_test))
+        neg_x_train = neg_x_train.add_column("tag",
+                                             ["other"] * len(neg_x_train))
+        neg_x_test = neg_x_test.add_column("tag",
+                                           ["other"] * len(neg_x_test))
 
         logging.info(f"- Creating train/test sets...")
         train = concatenate_datasets([pos_x_train, neg_x_train])
@@ -266,19 +272,23 @@ def retag_cli(
         "The rest will be discarded.",
     ),
     threshold: float = typer.Option(
-        0.9, help="Minimum threshold of confidence to retag a model. Default: 0.9"
+        0.9, help="Minimum threshold of confidence to retag a model. "
+                  "Default: 0.9"
     ),
     train_examples: int = typer.Option(
         100, help="Number of examples to use for training the retaggers"
     ),
     supervised: bool = typer.Option(
         False,
-        help="Use human curation, showing a `limit` amount of positive and negative examples to curate data"
-        " for training the retaggers. The user will be required to accept or reject. When the limit is reached,"
-        " the model will be train. All intermediary steps will be saved.",
+        help="Use human curation, showing a `limit` amount of positive "
+             "and negative examples to curate data"
+             " for training the retaggers. The user will be required to accept"
+             " or reject. When the limit is reached,"
+             " the model will be train. All intermediary steps will be saved.",
     ),
     years: str = typer.Option(
-        None, help="Comma-separated years you want to include in the retagging process"
+        None, help="Comma-separated years you want to include in "
+                   "the retagging process"
     ),
 ):
     if not data_path.endswith("jsonl"):
@@ -290,7 +300,8 @@ def retag_cli(
 
     if tags_file_path is None and tags is None:
         logger.error(
-            "To understand which tags need to be augmented, use --tags [tags separated by comma] or create a file with"
+            "To understand which tags need to be augmented, use --tags "
+            "[tags separated by comma] or create a file with "
             "a newline per tag and set the path in --tags-file-path"
         )
         exit(-1)
