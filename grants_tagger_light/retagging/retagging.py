@@ -1,3 +1,4 @@
+import io
 import json
 import logging
 import random
@@ -193,15 +194,31 @@ def retag(
         model.save(model_path)
 
     logging.info("- Predicting all tags")
-    for b in tqdm.tqdm(range(int(len(dset) / batch_size))):
-        start = b * batch_size
-        end = min(len(dset), (b+1) * batch_size)
-        batch = dset[start:end]["abstractText"]
-        for tag in tags:
-            if tag not in models:
-                logger.info(f"Skipping {tag} - classifier not trained. Maybe there were little data?")
-                continue
-            models[tag](batch, threshold=threshold)
+    dset = dset.add_column("changes", [[]] * len(dset))
+    with open(os.path.join(save_to_path, 'corrections'), 'w') as f:
+        for b in tqdm.tqdm(range(int(len(dset) / batch_size))):
+            start = b * batch_size
+            end = min(len(dset), (b+1) * batch_size)
+            batch = dset.select([i for i in range(start, end)])
+            batch_buffer = [x for x in batch]
+            for tag in models.keys():
+                batch_preds = models[tag](batch["abstractText"], threshold=threshold)
+                for i, bp in enumerate(batch_preds):
+                    is_predicted = bp == [0]
+                    is_expected = tag in batch[i]['meshMajor']
+                    if is_predicted != is_expected:
+                        if is_predicted:
+                            batch_buffer[i]['meshMajor'].append(tag)
+                            batch_buffer[i]['changes'].append(f"+{tag}")
+                        else:
+                            batch_buffer[i]['meshMajor'].remove(tag)
+                            batch_buffer[i]['changes'].append(f"-{tag}")
+            # batch = Dataset.from_list(batch_buffer)
+            # buffer = io.BytesIO()
+            # batch.to_json(buffer)
+            # f.write(buffer.getvalue().decode('utf-8'))
+            batch_buffer = [json.dumps(x) for x in batch_buffer]
+            f.write('\n'.join(batch_buffer))
 
 
 @retag_app.command()
