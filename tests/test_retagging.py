@@ -41,23 +41,25 @@ def test_retagging(data_path):
     with tempfile.TemporaryDirectory() as tmpdirname:
         save_to_path = tmpdirname + "/output"
 
-    tag = 'COVID-19'
-    retag(data_path,
-          save_to_path,
-          num_proc=1,
-          batch_size=1,
-          tags=[tag],
-          years=['2023'],
-          threshold=0.9,
-          train_examples=10,
-          supervised=False)
+    tag = "COVID-19"
+    retag(
+        data_path,
+        save_to_path,
+        num_proc=1,
+        batch_size=1,
+        tags=[tag],
+        years=["2023"],
+        threshold=0.9,
+        train_examples=10,
+        supervised=False,
+    )
 
     assert os.path.isdir(save_to_path)
     assert os.path.isdir(os.path.join(save_to_path, tag))
-    assert os.path.isdir(os.path.join(save_to_path, tag, 'clf'))
-    assert os.path.isfile(os.path.join(save_to_path, tag, 'curation'))
-    assert os.path.isfile(os.path.join(save_to_path, tag, 'labelbinarizer'))
+    assert os.path.isdir(os.path.join(save_to_path, tag, "clf"))
+    assert os.path.isfile(os.path.join(save_to_path, tag, "curation"))
+    assert os.path.isfile(os.path.join(save_to_path, tag, "labelbinarizer"))
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

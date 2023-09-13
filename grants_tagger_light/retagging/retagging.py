@@ -61,10 +61,10 @@ def _annotate(curation_file, dset, tag, limit, is_positive):
     while count < limit:
         tries = 0
         random.seed(time.time())
-        random_pos_row = random.randint(0, len(dset)-1)
+        random_pos_row = random.randint(0, len(dset) - 1)
         id_ = dset[random_pos_row]["pmid"]
         while id_ in [x["pmid"] for x in human_supervision[tag][field]]:
-            random_pos_row = random.randint(0, len(dset)-1)
+            random_pos_row = random.randint(0, len(dset) - 1)
             id_ = dset[random_pos_row]["pmid"]
             tries += 1
             if tries >= 10:
