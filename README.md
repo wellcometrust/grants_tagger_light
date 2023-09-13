@@ -317,6 +317,29 @@ Let's take a look at some of the params:
 For using the retagger, you need a small 
 - *supervised*: If you want to be asked for *train-examples* examples to curate a dataset for training the classifier. Recommended.
 
+```
+==================================================
+The SD BIOLINE HIV/Syphilis Duo assay is the first World Health Organization prequalified dual rapid diagnostic test for
+ simultaneous detection of HIV and Treponema pallidum antibodies in human blood. Prior to introducing the test into 
+ antenatal clinics across South Sudan, a field evaluation of its clinical performance in diagnosing both HIV and 
+ syphilis in pregnant women was conducted. SD Bioline test performance on venous blood samples was compared with (i) 
+ Vironostika HIV1/2 Uniform II Ag/Ab reference standard and Alere Determine HIV 1/2 non-reference standard for HIV 
+ diagnosis, and (ii) Treponema pallidum hemagglutination reference standard and Rapid plasma reagin non-reference 
+ standard for syphilis. Sensitivity, specificity, positive predictive value (PPN), negative predictive value (NPV) 
+ and kappa (ê) value were calculated for each component against the reference standards within 95% confidence 
+ intervals (CIs); agreements between Determine HIV 1/2 and SD Bioline HIV tests were also calculated. Of 442 pregnant 
+ women recruited, eight (1.8%) were HIV positive, 22 (5.0%) had evidence of syphilis exposure; 14 (3.2%) had active 
+ infection. For HIV diagnosis, the sensitivity, specificity, PPV and NPV were 100% (95% CI: 63.1-100), 100% 
+ (95% CI: 99.2-100), 100% (95% CI: 63.1-100) and 100% (95% CI: 99.2-100) respectively with ê value of 1 
+ (95% CI: 0.992-1.000). Overall agreement of the Duo HIV component and Determine test was 99.1% (95% CI: 0.977-0.998) 
+ with 66.7% (95% CI: 34.9-90.1) positive and 100% (95% CI: 0.992-1.000) negative percent agreements. For syphilis, 
+ the Duo assay sensitivity was 86.4% (95% CI: 65.1-97.1) and specificity 100% (95% CI: 99.1-100) with PPV 100% 
+ (95% CI: 82.4-100), NPV 99.2% (95% CI: 97.9-99.9) and ê value 0.92 (95% CI: 0.980-0.999). Our findings suggest the SD Bioline HIV/Syphilis Duo Assay could be suitable for HIV and syphilis testing in women attending antenatal services across South Sudan. Women with positive syphilis results should receive treatment immediately, whereas HIV positive women should undergo confirmatory testing following national HIV testing guidelines.
+==================================================
+[2/100]> Is this  a `HIV` text? [a to accept]:
+
+```
+
 If not set, the model will randomly get *train-examples* and train the classifier without your supervision, which will reduce the performance of the classifiers.
 
 ### Artifacts created
