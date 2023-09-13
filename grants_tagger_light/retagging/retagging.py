@@ -204,11 +204,11 @@ def retag(
         neg_x_test = neg_x_test.add_column("tag",
                                            ["other"] * len(neg_x_test))
 
-        logging.info(f"- Creating train/test sets...")
+        logging.info("- Creating train/test sets...")
         train = concatenate_datasets([pos_x_train, neg_x_train])
 
         # TODO: Use Evaluation on `test` to see if the model is good enough
-        test = concatenate_datasets([pos_x_test, neg_x_test])
+        # test = concatenate_datasets([pos_x_test, neg_x_test])
 
         label_binarizer = preprocessing.LabelBinarizer()
         label_binarizer_path = os.path.join(
