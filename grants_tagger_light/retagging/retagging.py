@@ -143,11 +143,12 @@ def retag(
             with open(f"{save_to_path}.err", "a") as f:
                 f.write(tag)
             continue
-
+        logging.info(f"-- Total positive examples for {tag}: {len(positive_dset)}")
         logging.info(f"- Obtaining negative examples ('other') for {tag}...")
         negative_dset = dset.filter(
             lambda x: tag not in x["meshMajor"], num_proc=num_proc
         )
+        logging.info(f"-- Total negative examples for {tag}: {len(negative_dset)}")
 
         curation_file = os.path.join(save_to_path, tag.replace(" ", ""), "curation")
         if supervised:
@@ -199,6 +200,8 @@ def retag(
 
         logging.info(f"- Creating train/test sets...")
         train = concatenate_datasets([pos_x_train, neg_x_train])
+
+        # TODO: Use Evaluation on `test` to see if the model is good enough
         test = concatenate_datasets([pos_x_test, neg_x_test])
 
         label_binarizer = preprocessing.LabelBinarizer()
@@ -240,10 +243,6 @@ def retag(
                         else:
                             batch_buffer[i]["meshMajor"].remove(tag)
                             batch_buffer[i]["changes"].append(f"-{tag}")
-            # batch = Dataset.from_list(batch_buffer)
-            # buffer = io.BytesIO()
-            # batch.to_json(buffer)
-            # f.write(buffer.getvalue().decode('utf-8'))
             batch_buffer = [json.dumps(x) for x in batch_buffer]
             f.write("\n".join(batch_buffer))
 

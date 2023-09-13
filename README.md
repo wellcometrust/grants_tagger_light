@@ -83,14 +83,16 @@ And then connect and attach to your machine with a tunnel
 
 # ⌨️  Commands
 
-| Commands        | Description                                                  | Needs dev |
-|-----------------|--------------------------------------------------------------|-----------|
-| 🔥 train        | preprocesses the data and trains a new model                 | True      |
-| ⚙ preprocess    | (Optional) preprocess and save the data outside training    | False     |
-| 📈 evaluate     | evaluate performance of pretrained model                     | True      |
-| 🔖 predict      | predict tags given a grant abstract using a pretrained model | False     |
-| 🎛 tune         | tune params and threshold                                    | True      |
-| ⬇ download      | download data from EPMC                                      | False     |
+| Commands     | Description                                                  | Needs dev |
+|--------------|--------------------------------------------------------------|-----------|
+| ⚙ preprocess | preprocess and save the data outside training                | False     |
+| 🔥 train     | preprocesses the data and trains a new model                 | True      |
+| 📚 augment   | augments data using an LLM (gpt)                             | False     |
+| ✏ retag      | retags data using XLinear to correct errors                  | False     |
+| 📈 evaluate  | evaluate performance of pretrained model                     | True      |
+| 🔖 predict   | predict tags given a grant abstract using a pretrained model | False     |
+| 🎛 tune      | tune params and threshold                                    | True      |
+| ⬇ download   | download data from EPMC                                      | False     |
 
 
 in square brackets the commands that are not implemented yet
@@ -295,11 +297,35 @@ For tags as `Data Science`, `Artificial Intelligence`, `Data Collection`, `Deep 
 
 `Artificial Intelligence` with several thousand rows shows a performance of 0.1 F1, showing a lot of confusion with the other tags described above.
 
-We propose a solution: retagging the data.
+We propose a solution: retagging the original data with a small curated dataset of examples and a quick Machine Learning light classifier: XLinear.
 
 ```
-grants-tagger retag mesh data/raw/allMeSH_2021.jsonl ll --tags-file-path tags_to_augment.txt 
+grants-tagger retag mesh data/raw/allMeSH_2021.jsonl [SET_YOUR_OUTPUT_FILE_HERE] \
+  --tags "Artificial Intelligence,HIV" \
+  --years 2016,2017,2018,2019,2020,2021 \
+  --train-examples 100 \
+  --batch-size 10000 \
+  --supervised 
 ```
+Let's take a look at some of the params:
+- *tags*: A comma-separated (and quoted) list of tags you want to retag.
+- *years*: A comma-separated list of years you want to include
+- *train-examples*: The number of examples to include for training the classifier. Default: 100
+- *batch-size*: The size of the processing batch. Keep it high as the memory consumption is really small. Default: 10000
+
+### Getting the curation data: Supervised or Unsupervised?
+For using the retagger, you need a small 
+- *supervised*: If you want to be asked for *train-examples* examples to curate a dataset for training the classifier. Recommended.
+
+If not set, the model will randomly get *train-examples* and train the classifier without your supervision, which will reduce the performance of the classifiers.
+
+### Artifacts created
+As a result of the proces, you will find a folder at *save_to_path*. Inside,  you will find:
+- One folder per tag, including:
+  - `clf` (a classifier),
+  - `curation` (a dataset of positive and negative examples for the tag)
+  - `labelbinarizer` (a label binarizer to encode the labels)  
+- a `corrections` file, the new allMeSH_2021.jsonl with your tags corrected.
 
 ### Other params
 ```
@@ -321,7 +347,6 @@ grants-tagger retag mesh data/raw/allMeSH_2021.jsonl ll --tags-file-path tags_to
 │ --help                                          Show this message and exit.                                                                                                                                     │
 ╰─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
 ```
-
 
 
 ## 📈 Evaluate
