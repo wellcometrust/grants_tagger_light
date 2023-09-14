@@ -2,10 +2,22 @@ vars:
     # ORIGINAL: - data_path: "../../data/raw/allMeSH_2021.jsonl"
     # RETAGGED:
     - data_path: "../../data/raw/retagging/allMeSH_2021.2016-2021.jsonl"
+    - preprocessing_output: "../../preprocessed_results"
     - script_loc: "../../grants_tagger_light/training"
     - output_dir: "../../bertmesh_outs/pipeline_test"
 
 stages:
+    preprocess:
+      cmd:
+        - grants-tagger preprocess mesh ${data_path} ${preprocessing_output} '' \
+          --test-size 25000 \
+          --train-years 2016,2017,2018,2019 \
+          --test-years 2020,2021
+      deps:
+        - ${data_path}
+      outs:
+        - ${preprocessing_output}
+
     train:
         cmd: 
           - mkdir -p ${output_dir}/best
@@ -35,6 +47,6 @@ stages:
             --eval_accumulation_steps 20 \
             --save_strategy epoch
         deps:
-            - ${data_path}
+            - ${preprocessing_output}
         outs:
             - ${output_dir}/best
