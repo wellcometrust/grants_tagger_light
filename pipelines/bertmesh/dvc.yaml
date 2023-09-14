@@ -52,5 +52,3 @@ stages:
             --save_strategy epoch
         deps:
             - ${preprocessing_output}
-        outs:
-            - ${output_dir}
