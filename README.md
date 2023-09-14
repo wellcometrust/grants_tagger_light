@@ -530,7 +530,7 @@ To run the test you need to have installed the `dev` dependencies first.
 This is done by running `poetry install --with dev` after you are in the sell (`poetry shell`)
 
 Run tests with `pytest`. If you want to write some additional tests,
-they should go in the subfolde `tests/`
+they should go in the subfolder `tests/`
 
 
 ## ✍️ Scripts
