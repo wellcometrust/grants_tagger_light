@@ -50,6 +50,7 @@ def augment(
     prompt_template: str = "grants_tagger_light/augmentation/prompt.template",
     concurrent_calls: int = os.cpu_count() * 2,
     temperature: float = 1.5,
+    tags: list = None,
     tags_file_path: str = None,
 ):
     if model_key.strip().lower() not in ["gpt-3.5-turbo", "text-davinci", "gpt-4"]:
@@ -60,6 +61,7 @@ def augment(
     dset = load_from_disk(os.path.join(data_path, "dataset"))
     if "train" in dset:
         dset = dset["train"]
+
     logger.info("Obtaining count values from the labels...")
     pool = multiprocessing.Pool(processes=num_proc)
     element_counts_list = pool.map(_count_elements_in_sublist, dset["meshMajor"])
@@ -71,16 +73,20 @@ def augment(
         merged_element_counts.items(), key=lambda x: x[1], reverse=True
     )
     sorted_merged_element_counts_dict = dict(sorted_merged_element_counts)
+
+    if tags is None:
+        tags = []
     if tags_file_path is not None:
         with open(tags_file_path, "r") as f:
-            tags = f.read().split("\n")
+            tags.extend([x.strip() for x in f.readlines()])
             logger.info(
                 f"Tags file path found. Filtering {len(tags)} tags "
                 f"(examples found: {tags[:15]}...)"
             )
-            sorted_merged_element_counts_dict = {
-                k: v for k, v in sorted_merged_element_counts_dict.items() if k in tags
-            }
+    if len(tags) > 0:
+        sorted_merged_element_counts_dict = {
+            k: v for k, v in sorted_merged_element_counts_dict.items() if k in tags
+        }
 
     if min_examples is not None:
         sorted_merged_element_counts_dict = {
@@ -191,6 +197,7 @@ def augment_cli(
         max=2,
         help="A value between 0 and 2. The bigger - the more creative.",
     ),
+    tags: str = typer.Option(None, help="Comma separated list of tags to retag"),
     tags_file_path: str = typer.Option(
         None,
         help="Text file containing one line per tag to be considered. "
@@ -204,11 +211,15 @@ def augment_cli(
         )
         exit(-1)
 
-    if tags_file_path is None and min_examples is None:
+    if tags_file_path is None and tags is None and min_examples is None:
         logger.error(
             "To understand which tags need to be augmented, "
-            "set either --min-examples or --tags-file-path"
+            "set either --min-examples or --tags-file-path or --tags"
         )
+        exit(-1)
+
+    if tags_file_path is not None and not os.path.isfile(tags_file_path):
+        logger.error(f"{tags_file_path} not found")
         exit(-1)
 
     if float(temperature) > 2.0 or float(temperature) < -2.0:
@@ -226,5 +237,6 @@ def augment_cli(
         prompt_template=prompt_template,
         concurrent_calls=concurrent_calls,
         temperature=temperature,
+        tags=parse_tags(tags),
         tags_file_path=tags_file_path,
     )

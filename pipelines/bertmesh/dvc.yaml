@@ -1,5 +1,5 @@
 vars:
-    - data_path: "../../data/raw/allMeSH_2021.json"
+    - data_path: "../../data/raw/allMeSH_2021.jsonl"
     - script_loc: "../../grants_tagger_light/training"
     - output_dir: "../../bertmesh_outs/pipeline_test"
 
@@ -8,15 +8,33 @@ stages:
         cmd: >-
             python ${script_loc}/train.py
             --model_key ""
-            --data_path ${data_path}
-            --output_dir ${output_dir}
-            --max_samples 10
-            --per_device_train_batch_size 4
-            --per_device_eval_batch_size 4
+            --data_path ${data_path}            
+            --per_device_train_batch_size 16 \
+            --per_device_eval_batch_size 1 \
+            --multilabel_attention True \
+            --freeze_backbone unfreeze \
+            --num_train_epochs 7 \
+            --learning_rate 5e-5 \
+            --dropout 0.1 \
+            --hidden_size 1024 \
+            --warmup_steps 5000 \
+            --max_grad_norm 2.0 \
+            --scheduler_type cosine_hard_restart \
+            --weight_decay 0.2 \
+            --correct_bias True \
+            --threshold 0.25 \
+            --prune_labels_in_evaluation True \
+            --hidden_dropout_prob 0.2 \
+            --attention_probs_dropout_prob 0.2 \
+            --fp16 \
+            --torch_compile \
+            --evaluation_strategy epoch \
+            --eval_accumulation_steps 20 \
+            --save_strategy epoch \
+            --wandb_project wellcome-mesh \
+            --wandb_name test-train-all \
+            --wandb_api_key ${WANDB_API_KEY}
         deps:
             - ${data_path}
-        params:
-            - ../../grants_tagger_light/training/cli_args/train_args.py:
-                  - BertMeshTrainingArguments
         outs:
             - ${output_dir}/best

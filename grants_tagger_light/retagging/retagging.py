@@ -122,9 +122,11 @@ def retag(
             lambda x: any(np.isin(years, [str(x["year"])])), num_proc=num_proc
         )
 
+    if tags is None:
+        tags = []
     if tags_file_path is not None and os.path.isfile(tags_file_path):
         with open(tags_file_path, "r") as f:
-            tags = [x.strip() for x in f.readlines()]
+            tags.extend([x.strip() for x in f.readlines()])
 
     logging.info(f"- Total tags detected: {tags}.")
     logging.info("- Training classifiers (retaggers)")
