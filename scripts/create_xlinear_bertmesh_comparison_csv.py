@@ -128,9 +128,14 @@ def create_comparison_csv(
     # Add active portfolio
     active_grants = pd.read_csv(active_portfolio_path)
     active_grants = active_grants[~active_grants["Synopsis"].isna()]
-    active_grants.sample(frac=1)
-    active_grants_sample = active_grants.iloc[:active_portfolio_sample]
-    active_grants_sample = pd.DataFrame({"abstract": active_grants_sample["Synopsis"]})
+    active_grants.drop_duplicates(subset="Synopsis", inplace=True)
+    active_grants_sample = active_grants.sample(n=active_portfolio_sample)
+    active_grants_sample = pd.DataFrame(
+        {
+            "abstract": active_grants_sample["Synopsis"],
+            "Reference": active_grants_sample["Reference"],
+        }
+    )
     active_grants_sample["active_portfolio"] = 1
     grants_sample = pd.concat([grants_sample, active_grants_sample])
 
@@ -192,7 +197,7 @@ def create_comparison_csv(
         )
 
     # Output df to csv
-    grants_sample.to_csv(output_path, index=False)
+    grants_sample.to_excel(output_path, index=False)
 
 
 if __name__ == "__main__":
