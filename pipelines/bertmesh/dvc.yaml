@@ -1,10 +1,14 @@
 vars:
-    # - data_path: "../../data/raw/allMeSH_2021.jsonl"
+    # ORIGINAL: - data_path: "../../data/raw/allMeSH_2021.jsonl"
+    # RETAGGED:
     - data_path: "../../data/raw/retagging/allMeSH_2021.2016-2021.jsonl"
     - script_loc: "../../grants_tagger_light/training"
     - output_dir: "../../bertmesh_outs/pipeline_test"
 
 stages:
+    create_dir:
+        cmd: >-
+            mkdir -p ${output_dir}
     train:
         cmd: >-
             python ${script_loc}/train.py \
