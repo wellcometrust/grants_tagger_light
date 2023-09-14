@@ -7,15 +7,19 @@ vars:
     - output_dir: "../../bertmesh_outs/pipeline_test/best"
 
 stages:
+    preparation:
+      cmd: >-
+        mkdir -p ${output_dir}
+      outs:
+        - {output_dir}
     preprocess:
-      cmd:
-        - grants-tagger preprocess mesh ${data_path} ${preprocessing_output} '' \
-          --test-size 25000 \
-          --train-years 2016,2017,2018,2019 \
+      cmd: >-
+        grants-tagger preprocess mesh ${data_path} ${preprocessing_output} ""
+          --test-size 25000
+          --train-years 2016,2017,2018,2019
           --test-years 2020,2021
-        - mkdir -p ${output_dir}
       deps:
-        - ${data_path}
+        - ${output_dir}
       outs:
         - ${preprocessing_output}
 
