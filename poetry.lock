@@ -4288,4 +4288,4 @@ test = ["zope.testing"]
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.10"
-content-hash = "0c80743677efb7db358ce4088a77a8f3dc1200ca71f02489f552d90f9b50a1d4"
+content-hash = "019a45e6955dd283a0127e78e50df6fe8c29cebbdfba847bc9cb39d9f7a509bb"

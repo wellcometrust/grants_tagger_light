@@ -48,33 +48,7 @@ For inference, CPU-support should suffice.
 
 You now have access to the `grants-tagger` command line interface!
 
-## 3. For `retagging` you will need to make sure you have `openjdk 8 (or 11)` installed to run Spark
-First, make sure you don't have java installed or you have another version that it's not java 8 or 11.
-```shell
-java -version
-```
-
-If you don't or you have another version, install it (example for java 8):
-```shell
-sudo apt update
-sudo apt install openjdk-8-jdk
-```
-
-Make sure you set by default the one we have just installed. Copy the path to the java folder from:
-```shell
-sudo update-alternatives --config java
-```
-
-And now, set your JAVA_HOME env var:
-```shell
-sudo vim /etc/environment
-JAVA_HOME="[PATH_TO_THE_JAVA_FOLDER]
-```
-
-Restar the shell or do `source /etc/environment`
-
-
-## OPTIONAL: 4. Install MantisNLP `remote` to connect to a remote AWS instances
+## OPTIONAL: 3. Install MantisNLP `remote` to connect to a remote AWS instances
 `pip install git+https://github.com/ivyleavedtoadflax/remote.py.git`
 Then add your instance
 `remote config add [instance_name]`
@@ -254,14 +228,14 @@ grants-tagger augment mesh [FOLDER_AFTER_PREPROCESSING] [SET_YOUR_OUTPUT_FOLDER_
 
 ### Other params
 ```                                                                                                                                                                                                                   
- Usage: grants-tagger augment mesh [OPTIONS] DATA_PATH SAVE_TO_PATH                                                                                                                                                
+Usage: grants-tagger augment mesh [OPTIONS] DATA_PATH SAVE_TO_PATH                                                                                                                                                
 
 ╭─ Arguments ─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
-│ *    data_path         TEXT  Path to mesh.jsonl [default: None] [required]                                                                                                                                      │
-│ *    save_to_path      TEXT  Path to save the new generated data in jsonl format
+│ *    data_path         TEXT  Path to folder after `preprocess` [default: None] [required]                                                                                                                                      │
+│ *    save_to_path      TEXT  Path to save the new jsonl data [default: None] [required]                                                                                                                         │
 ╰─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
 ╭─ Options ───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
-│ --model-key               TEXT                   LLM to use data augmentation. By now, only `openai` is supported [default: gpt-3.5-turbo]                                                                      │
+│ --model-key               TEXT                   LLM to use data augmentation. By now, only openai models are supported [default: gpt-3.5-turbo]                                                                      │
 │ --num-proc                INTEGER                Number of processes to use for data augmentation [default: 8]                                                                                                  │
 │ --batch-size              INTEGER                Preprocessing batch size (for dataset, filter, map, ...) [default: 64]                                                                                         │
 │ --min-examples            INTEGER                Minimum number of examples to require. Less than that will trigger data augmentation. [default: None]                                                          │
@@ -270,6 +244,7 @@ grants-tagger augment mesh [FOLDER_AFTER_PREPROCESSING] [SET_YOUR_OUTPUT_FOLDER_
 │                                                  [default: grants_tagger_light/augmentation/prompt.template]                                                                                                    │
 │ --concurrent-calls        INTEGER RANGE [x>=1]   Concurrent calls with 1 tag each to the different model [default: 16]                                                                                          │
 │ --temperature             FLOAT RANGE [0<=x<=2]  A value between 0 and 2. The bigger - the more creative. [default: 1.5]                                                                                        │
+│ --tags                    TEXT                   Comma separated list of tags to retag [default: None]                                                                                                          │
 │ --tags-file-path          TEXT                   Text file containing one line per tag to be considered. The rest will be discarded. [default: None]                                                            │
 │ --help                                           Show this message and exit.                                                                                                                                    │
 ╰─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯

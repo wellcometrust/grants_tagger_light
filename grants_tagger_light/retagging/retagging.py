@@ -2,6 +2,7 @@ import json
 import logging
 import random
 import time
+from colorama import Fore, Back, Style
 
 import typer
 from loguru import logger
@@ -42,15 +43,19 @@ def _annotate(curation_file, dset, tag, limit, is_positive):
     field = "positive" if is_positive else "negative"
     human_supervision = {tag: {"positive": [], "negative": []}}
     if os.path.isfile(curation_file):
-        prompt = (
-            f"File `{curation_file}` found. Do you want to reuse previous work? [y|n]: "
-        )
-        answer = input(prompt)
-        while answer not in ["y", "n"]:
+        with open(curation_file, "r") as f:
+            human_supervision = json.load(f)
+        if len(human_supervision[tag][field]) > 0:
+            prompt = (
+                f"{field.title()} examples for `{curation_file}` found. "
+                f"Do you want to reuse them? [y|n]: "
+            )
             answer = input(prompt)
-        if answer == "y":
-            with open(curation_file, "r") as f:
-                human_supervision = json.load(f)
+            while answer not in ["y", "n"]:
+                logging.error(f"{answer} not valid (only `y` or `n` accepted)")
+                answer = input(prompt)
+            if answer == "n":
+                human_supervision[tag][field] = []
 
     count = len(human_supervision[tag][field])
     logging.info(
@@ -77,12 +82,21 @@ def _annotate(curation_file, dset, tag, limit, is_positive):
         if finished:
             break
         print("=" * 50)
-        print(dset[random_pos_row]["abstractText"])
+        keywords = []
+        for k in tag.split(' '):
+            keywords.extend(k.split(','))
+        text = Fore.YELLOW + dset[random_pos_row]["abstractText"] + Style.RESET_ALL
+        for k in keywords:
+            text = text.replace(k.lower(), Back.BLUE + k.lower() + Back.RESET)
+            text = text.replace(k.upper(), Back.BLUE + k.upper() + Back.RESET)
+            text = text.replace(k.title(), Back.BLUE + k.title() + Back.RESET)
+            text = text.replace(k.capitalize(), Back.BLUE + k.capitalize() + Back.RESET)
+        print(text)
         print("=" * 50)
-        res = input(
-            f'[{count}/{limit}]> Is this {"NOT " if not is_positive else ""}'
-            f" a `{tag}` text? [a to accept]: "
-        )
+        res = input(Style.BRIGHT +
+                    f'[{count}/{limit}]> Is this {"NOT " if not is_positive else ""}'
+                    f" a `{tag}` text? [a to accept]: " + Style.RESET_ALL
+                    )
         if res == "a":
             human_supervision[tag][field].append(dset[random_pos_row])
             with open(curation_file, "w") as f:
@@ -131,6 +145,8 @@ def retag(
     logging.info(f"- Total tags detected: {tags}.")
     logging.info("- Training classifiers (retaggers)")
 
+    # First, we annotate all the tags.
+    # We don't run classification until all tags are annotated
     for tag in tags:
         os.makedirs(os.path.join(save_to_path, tag.replace(" ", "")), exist_ok=True)
         logging.info(f"- Obtaining positive examples for {tag}...")
@@ -176,6 +192,7 @@ def retag(
 
     logging.info("- Retagging...")
 
+    # Second, for each tag, we train classifiers.
     models = {}
     for tag in tags:
         curation_file = os.path.join(save_to_path, tag.replace(" ", ""), "curation")
@@ -198,14 +215,14 @@ def retag(
         )
 
         pos_x_train = pos_x_train.add_column("tag", [tag] * len(pos_x_train))
-        pos_x_test = pos_x_test.add_column("tag", [tag] * len(pos_x_test))
         neg_x_train = neg_x_train.add_column("tag", ["other"] * len(neg_x_train))
-        neg_x_test = neg_x_test.add_column("tag", ["other"] * len(neg_x_test))
 
         logging.info("- Creating train/test sets...")
         train = concatenate_datasets([pos_x_train, neg_x_train])
 
         # TODO: Use Evaluation on `test` to see if the model is good enough
+        # pos_x_test = pos_x_test.add_column("tag", [tag] * len(pos_x_test))
+        # neg_x_test = neg_x_test.add_column("tag", ["other"] * len(neg_x_test))
         # test = concatenate_datasets([pos_x_test, neg_x_test])
 
         label_binarizer = preprocessing.LabelBinarizer()
@@ -227,18 +244,22 @@ def retag(
         os.makedirs(model_path, exist_ok=True)
         model.save(model_path)
 
+    # Third, we predict
     logging.info("- Predicting all tags")
     dset = dset.add_column("changes", [[]] * len(dset))
     with open(os.path.join(save_to_path, "corrections"), "w") as f:
-        for b in tqdm.tqdm(range(int(len(dset) / batch_size))):
-            start = b * batch_size
-            end = min(len(dset), (b + 1) * batch_size)
+        for batch_index in tqdm.tqdm(range(0, len(dset), batch_size)):
+            start = batch_index * batch_size
+            end = min(len(dset), (batch_index + 1) * batch_size)
             batch = dset.select([i for i in range(start, end)])
             batch_buffer = [x for x in batch]
             for tag in models.keys():
                 batch_preds = models[tag](batch["abstractText"], threshold=threshold)
-                for i, bp in enumerate(batch_preds):
-                    is_predicted = bp == [0]
+                for i, pred in enumerate(batch_preds):
+                    # pred is an array of classes returned.
+                    # if pred is [0] - positive (or just len(ped)>0)
+                    # if pred is empty [] - negative
+                    is_predicted = len(pred) > 0
                     is_expected = tag in batch[i]["meshMajor"]
                     if is_predicted != is_expected:
                         if is_predicted:

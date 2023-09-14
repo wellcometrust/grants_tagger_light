@@ -182,7 +182,7 @@ def augment(
 
 @augment_app.command()
 def augment_cli(
-    data_path: str = typer.Argument(..., help="Path to mesh.jsonl"),
+    data_path: str = typer.Argument(..., help="Path to folder after `preprocess`"),
     save_to_path: str = typer.Argument(..., help="Path to save the new jsonl data"),
     model_key: str = typer.Option(
         "gpt-3.5-turbo",
