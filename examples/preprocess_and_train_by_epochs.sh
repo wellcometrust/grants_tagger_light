@@ -1,7 +1,8 @@
 # Run on g5.12xlarge instance
 
 # Without saving (on-the-fly)
-SOURCE="data/raw/allMeSH_2021.jsonl"
+#SOURCE="data/raw/allMeSH_2021.jsonl"
+SOURCE="data/raw/retagging/allMeSH_2021.2016-2021.jsonl"
 
 grants-tagger train bertmesh \
     "" \
