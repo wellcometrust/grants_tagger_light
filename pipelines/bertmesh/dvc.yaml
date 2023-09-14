@@ -30,10 +30,7 @@ stages:
             --torch_compile \
             --evaluation_strategy epoch \
             --eval_accumulation_steps 20 \
-            --save_strategy epoch \
-            --wandb_project wellcome-mesh \
-            --wandb_name test-train-all \
-            --wandb_api_key ${WANDB_API_KEY}
+            --save_strategy epoch
         deps:
             - ${data_path}
         outs:

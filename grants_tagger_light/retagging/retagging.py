@@ -258,8 +258,10 @@ def retag(
                 batch_preds = models[tag](batch["abstractText"], threshold=threshold)
                 for i, pred in enumerate(batch_preds):
                     # pred is an array of classes returned.
-                    # if pred is [0] - positive (or just len(ped)>0)
-                    # if pred is empty [] - negative
+                    # Since it's binary clf, possibilities are:
+                    # - [0] - true (class 0 - only class we have)
+                    # - [] - false (no class)
+                    # len(ped)>0 checks if prediction is tag
                     is_predicted = len(pred) > 0
                     is_expected = tag in batch[i]["meshMajor"]
                     if is_predicted != is_expected:
