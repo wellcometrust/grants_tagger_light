@@ -39,8 +39,9 @@ def data_path():
         yield data_path
 
 
-@pytest.mark.skipif('OPENAI_API_KEY' not in os.environ,
-                    reason="requires OPENAI_API_KEY installed")
+@pytest.mark.skipif(
+    "OPENAI_API_KEY" not in os.environ, reason="requires OPENAI_API_KEY installed"
+)
 def test_augment(data_path):
     logging.basicConfig(level=logging.INFO)
     with tempfile.TemporaryDirectory() as tmpdirname:
@@ -48,7 +49,12 @@ def test_augment(data_path):
         save_to_path = tmpdirname + "/augmented.jsonl"
 
     preprocess_mesh(
-        data_path=data_path, save_to_path=preprocessing_path, model_key="", num_proc=2, batch_size=1, test_size=0.5
+        data_path=data_path,
+        save_to_path=preprocessing_path,
+        model_key="",
+        num_proc=2,
+        batch_size=1,
+        test_size=0.5,
     )
 
     augment(
@@ -57,10 +63,10 @@ def test_augment(data_path):
         model_key="gpt-3.5-turbo",
         examples=1,
         concurrent_calls=1,
-        tags=['COVID-19']
+        tags=["COVID-19"],
     )
 
-    with open(save_to_path, 'r') as f:
+    with open(save_to_path, "r") as f:
         logging.info(f.read())
 
 
