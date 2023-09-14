@@ -100,7 +100,8 @@ def augment(
 
     if len(sorted_merged_element_counts_dict.keys()) < 1:
         logger.error(
-            "I did not find any examples for your tags in your preprocessed folder. Try:\n"
+            "I did not find any examples for your tags "
+            "in your preprocessed folder. Try:\n"
             "- Other train/set split in `preprocess`;\n"
             "- Other years;\n"
             "- Other tags;"
