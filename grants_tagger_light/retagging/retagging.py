@@ -83,8 +83,8 @@ def _annotate(curation_file, dset, tag, limit, is_positive):
             break
         print("=" * 50)
         keywords = []
-        for k in tag.split(' '):
-            keywords.extend(k.split(','))
+        for k in tag.split(" "):
+            keywords.extend(k.split(","))
         text = Fore.YELLOW + dset[random_pos_row]["abstractText"] + Style.RESET_ALL
         for k in keywords:
             text = text.replace(k.lower(), Back.BLUE + k.lower() + Back.RESET)
@@ -93,10 +93,11 @@ def _annotate(curation_file, dset, tag, limit, is_positive):
             text = text.replace(k.capitalize(), Back.BLUE + k.capitalize() + Back.RESET)
         print(text)
         print("=" * 50)
-        res = input(Style.BRIGHT +
-                    f'[{count}/{limit}]> Is this {"NOT " if not is_positive else ""}'
-                    f" a `{tag}` text? [a to accept]: " + Style.RESET_ALL
-                    )
+        res = input(
+            Style.BRIGHT
+            + f'[{count}/{limit}]> Is this {"NOT " if not is_positive else ""}'
+            f" a `{tag}` text? [a to accept]: " + Style.RESET_ALL
+        )
         if res == "a":
             human_supervision[tag][field].append(dset[random_pos_row])
             with open(curation_file, "w") as f:
