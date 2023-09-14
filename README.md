@@ -48,6 +48,12 @@ For inference, CPU-support should suffice.
 
 You now have access to the `grants-tagger` command line interface!
 
+## 3. Pull the data
+`dvc pull`
+
+Make sure the `data/raw/allMeSH_2021.jsonl` file was pulled (the original data) as well as
+`data/raw/retagging/allMeSH_2021.2016-2021.jsonl` file with the retagged data so far.
+
 ## OPTIONAL: 3. Install MantisNLP `remote` to connect to a remote AWS instances
 `pip install git+https://github.com/ivyleavedtoadflax/remote.py.git`
 Then add your instance
