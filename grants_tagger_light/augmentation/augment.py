@@ -14,6 +14,7 @@ from datasets import load_from_disk
 from grants_tagger_light.augmentation.parallel_augment_openai import (
     ParallelAugmentOpenAI,
 )
+from grants_tagger_light.utils.years_tags_parser import parse_tags
 
 augment_app = typer.Typer()
 
@@ -74,6 +75,7 @@ def augment(
     )
     sorted_merged_element_counts_dict = dict(sorted_merged_element_counts)
 
+    print(f"Tags: {tags}")
     if tags is None:
         tags = []
     if tags_file_path is not None:
@@ -87,6 +89,7 @@ def augment(
         sorted_merged_element_counts_dict = {
             k: v for k, v in sorted_merged_element_counts_dict.items() if k in tags
         }
+        logger.info(f"Tags count dictionary: {sorted_merged_element_counts_dict}")
 
     if min_examples is not None:
         sorted_merged_element_counts_dict = {
@@ -95,10 +98,26 @@ def augment(
             if v < min_examples
         }
 
+    if len(sorted_merged_element_counts_dict.keys()) < 1:
+        logger.error(
+            "I did not find any examples for your tags in your preprocessed folder. Try:\n"
+            "- Other train/set split in `preprocess`;\n"
+            "- Other years;\n"
+            "- Other tags;"
+        )
+        exit(-1)
+
     with open(f"{save_to_path}.count", "w") as f:
         f.write(json.dumps(sorted_merged_element_counts_dict, indent=2))
 
     tags_to_augment = list(sorted_merged_element_counts_dict.keys())
+
+    if len(tags_to_augment) < concurrent_calls:
+        logger.error(
+            "Found less tags than concurrent calls to OpenAI."
+            f" Overwritting `concurrent-calls` to {len(tags_to_augment)}"
+        )
+        concurrent_calls = len(tags_to_augment)
 
     biggest_tags_to_augment = [
         f"{k}({sorted_merged_element_counts_dict[k]})" for k in tags_to_augment[:5]
