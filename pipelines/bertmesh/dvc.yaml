@@ -15,9 +15,9 @@ stages:
 
     preprocess:
       cmd: >-
-        grants-tagger preprocess mesh ${data_path} ${preprocessing_output} ""
-          --test-size 25000
-          --train-years 2016,2017,2018,2019
+        grants-tagger preprocess mesh ${data_path} ${preprocessing_output} "" \
+          --test-size 25000 \
+          --train-years 2016,2017,2018,2019 \
           --test-years 2020,2021
       deps:
         - ${output_dir}
