@@ -6,12 +6,10 @@ vars:
     - output_dir: "../../bertmesh_outs/pipeline_test"
 
 stages:
-    create_dir:
-        cmd: >-
-            mkdir -p ${output_dir}
     train:
-        cmd: >-
-            python ${script_loc}/train.py \
+        cmd: 
+          - mkdir -p ${output_dir}/best
+          - python ${script_loc}/train.py \
             --model_key "" \
             --data_path ${data_path} \            
             --per_device_train_batch_size 16 \
