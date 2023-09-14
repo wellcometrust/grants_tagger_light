@@ -126,7 +126,7 @@ your own data under development.
 
 ## 🔥 Train
 
-The command will train a model and save it to the specified path. Currently we support on BertMesh.
+The command will train a model and save it to the specified path. Currently, we support BertMesh.
 
 ### Training bertmesh
 ```
@@ -193,6 +193,18 @@ grants-tagger train bertmesh \
     --wandb_name test-train-all \
     --wandb_api_key ${WANDB_API_KEY}
 ```
+
+## WANDB
+Make sure you track the training. To do that, either set --wandb_api_key or define 'WANDB_API_KEY' in the environment variables.
+
+## DVC for preprocessing and training
+You can run preprocessing and training by doing:
+```bash
+cd pipelines/bertmesh
+dvc repro
+```
+
+Make sure you have  your 'WANDB_API_KEY' in the environment variables!
 
 ## 📚 Augment
 Data augmentation can be useful for low represented classes. LLMs as `openai GPT-3.5` can be used to that purpose.
