@@ -11,7 +11,8 @@ stages:
       cmd: >-
         mkdir -p ${output_dir}
       outs:
-        - {output_dir}
+        - ${output_dir}
+
     preprocess:
       cmd: >-
         grants-tagger preprocess mesh ${data_path} ${preprocessing_output} ""
