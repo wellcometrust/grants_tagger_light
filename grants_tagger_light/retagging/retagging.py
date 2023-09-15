@@ -249,9 +249,8 @@ def retag(
     logging.info("- Predicting all tags")
     dset = dset.add_column("changes", [[]] * len(dset))
     with open(os.path.join(save_to_path, "corrections"), "w") as f:
-        for batch_index in tqdm.tqdm(range(0, len(dset), batch_size)):
-            start = batch_index * batch_size
-            end = min(len(dset), (batch_index + 1) * batch_size)
+        for start in tqdm.tqdm(range(0, len(dset), batch_size)):
+            end = min(len(dset), start + batch_size)
             batch = dset.select([i for i in range(start, end)])
             batch_buffer = [x for x in batch]
             for tag in models.keys():

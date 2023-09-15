@@ -12,7 +12,7 @@ class WandbArguments:
     """
 
     wandb_api_key: str = field(
-        default=os.environ['WANDB_API_KEY'],
+        default=os.environ['WANDB_API_KEY'] if 'WANDB_API_KEY' in os.environ else '',
         metadata={"help": "Wandb API key"},
     )
 
