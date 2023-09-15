@@ -163,3 +163,4 @@ cython_debug/
 # Folder where training outputs are stored
 bertmesh_outs/
 wandb/
+/bertmesh_before_retagging
