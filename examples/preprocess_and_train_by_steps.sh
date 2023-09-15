@@ -1,7 +1,8 @@
 # Run on g5.12xlarge instance
 
 # Without saving (on-the-fly)
-SOURCE="data/raw/allMeSH_2021.jsonl"
+# SOURCE="data/raw/allMeSH_2021.jsonl"
+SOURCE="data/raw/retagging/allMeSH_2021.2016-2021.jsonl"
 
 grants-tagger train bertmesh \
     "" \
@@ -14,7 +15,7 @@ grants-tagger train bertmesh \
     --per_device_eval_batch_size 1 \
     --multilabel_attention True \
     --freeze_backbone unfreeze \
-    --num_train_epochs 7 \
+    --num_train_epochs 12 \
     --learning_rate 5e-5 \
     --dropout 0.1 \
     --hidden_size 1024 \

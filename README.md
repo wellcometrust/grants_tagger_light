@@ -48,6 +48,12 @@ For inference, CPU-support should suffice.
 
 You now have access to the `grants-tagger` command line interface!
 
+## 3. Pull the data
+`dvc pull`
+
+Make sure the `data/raw/allMeSH_2021.jsonl` file was pulled (the original data) as well as
+`data/raw/retagging/allMeSH_2021.2016-2021.jsonl` file with the retagged data so far.
+
 ## OPTIONAL: 3. Install MantisNLP `remote` to connect to a remote AWS instances
 `pip install git+https://github.com/ivyleavedtoadflax/remote.py.git`
 Then add your instance
@@ -57,14 +63,16 @@ And then connect and attach to your machine with a tunnel
 
 # ⌨️  Commands
 
-| Commands        | Description                                                  | Needs dev |
-|-----------------|--------------------------------------------------------------|-----------|
-| 🔥 train        | preprocesses the data and trains a new model                 | True      |
-| ⚙ preprocess    | (Optional) preprocess and save the data outside training    | False     |
-| 📈 evaluate     | evaluate performance of pretrained model                     | True      |
-| 🔖 predict      | predict tags given a grant abstract using a pretrained model | False     |
-| 🎛 tune         | tune params and threshold                                    | True      |
-| ⬇ download      | download data from EPMC                                      | False     |
+| Commands     | Description                                                  | Needs dev |
+|--------------|--------------------------------------------------------------|-----------|
+| ⚙ preprocess | preprocess and save the data outside training                | False     |
+| 🔥 train     | preprocesses the data and trains a new model                 | True      |
+| 📚 augment   | augments data using an LLM (gpt)                             | False     |
+| ✏ retag      | retags data using XLinear to correct errors                  | False     |
+| 📈 evaluate  | evaluate performance of pretrained model                     | True      |
+| 🔖 predict   | predict tags given a grant abstract using a pretrained model | False     |
+| 🎛 tune      | tune params and threshold                                    | True      |
+| ⬇ download   | download data from EPMC                                      | False     |
 
 
 in square brackets the commands that are not implemented yet
@@ -118,9 +126,9 @@ your own data under development.
 
 ## 🔥 Train
 
-The command will train a model and save it to the specified path. Currently we support on BertMesh.
+The command will train a model and save it to the specified path. Currently, we support BertMesh.
 
-### bertmesh
+### Training bertmesh
 ```
  Usage: grants-tagger train bertmesh [OPTIONS] MODEL_KEY DATA_PATH
 
@@ -154,7 +162,7 @@ to improve performance on big datasets. To enable it:
 #### Other arguments
 Besides those arguments, feel free to add any other TrainingArgument from Hugging Face or Wand DB.
 This is the example used to train reaching a ~0.6 F1, also available at `examples/train_by_epochs.sh`
-```commandline
+```shell
 grants-tagger train bertmesh \
     "" \
     [YOUR_PREPROCESSED_FOLDER] \
@@ -185,6 +193,177 @@ grants-tagger train bertmesh \
     --wandb_name test-train-all \
     --wandb_api_key ${WANDB_API_KEY}
 ```
+
+## WANDB
+Make sure you track the training. To do that, either set --wandb_api_key or define 'WANDB_API_KEY' in the environment variables.
+
+## DVC for preprocessing and training
+You can run preprocessing and training by doing:
+```bash
+cd pipelines/bertmesh
+dvc repro
+```
+
+Make sure you have  your 'WANDB_API_KEY' in the environment variables!
+
+## 📚 Augment
+Data augmentation can be useful for low represented classes. LLMs as `openai GPT-3.5` can be used to that purpose.
+
+### Augmenting bertmesh
+For bertmesh, we will augment the `allMeSH_2021.jsonl` file. We just need to select the path to that file (usually in `data/raw/allMeSH_2021.jsonl`)
+and where to save the generated data (in jsonl).
+
+```shell
+grants-tagger augment mesh [FOLDER_AFTER_PREPROCESSING] [SET_YOUR_OUTPUT_FOLDER_HERE] \
+```
+
+### concurrent-calls param
+By setting `concurrent-calls [number_of_calls]` you will use the multiclient openai library which will create 
+async calls to openai and work in parallel, improving the processing times.
+
+If `1`, vanilla `openai` library in sync mode will be used.
+
+### What tags do we augment? By minimum examples 
+There are two ways to do it. First, `all tags` with less than `min-examples` examples.
+In this case, There are two parameters which are important to know:
+* `min-examples`: Example: 25. Is the min. number of examples you require from a tag. If less is found, the data augmentation will be triggered.
+* `examples`: Example: 25. In case there are less than `min-examples`, how many examples we generate for that tag.
+
+```shell
+grants-tagger augment mesh [FOLDER_AFTER_PREPROCESSING] [SET_YOUR_OUTPUT_FOLDER_HERE] \
+  --min-examples 25 \
+  --concurrent-calls 25
+```
+
+### What tags do we augment? By tags file
+Second way is to use a file with 1 line per tag. To do this, instead of `min-examples` use `tags-file-path` param.
+```shell
+grants-tagger augment mesh [FOLDER_AFTER_PREPROCESSING] [SET_YOUR_OUTPUT_FOLDER_HERE] \
+  --tags-file-path tags_to_augment.txt \
+  --examples 25 \
+  --concurrent-calls 25
+```
+
+### Other params
+```                                                                                                                                                                                                                   
+Usage: grants-tagger augment mesh [OPTIONS] DATA_PATH SAVE_TO_PATH                                                                                                                                                
+
+╭─ Arguments ─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
+│ *    data_path         TEXT  Path to folder after `preprocess` [default: None] [required]                                                                                                                                      │
+│ *    save_to_path      TEXT  Path to save the new jsonl data [default: None] [required]                                                                                                                         │
+╰─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+╭─ Options ───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
+│ --model-key               TEXT                   LLM to use data augmentation. By now, only openai models are supported [default: gpt-3.5-turbo]                                                                      │
+│ --num-proc                INTEGER                Number of processes to use for data augmentation [default: 8]                                                                                                  │
+│ --batch-size              INTEGER                Preprocessing batch size (for dataset, filter, map, ...) [default: 64]                                                                                         │
+│ --min-examples            INTEGER                Minimum number of examples to require. Less than that will trigger data augmentation. [default: None]                                                          │
+│ --examples                INTEGER                Examples to generate per each tag. [default: 25]                                                                                                               │
+│ --prompt-template         TEXT                   File to use as a prompt. Make sure to ask the LLM to return a dict with two fields: `abstract` and `tags`                                                      │
+│                                                  [default: grants_tagger_light/augmentation/prompt.template]                                                                                                    │
+│ --concurrent-calls        INTEGER RANGE [x>=1]   Concurrent calls with 1 tag each to the different model [default: 16]                                                                                          │
+│ --temperature             FLOAT RANGE [0<=x<=2]  A value between 0 and 2. The bigger - the more creative. [default: 1.5]                                                                                        │
+│ --tags                    TEXT                   Comma separated list of tags to retag [default: None]                                                                                                          │
+│ --tags-file-path          TEXT                   Text file containing one line per tag to be considered. The rest will be discarded. [default: None]                                                            │
+│ --help                                           Show this message and exit.                                                                                                                                    │
+╰─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+```
+
+## ✏ Retagging
+Retagging is the process of correcting inconsistent tags in the data.
+
+## Retagging bertmesh
+The data in `allMeSH_2021.jsonl` (`PubMed` labelled with `MeSH` tags) is highly inconsistent for many rows, leading to 
+bad performance of some ambiguous labels. 
+
+Example: this is a row not being tagged as `Artificial Intelligence`, but talking about `Neural Networks`.
+
+```python
+{"journal": "Nature communications", "meshMajor": ["Cell Cycle", "Image Processing, Computer-Assisted", "Microscopy", "Neural Networks, Computer", "Saccharomyces cerevisiae", "Software"], "year": "2020", "abstractText": "The identification of cell borders ('segmentation') in microscopy images constitutes a bottleneck for large-scale experiments. For the model organism Saccharomyces cerevisiae, current segmentation methods face challenges when cells bud, crowd, or exhibit irregular features. We present a convolutional neural network (CNN) named YeaZ, the underlying training set of high-quality segmented yeast images (>10 000 cells) including mutants, stressed cells, and time courses, as well as a graphical user interface and a web application ( www.quantsysbio.com/data-and-software ) to efficiently employ, test, and expand the system. A key feature is a cell-cell boundary test which avoids the need for fluorescent markers. Our CNN is highly accurate, including for buds, and outperforms existing methods on benchmark images, indicating it transfers well to other conditions. To demonstrate how efficient large-scale image processing uncovers new biology, we analyze the geometries of ?2200 wild-type and cyclin mutant cells and find that morphogenesis control occurs unexpectedly early and gradually.", "pmid": "33184262", "title": "A convolutional neural network segments yeast microscopy images with high accuracy."}]
+```
+
+And this is another example. Same topic, but now it was tagged as `Artificial Intelligence`.
+```
+{"journal": "Nature communications", "meshMajor": ["Databases, Factual", "Deep Learning", "Diagnosis, Computer-Assisted", "False Positive Reactions", "Humans", "Image Processing, Computer-Assisted", "Neural Networks, Computer", "Stomach Neoplasms"], "year": "2020", "abstractText": "The early detection and accurate histopathological diagnosis of gastric cancer increase the chances of successful treatment. The worldwide shortage of pathologists offers a unique opportunity for the use of artificial intelligence assistance systems to alleviate the workload and increase diagnostic accuracy. Here, we report a clinically applicable system developed at the Chinese PLA General Hospital, China, using a deep convolutional neural network trained with 2,123 pixel-level annotated H&E-stained whole slide images. The model achieves a sensitivity near 100% and an average specificity of 80.6% on a real-world test dataset with 3,212 whole slide images digitalized by three scanners. We show that the system could aid pathologists in improving diagnostic accuracy and preventing misdiagnoses. Moreover, we demonstrate that our system performs robustly with 1,582 whole slide images from two other medical centres. Our study suggests the feasibility and benefits of using histopathological artificial intelligence assistance systems in routine practice scenarios.", "pmid": "32855423", "title": "Clinically applicable histopathological diagnosis system for gastric cancer detection using deep learning."}
+```
+
+For tags as `Data Science`, `Artificial Intelligence`, `Data Collection`, `Deep Learning`, `Neural Networks, Computer`, `Machine Learning`, the situation is really dramatic.
+
+`Artificial Intelligence` with several thousand rows shows a performance of 0.1 F1, showing a lot of confusion with the other tags described above.
+
+We propose a solution: retagging the original data with a small curated dataset of examples and a quick Machine Learning light classifier: XLinear.
+
+```
+grants-tagger retag mesh data/raw/allMeSH_2021.jsonl [SET_YOUR_OUTPUT_FILE_HERE] \
+  --tags "Artificial Intelligence,HIV" \
+  --years 2016,2017,2018,2019,2020,2021 \
+  --train-examples 100 \
+  --batch-size 10000 \
+  --supervised 
+```
+Let's take a look at some of the params:
+- *tags*: A comma-separated (and quoted) list of tags you want to retag.
+- *years*: A comma-separated list of years you want to include
+- *train-examples*: The number of examples to include for training the classifier. Default: 100
+- *batch-size*: The size of the processing batch. Keep it high as the memory consumption is really small. Default: 10000
+
+### Getting the curation data: Supervised or Unsupervised?
+For using the retagger, you need a small 
+- *supervised*: If you want to be asked for *train-examples* examples to curate a dataset for training the classifier. Recommended.
+
+```
+==================================================
+The SD BIOLINE HIV/Syphilis Duo assay is the first World Health Organization prequalified dual rapid diagnostic test for
+ simultaneous detection of HIV and Treponema pallidum antibodies in human blood. Prior to introducing the test into 
+ antenatal clinics across South Sudan, a field evaluation of its clinical performance in diagnosing both HIV and 
+ syphilis in pregnant women was conducted. SD Bioline test performance on venous blood samples was compared with (i) 
+ Vironostika HIV1/2 Uniform II Ag/Ab reference standard and Alere Determine HIV 1/2 non-reference standard for HIV 
+ diagnosis, and (ii) Treponema pallidum hemagglutination reference standard and Rapid plasma reagin non-reference 
+ standard for syphilis. Sensitivity, specificity, positive predictive value (PPN), negative predictive value (NPV) 
+ and kappa (ê) value were calculated for each component against the reference standards within 95% confidence 
+ intervals (CIs); agreements between Determine HIV 1/2 and SD Bioline HIV tests were also calculated. Of 442 pregnant 
+ women recruited, eight (1.8%) were HIV positive, 22 (5.0%) had evidence of syphilis exposure; 14 (3.2%) had active 
+ infection. For HIV diagnosis, the sensitivity, specificity, PPV and NPV were 100% (95% CI: 63.1-100), 100% 
+ (95% CI: 99.2-100), 100% (95% CI: 63.1-100) and 100% (95% CI: 99.2-100) respectively with ê value of 1 
+ (95% CI: 0.992-1.000). Overall agreement of the Duo HIV component and Determine test was 99.1% (95% CI: 0.977-0.998) 
+ with 66.7% (95% CI: 34.9-90.1) positive and 100% (95% CI: 0.992-1.000) negative percent agreements. For syphilis, 
+ the Duo assay sensitivity was 86.4% (95% CI: 65.1-97.1) and specificity 100% (95% CI: 99.1-100) with PPV 100% 
+ (95% CI: 82.4-100), NPV 99.2% (95% CI: 97.9-99.9) and ê value 0.92 (95% CI: 0.980-0.999). Our findings suggest the SD Bioline HIV/Syphilis Duo Assay could be suitable for HIV and syphilis testing in women attending antenatal services across South Sudan. Women with positive syphilis results should receive treatment immediately, whereas HIV positive women should undergo confirmatory testing following national HIV testing guidelines.
+==================================================
+[2/100]> Is this  a `HIV` text? [a to accept]:
+
+```
+
+If not set, the model will randomly get *train-examples* and train the classifier without your supervision, which will reduce the performance of the classifiers.
+
+### Artifacts created
+As a result of the proces, you will find a folder at *save_to_path*. Inside,  you will find:
+- One folder per tag, including:
+  - `clf` (a classifier),
+  - `curation` (a dataset of positive and negative examples for the tag)
+  - `labelbinarizer` (a label binarizer to encode the labels)  
+- a `corrections` file, the new allMeSH_2021.jsonl with your tags corrected.
+
+### Other params
+```
+ Usage: grants-tagger retag mesh [OPTIONS] DATA_PATH SAVE_TO_PATH                                                                                                                                                  
+
+╭─ Arguments ─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
+│ *    data_path         TEXT  Path to mesh.jsonl [default: None] [required]                                                                                                                                      │
+│ *    save_to_path      TEXT  Path where to save the retagged data [default: None] [required]                                                                                                                    │
+╰─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+╭─ Options ───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
+│ --num-proc                             INTEGER  Number of processes to use for data augmentation [default: 8]                                                                                                   │
+│ --batch-size                           INTEGER  Preprocessing batch size (for dataset, filter, map, ...) [default: 64]                                                                                          │
+│ --tags-file-path                       TEXT     Text file containing one line per tag to be considered. The rest will be discarded. [default: None]                                                             │
+│ --threshold                            FLOAT    Minimum threshold of confidence to retag a model. Default: 0.9 [default: 0.9]                                                                                   │
+│ --train-examples                       INTEGER  Number of examples to use for training the retaggers [default: 100]                                                                                             │
+│ --supervised        --no-supervised             Use human curation, showing a `limit` amount of positive and negative examples to curate data for training the retaggers. The user will be required to accept   │
+│                                                 or reject. When the limit is reached, the model will be train. All intermediary steps will be saved.                                                            │
+│                                                 [default: supervised]                                                                                                                                           │
+│ --help                                          Show this message and exit.                                                                                                                                     │
+╰─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+```
+
 
 ## 📈 Evaluate
 
@@ -369,7 +548,7 @@ To run the test you need to have installed the `dev` dependencies first.
 This is done by running `poetry install --with dev` after you are in the sell (`poetry shell`)
 
 Run tests with `pytest`. If you want to write some additional tests,
-they should go in the subfolde `tests/`
+they should go in the subfolder `tests/`
 
 
 ## ✍️ Scripts
