@@ -10,9 +10,9 @@ stages:
       --xlinear-thresh 0.2 --pre-annotate-xlinear --output-path data/grants_comparison/comparison.xlsx
     deps:
     - path: scripts/create_xlinear_bertmesh_comparison_csv.py
-      md5: a8ced1e8851e43f1902ba0d9dbf98781
-      size: 8350
+      md5: d960c5b83b112d390b80f9db8467f8a6
+      size: 8089
     outs:
     - path: data/grants_comparison/comparison.xlsx
-      md5: bd9ecabc26224fab96816fc7a6bd8be8
-      size: 195402
+      md5: 91983b99e7a5386f5e21d3a2ede38642
+      size: 937396
