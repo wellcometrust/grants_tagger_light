@@ -18,7 +18,7 @@ stages:
         cmd: >-
           grants-tagger train bertmesh "" ${preprocessing_output}
           --output_dir ${output_dir}
-          --per_device_train_batch_size 16
+          --per_device_train_batch_size 8
           --per_device_eval_batch_size 1
           --multilabel_attention True
           --freeze_backbone unfreeze
