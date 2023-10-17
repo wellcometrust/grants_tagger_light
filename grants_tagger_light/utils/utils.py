@@ -1,11 +1,14 @@
 import json
 import logging
+import os 
+from datasets import load_from_disk
 
 # encoding: utf-8
 import pickle
 from functools import partial
 
 import pandas as pd
+import numpy as np
 import requests
 from sklearn.metrics import f1_score
 from sklearn.model_selection import train_test_split
@@ -40,6 +43,26 @@ def yield_tags(data_path, label_binarizer=None):
 def load_data(data_path, label_binarizer=None, X_format="List"):
     """Load data from the dataset."""
     print("Loading data...")
+
+
+    if os.path.isdir(data_path):
+        logger.info(
+            "Train/test data found in a folder, which means you preprocessed and "
+            "save the data before. Loading that split from disk..."
+        )
+        dset = load_from_disk(os.path.join(data_path, "dataset"))
+        with open(os.path.join(data_path, "label2id"), "r") as f:
+            label2id = json.load(f)
+        with open(os.path.join(data_path, "id2label"), "r") as f:
+            id2label = json.load(f)
+    
+    train_dset, val_dset = dset["train"], dset["test"]
+    texts = val_dset['abstractText']
+    tags = val_dset['label_ids']
+    if label_binarizer:
+        tags = label_binarizer.transform(tags)
+    meta = val_dset['meshMajor']
+    return texts, tags, meta
 
     texts = []
     tags = []
