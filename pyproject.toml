@@ -25,6 +25,9 @@ loguru = "^0.7.0"
 wandb = "^0.15.4"
 openai = "0.27.8"
 openai-multi-client = "^0.1.1"
+openpyxl = "^3.1.2"
+colorama = "^0.4.6"
+xlsxwriter = "^3.1.4"
 
 
 [tool.poetry.group.dev]

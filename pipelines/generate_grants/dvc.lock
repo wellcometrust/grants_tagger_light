@@ -7,12 +7,12 @@ stages:
       --active-portfolio-path data/raw/active_grants_last_5_years.csv --bertmesh-path
       Wellcome/WellcomeBertMesh --bertmesh-thresh 0.5 --pre-annotate-bertmesh --xlinear-path
       models/xlinear-0.2.5/model --xlinear-label-binarizer-path models/xlinear-0.2.5/label_binarizer.pkl
-      --xlinear-thresh 0.2 --pre-annotate-xlinear --output-path data/grants_comparison/comparison.csv
+      --xlinear-thresh 0.2 --pre-annotate-xlinear --output-path data/grants_comparison/comparison.xlsx
     deps:
     - path: scripts/create_xlinear_bertmesh_comparison_csv.py
-      md5: 0a91bf23be4068bdc7c4b7a32d80ff2d
-      size: 8214
+      md5: d960c5b83b112d390b80f9db8467f8a6
+      size: 8089
     outs:
-    - path: data/grants_comparison/comparison.csv
-      md5: bc4fd9f4a670409dad07ffd03cf421f1
-      size: 596654
+    - path: data/grants_comparison/comparison.xlsx
+      md5: 91983b99e7a5386f5e21d3a2ede38642
+      size: 937396

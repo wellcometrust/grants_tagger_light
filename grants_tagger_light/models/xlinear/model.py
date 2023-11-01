@@ -68,6 +68,13 @@ class MeshXLinear(BaseEstimator, ClassifierMixin):
         # Those are MeshXLinear params
         self.threshold = threshold
 
+        self.model_path = None
+        self.xlinear_model_ = None
+        self.vectorizer_ = None
+
+        self.label_binarizer_path = label_binarizer_path
+        self.label_binarizer_ = None
+
         if label_binarizer_path is not None:
             self.load_label_binarizer(label_binarizer_path)
 
@@ -167,7 +174,6 @@ class MeshXLinear(BaseEstimator, ClassifierMixin):
         """
         X: list or numpy array of texts
         model_path: path to trained model
-        label_binarizer_path: path to trained label_binarizer
         probabilities: bool, default False. When true probabilities
                     are returned along with tags
         threshold: float, default 0.5. Probability threshold to be used to assign tags.
@@ -217,6 +223,9 @@ class MeshXLinear(BaseEstimator, ClassifierMixin):
         with open(params_path, "r") as f:
             self.__dict__.update(json.load(f))
 
+        self.load_label_binarizer(self.label_binarizer_path)
+        self.model_path = model_path
+
         if self.vectorizer_library == "sklearn":
             self.vectorizer_ = load_pickle(vectorizer_path)
         else:
@@ -228,6 +237,8 @@ class MeshXLinear(BaseEstimator, ClassifierMixin):
         self.xlinear_model_ = XLinearModel.load(
             model_path, is_predict_only=is_predict_only
         )
+
+        return self
 
     def load_label_binarizer(self, label_binarizer_path):
         with open(label_binarizer_path, "rb") as f:

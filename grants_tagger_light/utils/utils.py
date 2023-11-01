@@ -11,6 +11,7 @@ from sklearn.metrics import f1_score
 from sklearn.model_selection import train_test_split
 from transformers import AutoModel
 from sklearn.preprocessing import MultiLabelBinarizer
+from datasets import load_from_disk
 
 logger = logging.getLogger(__name__)
 
@@ -36,10 +37,31 @@ def yield_tags(data_path, label_binarizer=None):
             else:
                 yield item["tags"]
 
+def load_data_from_dataset(data_path, model_id2labels, label_binarizer):
+    df = load_from_disk(data_path)
+    texts = df['test']['abstractText']
+    label_ids = df['test']['label_ids']
+    labels = []
+    for label_id in label_ids:
+        labels.append([model_id2labels[label] for label in label_id])
+    
+    # create on-hot-encoding
+    tags = []
+    for label_set in label_ids:
+        tag = [0] * len(label_binarizer.classes_)
+        for label in label_set:
+            tag[label] = 1
+        tags.append(tag)
+    
 
-def load_data(data_path, label_binarizer=None, X_format="List"):
+    return texts, tags, None
+    
+
+def load_data(data_path, label_binarizer=None, X_format="List", model_id2labels=None):
     """Load data from the dataset."""
     print("Loading data...")
+    if ".json" not in str(data_path):
+        return load_data_from_dataset(data_path, model_id2labels, label_binarizer)
 
     texts = []
     tags = []

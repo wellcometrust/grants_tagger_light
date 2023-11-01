@@ -1,3 +1,4 @@
+## Quick Evaluation script based on the training script, for preprocessed tags
 from transformers import (
     Trainer,
     TrainingArguments,
@@ -36,7 +37,7 @@ from grants_tagger_light.utils.years_tags_parser import parse_years, parse_tags
 transformers.set_seed(42)
 
 
-def train_bertmesh(
+def evaluate_bertmesh(
     model_key: str,
     data_path: str,
     training_args: TrainingArguments,
@@ -147,16 +148,6 @@ def train_bertmesh(
     if model_args.freeze_backbone is None:
         model_args.freeze_backbone = "freeze"
 
-    if model_args.freeze_backbone.lower().strip() == "unfreeze":
-        logger.info("Unfreezing weights&biases in the backbone")
-        model.unfreeze_backbone()
-    elif model_args.freeze_backbone.lower().strip() == "unfreeze_bias":
-        logger.info("Unfreezing only biases in the backbone")
-        model.unfreeze_backbone(only_bias=True)
-    elif model_args.freeze_backbone.lower().strip() == "freeze":
-        logger.info("Freezing backbone")
-        model.freeze_backbone()
-
     def sklearn_metrics(prediction: EvalPrediction):
         # This is a batch, so it's an array (rows) of array (labels)
         # Array of arrays with probas [[5.4e-5 1.3e-3...] [5.4e-5 1.3e-3...] ... ]
@@ -189,12 +180,21 @@ def train_bertmesh(
         report = classification_report(
               filtered_y_true, filtered_y_pred, output_dict=True
         )
+        averages = {idx: r for idx, r in report.items() if "avg" in idx}
+        report = {
+            id2label[idx]: r
+            for idx, r in report.items()
+            if "avg" not in idx
+        }
+
+        report = {**averages, **report}
 
         metric_dict = {
             "micro_avg": report["micro avg"],
             "macro_avg": report["macro avg"],
             "weighted_avg": report["weighted avg"],
             "samples_avg": report["samples avg"],
+            "full_report": report,
         }
 
         return metric_dict
@@ -268,22 +268,13 @@ def train_bertmesh(
         compute_metrics=sklearn_metrics,
         optimizers=(optimizer, scheduler),
     )
-    # logger.info(training_args)
 
-    if from_checkpoint is None:
-        logger.info("Training...")
-    else:
-        logger.info(f"Resuming training from checkpoint: {from_checkpoint}")
-    trainer.train()
-
-    logger.info("Saving the model...")
-    trainer.save_model(os.path.join(training_args.output_dir, "best"))
 
     logger.info("Evaluating...")
     metrics = trainer.evaluate(eval_dataset=val_dset)
 
     logger.info(pformat(metrics))
-    with open(os.path.join(training_args.output_dir, "metrics"), "w") as f:
+    with open("preprocessed_results/metrics_old.json", "w") as f:
         f.write(pformat(metrics))
 
 
@@ -291,7 +282,7 @@ train_app = typer.Typer()
 
 
 @train_app.command()
-def train_bertmesh_cli(
+def evaluate_bertmesh_cli(
     ctx: typer.Context,
     model_key: str = typer.Argument(
         ..., help="Pretrained model key. " "Local path or HF location"
@@ -348,7 +339,7 @@ def train_bertmesh_cli(
     logger.info("Training args: {}".format(pformat(training_args)))
     logger.info("Wandb args: {}".format(pformat(wandb_args)))
 
-    train_bertmesh(
+    evaluate_bertmesh(
         model_key=model_key,
         data_path=data_path,
         training_args=training_args,
@@ -362,3 +353,6 @@ def train_bertmesh_cli(
         train_years=parse_years(train_years),
         test_years=parse_years(test_years),
     )
+
+if __name__ == "__main__":
+    train_app()

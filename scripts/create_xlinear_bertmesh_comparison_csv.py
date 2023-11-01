@@ -90,7 +90,6 @@ def create_comparison_csv(
     mesh_metadata_path: str,
     mesh_terms_list_path: str,
     active_portfolio_path: str,
-    active_portfolio_sample: int,
     pre_annotate_bertmesh: bool,
     bertmesh_path: str,
     bertmesh_thresh: float,
@@ -128,11 +127,15 @@ def create_comparison_csv(
     # Add active portfolio
     active_grants = pd.read_csv(active_portfolio_path)
     active_grants = active_grants[~active_grants["Synopsis"].isna()]
-    active_grants.sample(frac=1)
-    active_grants_sample = active_grants.iloc[:active_portfolio_sample]
-    active_grants_sample = pd.DataFrame({"abstract": active_grants_sample["Synopsis"]})
-    active_grants_sample["active_portfolio"] = 1
-    grants_sample = pd.concat([grants_sample, active_grants_sample])
+    active_grants.drop_duplicates(subset="Synopsis", inplace=True)
+    active_grants = pd.DataFrame(
+        {
+            "abstract": active_grants["Synopsis"],
+            "Reference": active_grants["Reference"],
+        }
+    )
+    active_grants["active_portfolio"] = 1
+    grants_sample = pd.concat([grants_sample, active_grants])
 
     abstracts = grants_sample["abstract"].tolist()
     print(f"{len(abstracts)} abstracts to tag")
@@ -192,7 +195,7 @@ def create_comparison_csv(
         )
 
     # Output df to csv
-    grants_sample.to_csv(output_path, index=False)
+    grants_sample.to_excel(output_path, index=False, engine="xlsxwriter")
 
 
 if __name__ == "__main__":
@@ -203,7 +206,6 @@ if __name__ == "__main__":
     parser.add_argument("--mesh-metadata-path", type=str)
     parser.add_argument("--mesh-terms-list-path", type=str)
     parser.add_argument("--active-portfolio-path", type=str)
-    parser.add_argument("--active-portfolio-sample", type=int, default=200)
     parser.add_argument("--pre-annotate-bertmesh", action="store_true")
     parser.add_argument(
         "--bertmesh-path", type=str, default="Wellcome/WellcomeBertMesh"
@@ -224,7 +226,6 @@ if __name__ == "__main__":
         mesh_metadata_path=args.mesh_metadata_path,
         mesh_terms_list_path=args.mesh_terms_list_path,
         active_portfolio_path=args.active_portfolio_path,
-        active_portfolio_sample=args.active_portfolio_sample,
         pre_annotate_bertmesh=args.pre_annotate_bertmesh,
         bertmesh_path=args.bertmesh_path,
         bertmesh_thresh=args.bertmesh_thresh,

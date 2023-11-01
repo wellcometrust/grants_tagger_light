@@ -1,19 +1,32 @@
 schema: '2.0'
 stages:
   train:
-    cmd: python ../../grants_tagger_light/training/train.py --model_key "" --data_path
-      ../../data/raw/allMeSH_2021.json --output_dir ../../bertmesh_outs/pipeline_test
-      --max_samples 10 --per_device_train_batch_size 4 --per_device_eval_batch_size
-      4
+    cmd: grants-tagger train bertmesh "" ../../preprocessed_results --output_dir ../../bertmesh_outs/pipeline_test/best
+      --per_device_train_batch_size 8 --gradient_accumulation_step 2 --per_device_eval_batch_size
+      1 --multilabel_attention True --freeze_backbone unfreeze_bias --num_train_epochs
+      7 --learning_rate 5e-5 --dropout 0.1 --hidden_size 1024 --warmup_steps 5000
+      --max_grad_norm 2.0 --scheduler_type cosine_hard_restart --weight_decay 0.2
+      --correct_bias True --threshold 0.25 --hidden_dropout_prob 0.2 --attention_probs_dropout_prob
+      0.2 --fp16 --torch_compile --evaluation_strategy steps --eval_accumulation_steps
+      20 --save_strategy steps --save_steps 10000 --eval_steps 1000
     deps:
-    - path: ../../data/raw/allMeSH_2021.json
-      md5: e827a6b8062d1312664dcf075c12d89f
-      size: 27547042745
-    params:
-      ../../grants_tagger_light/training/cli_args/train_args.py:
-        BertMeshTrainingArguments: {}
+    - path: ../../preprocessed_results
+      md5: f4e12c892d00f2ec079cf9fb782c8bc7.dir
+      size: 12530480449
+      nfiles: 199
     outs:
     - path: ../../bertmesh_outs/pipeline_test/best
-      md5: b96ff54ecd600460dbb18b3e82d8b517.dir
-      size: 439905869
-      nfiles: 3
+      md5: b0dc8fcdb92f068115081d77d0c4f93f.dir
+      size: 12410643000
+      nfiles: 44
+  preprocess:
+    cmd:
+    - mkdir -p ../../bertmesh_outs/pipeline_test/best
+    - grants-tagger preprocess mesh ../../data/raw/retagging/allMeSH_2021.2016-2021.jsonl
+      ../../preprocessed_results "" --test-size 25000 --train-years 2016,2017,2018,2019
+      --test-years 2020,2021
+    outs:
+    - path: ../../preprocessed_results
+      md5: f4e12c892d00f2ec079cf9fb782c8bc7.dir
+      size: 12530480449
+      nfiles: 199

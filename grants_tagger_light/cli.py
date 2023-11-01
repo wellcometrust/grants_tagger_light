@@ -5,6 +5,7 @@ import typer
 from grants_tagger_light.augmentation import augment_app
 from grants_tagger_light.download_epmc import download_epmc_cli
 from grants_tagger_light.evaluation import evaluate_app
+from grants_tagger_light.retagging import retag_app
 from grants_tagger_light.predict import predict_cli
 from grants_tagger_light.preprocessing import preprocess_app
 from grants_tagger_light.tune_threshold import tune_threshold_cli
@@ -18,6 +19,7 @@ app = typer.Typer(pretty_exceptions_enable=False)
 app.add_typer(preprocess_app, name="preprocess")
 app.add_typer(augment_app, name="augment")
 app.add_typer(evaluate_app, name="evaluate")
+app.add_typer(retag_app, name="retag")
 
 
 app.command("predict")(predict_cli)

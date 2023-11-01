@@ -1,3 +1,4 @@
+import datetime
 import os
 from dataclasses import dataclass, field, fields
 
@@ -11,17 +12,17 @@ class WandbArguments:
     """
 
     wandb_api_key: str = field(
-        default=None,
+        default=os.environ["WANDB_API_KEY"] if "WANDB_API_KEY" in os.environ else "",
         metadata={"help": "Wandb API key"},
     )
 
     wandb_project: str = field(
-        default=None,
+        default="bertmesh",
         metadata={"help": "Wandb project name"},
     )
 
     wandb_name: str = field(
-        default=None,
+        default=str(datetime.datetime.now()),
         metadata={"help": "Wandb run name"},
     )
 

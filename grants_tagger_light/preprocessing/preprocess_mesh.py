@@ -118,7 +118,6 @@ def preprocess_mesh(
         num_proc=num_proc,
         desc="Tokenizing",
         fn_kwargs={"tokenizer": tokenizer, "x_col": "abstractText"},
-        load_from_cache_file=False,
     )
     logger.info("Time taken to tokenize: {}".format(time.time() - t1))
 
@@ -261,7 +260,7 @@ def preprocess_mesh_cli(
     if not data_path.endswith("jsonl"):
         logger.error(
             "It seems your input MeSH data is not in `jsonl` format. "
-            "Please, run first `scripts/mesh_json_to_jsonlpy.`"
+            "Please, run first `scripts/mesh_json_to_jsonl.py.`"
         )
         exit(-1)
 
