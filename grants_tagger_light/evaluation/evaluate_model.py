@@ -6,6 +6,7 @@ from pathlib import Path
 from typing import Optional
 from transformers import pipeline
 from transformers.pipelines import PIPELINE_REGISTRY
+from tqdm.auto import tqdm
 
 import scipy.sparse as sp
 import typer
@@ -33,13 +34,20 @@ def evaluate_model(
     model = BertMesh.from_pretrained(model_path)
 
     label_binarizer = MultiLabelBinarizer()
-    label_binarizer.fit([list(model.id2label.values())])
+    id2labels = [0 for i in range(model.config.num_labels)]
+    for k, v in model.id2label.items():
+        id2labels[k] = v
+    label_binarizer.fit([id2labels])
 
     pipe = pipeline(
         "grants-tagging",
         model=model,
         tokenizer="Wellcome/WellcomeBertMesh",
+        device=0,
     )
+    def data():
+        for x in X_test:
+            yield x
 
     if split_data:
         print(
@@ -48,13 +56,14 @@ def evaluate_model(
         )
         _, X_test, _, Y_test = load_train_test_data(data_path, label_binarizer)
     else:
-        X_test, Y_test, _ = load_data(data_path, label_binarizer)
-
-    Y_pred_proba = pipe(X_test, return_labels=False)
-
+        X_test, Y_test, _ = load_data(data_path, label_binarizer, model_id2labels=model.id2label)
+    
+    Y_pred_proba = []
+    for out in tqdm(pipe(data(), return_labels=False)):
+        Y_pred_proba.append(out)
     Y_pred_proba = torch.vstack(Y_pred_proba)
 
-    Y_pred_proba = sp.csr_matrix(Y_pred_proba)
+    #Y_pred_proba = sp.csr_matrix(Y_pred_proba)
 
     if not isinstance(threshold, list):
         threshold = [threshold]

@@ -1,7 +1,7 @@
 vars:
     # RETAGGED: - data_path: "../../data/raw/retagging/allMeSH_2021.2016-2021.jsonl"
-    # ORIGINAL:
-    - data_path: "../../data/raw/allMeSH_2021.jsonl"
+    # ORIGINAL: - data_path: "../../data/raw/allMeSH_2021.jsonl"
+    - data_path: "../../data/raw/retagging/allMeSH_2021.2016-2021.jsonl"
     - preprocessing_output: "../../preprocessed_results"
     - script_loc: "../../grants_tagger_light/training"
     - output_dir: "../../bertmesh_outs/pipeline_test/best"
@@ -22,7 +22,7 @@ stages:
           --gradient_accumulation_step 2
           --per_device_eval_batch_size 1
           --multilabel_attention True
-          --freeze_backbone unfreeze
+          --freeze_backbone unfreeze_bias
           --num_train_epochs 7
           --learning_rate 5e-5
           --dropout 0.1
@@ -40,8 +40,8 @@ stages:
           --evaluation_strategy steps
           --eval_accumulation_steps 20
           --save_strategy steps
-          --save_steps 20000
-          --eval_steps 10000
+          --save_steps 10000
+          --eval_steps 1000
         deps:
             - ${preprocessing_output}
         outs:
