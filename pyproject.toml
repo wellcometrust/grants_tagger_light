@@ -19,7 +19,7 @@ dvc = {extras = ["s3"], version = "^2.58.2"}
 # torch-cpu is not available anymore!
 # torch = {version = "2.0.1", source = "torch-cpu"}
 torch = "2.0.1"
-transformers = "4.29.2"
+transformers = "4.36.0"
 libpecos = "^1.0.0"
 loguru = "^0.7.0"
 wandb = "^0.15.4"
